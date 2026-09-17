@@ -1,0 +1,30 @@
+# Secrets — never commit API keys
+.env
+.env.local
+
+# Duplicate skill tree written by `npx skills add` for other agents.
+# .agents/skills is the source of truth; .claude/skills symlinks into it.
+/agent/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+.npm/
+
+# Video working output — raw footage and renders stay out of git
+/edit/
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+!vendor/**/*.mp4
+
+# Render/build artifacts
+out/
+dist/
+.cache/
