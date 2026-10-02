@@ -1,0 +1,41 @@
+{
+  "category": "logo-reveal",
+  "envelope": {
+    "duration": 6.0,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "pacing": "elegant",
+    "export": "mp4"
+  },
+  "palette": {
+    "bg_deep": "#04070f",
+    "bg_mid": "#0a1324",
+    "plate_navy": "#060c18",
+    "steel": "#c9d6e8",
+    "ice": "#eaf2ff",
+    "accent": "#4f9dff",
+    "glow": "#5ab0ff"
+  },
+  "content": {
+    "logo": "assets/logo.png",
+    "logo_source": "assets/logo-src.jpg",
+    "tagline": null,
+    "url": null,
+    "note": "Mark-only lockup. No wordmark invented — brand text not supplied."
+  },
+  "asset_needs": [],
+  "brief": "A 6s cinematic sting for an isometric glass/chrome letterform. The frame opens black; a soft core glow swells at centre and an anamorphic light streak rakes across the frame. The mark is revealed by that light — fading up from a 1.14 scale with an 18px defocus racking to sharp, so it resolves out of the bloom rather than simply appearing. A specular band then travels across the glass faces, masked to the mark's own silhouette, which is what sells chrome. A slow 5% camera push-in runs under the whole second half, an accent rule sweeps out beneath the lockup, and fine motes drift for parallax depth. Settles to a held hero frame, breathes once, and falls to black.",
+  "motion": [
+    { "t": "0.00-0.70", "beat": "black; core glow swells at centre" },
+    { "t": "0.35-1.50", "beat": "anamorphic light streak rakes L->R" },
+    { "t": "0.70-1.95", "beat": "mark reveal: autoAlpha 0->1, scale 1.14->1.0, blur 18px->0" },
+    { "t": "1.85-2.95", "beat": "specular sweep across glass, masked to logo silhouette" },
+    { "t": "2.00-6.00", "beat": "camera push-in 1.00->1.05" },
+    { "t": "2.55-3.30", "beat": "accent rule sweeps out beneath the mark" },
+    { "t": "1.00-6.00", "beat": "dust motes drift (deterministic)" },
+    { "t": "3.10-5.20", "beat": "bloom breathes once" },
+    { "t": "5.30-6.00", "beat": "fall to black" }
+  ],
+  "proof_times": [0.5, 1.3, 2.4, 3.6, 5.0, 5.8]
+}
