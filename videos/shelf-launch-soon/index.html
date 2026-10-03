@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=640" />
+    <script src="./vendor/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Sora"; font-weight: 600; src: url("assets/fonts/sora-latin-600-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Sora"; font-weight: 700; src: url("assets/fonts/sora-latin-700-normal.woff2") format("woff2"); }
+
+      /* Same system as the S.H.E.L.F sign on the other wall: slate eyebrow (its
+         tagline colour), deep-navy hero (its name colour), one blue accent. */
+      :root {
+        --ink: #0d1b36;
+        --ink-soft: #2e3d58;
+        --accent: #1f5fd6;
+        --halo: 70, 150, 255;
+        --shadow: 45, 35, 25;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1080px;
+        height: 640px;
+        overflow: hidden;
+        background: transparent;
+      }
+      #stage {
+        position: relative;
+        width: 1080px;
+        height: 640px;
+        overflow: hidden;
+        background: transparent;
+      }
+
+      /* Fixed-width, left-aligned block: typed text grows rightwards and nothing
+         already on the wall moves while it types. */
+      #block {
+        position: absolute;
+        left: 70px;
+        top: 86px;
+        width: 940px;
+      }
+
+      .line { white-space: nowrap; }
+      .ch { display: none; }
+
+      /* This wall is lit from the downlight to its upper-left, so contact
+         shadows fall down-right. */
+      #l1 {
+        font: 600 120px/1.2 "Sora", sans-serif;
+        letter-spacing: 0.14em;
+        color: var(--ink-soft);
+      }
+      #l1 .ch { text-shadow: 2px 3px 4px rgba(var(--shadow), 0.22); }
+
+      #l2 {
+        --lh: 0;
+        margin-top: 14px;
+        font: 700 280px/0.92 "Sora", sans-serif;
+        letter-spacing: 0.02em;
+        color: var(--ink);
+      }
+      #l2 .ch {
+        text-shadow: 4px 8px 9px rgba(var(--shadow), 0.3), 0 0 26px rgba(var(--halo), var(--lh));
+      }
+
+      .cur {
+        display: inline-block;
+        width: 0.07em;
+        height: 0.74em;
+        background: var(--accent);
+        box-shadow: 0 0 0.12em rgba(var(--halo), 0.7);
+        vertical-align: baseline;
+        opacity: 0;
+      }
+      /* trailing tracking would otherwise park the cursor a wide gap away */
+      #cur1 { margin-left: -0.1em; }
+      #cur2 { margin-left: 0.04em; }
+
+      #bar {
+        position: relative;
+        width: 860px;
+        height: 7px;
+        margin-top: 44px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: rgba(13, 27, 54, 0.13);
+        opacity: 0;
+      }
+      #fill {
+        position: relative;
+        width: 72%;
+        height: 100%;
+        transform: scaleX(0);
+        transform-origin: 0 50%;
+        border-radius: 4px;
+        overflow: hidden;
+        background: linear-gradient(90deg, #1f5fd6, #5a9cff);
+        box-shadow: 0 0 12px rgba(var(--halo), 0.55);
+      }
+      #shine {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 140px;
+        transform: translateX(-160px);
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="10"
+      data-width="1080"
+      data-height="640"
+    >
+      <div id="scene" class="clip" data-start="0" data-duration="10" data-track-index="0">
+        <div id="block">
+          <div id="l1" class="line"><span id="cur1" class="cur"></span></div>
+          <div id="l2" class="line"><span id="cur2" class="cur"></span></div>
+          <div id="bar"><div id="fill"><div id="shine"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* Keystroke times are authored, not random, so every render is identical.
+         ../shelf-wall-reveal/tools/mix_sfx.py parses T1 / ENTER / T2 from this file,
+         so the key clicks follow if you retime the typing. */
+      var LINE1 = "LAUNCHING";
+      var LINE2 = "SOON";
+      var T1 = [5.15, 5.22, 5.28, 5.36, 5.42, 5.48, 5.56, 5.62, 5.69];
+      var ENTER = 5.84;
+      var T2 = [5.99, 6.13, 6.26, 6.41];
+
+      /* `tight`: the all-caps hero is set at 0.92 leading, tighter than Sora's
+         ascent box (which reserves room for accents these letters don't have).
+         The boxes overlap the eyebrow; the ink doesn't — verified by snapshot.
+         Marked per letter, not on a wrapper, so other collisions stay audited. */
+      function build(lineId, curId, text, tight) {
+        var line = document.getElementById(lineId), cur = document.getElementById(curId), out = [];
+        for (var i = 0; i < text.length; i++) {
+          var s = document.createElement("span");
+          s.className = "ch";
+          if (tight) s.setAttribute("data-layout-allow-overlap", "");
+          s.textContent = text[i];
+          line.insertBefore(s, cur);
+          out.push(s);
+        }
+        return out;
+      }
+      var c1 = build("l1", "cur1", LINE1);
+      var c2 = build("l2", "cur2", LINE2, true);
+
+      var tl = gsap.timeline({ paused: true });
+
+      function key(el, t) {
+        tl.set(el, { display: "inline-block" }, t);
+        tl.fromTo(
+          el,
+          { scale: 1.18, filter: "blur(3px)" },
+          { scale: 1, filter: "blur(0px)", duration: 0.12, ease: "power2.out", immediateRender: false },
+          t
+        );
+      }
+
+      /* cursor arrives and blinks twice before the first keystroke */
+      [[4.55, 1], [4.8, 0], [5.0, 1]].forEach(function (s) { tl.set("#cur1", { autoAlpha: s[1] }, s[0]); });
+
+      /* LAUNCHING — the cursor stays solid while typing, like a real one */
+      c1.forEach(function (el, i) { key(el, T1[i]); });
+
+      /* Enter: the cursor drops to the next line */
+      tl.set("#cur1", { autoAlpha: 0 }, ENTER);
+      tl.set("#cur2", { autoAlpha: 1 }, ENTER);
+
+      /* SOON — slower, emphatic */
+      c2.forEach(function (el, i) { key(el, T2[i]); });
+
+      /* idle blink for the rest of the hold */
+      for (var b = 0, t = 6.9; t < 10; t += 0.5, b++) tl.set("#cur2", { autoAlpha: b % 2 ? 1 : 0 }, t);
+
+      /* SOON lights up, then the launch bar fills most of the way */
+      tl.fromTo("#l2", { "--lh": 0 }, { "--lh": 0.45, duration: 0.6, ease: "sine.out" }, 6.5);
+      tl.fromTo("#bar", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: "sine.out" }, 6.55);
+      tl.fromTo("#fill", { scaleX: 0 }, { scaleX: 1, duration: 0.9, ease: "power2.out" }, 6.6);
+      tl.fromTo("#shine", { x: -160 }, { x: 640, duration: 0.7, ease: "sine.inOut" }, 7.6);
+      tl.fromTo("#shine", { x: -160 }, { x: 640, duration: 0.7, ease: "sine.inOut", immediateRender: false }, 9.0);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

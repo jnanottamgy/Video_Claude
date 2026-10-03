@@ -147,11 +147,11 @@
       id="stage"
       data-composition-id="main"
       data-start="0"
-      data-duration="8"
+      data-duration="10"
       data-width="1080"
       data-height="1350"
     >
-      <div id="lockup" class="clip" data-start="0" data-duration="8" data-track-index="0">
+      <div id="lockup" class="clip" data-start="0" data-duration="10" data-track-index="0">
         <div id="markWrap">
           <img id="markImg" src="assets/mark.png" alt="" />
           <div id="spec"></div>
@@ -175,21 +175,27 @@
       var FLASH = "#3d8bff";
       var tl = gsap.timeline({ paused: true });
 
-      /* 1 — the halo switches on, then the mark resolves and lands on the wall:
-             defocus racks to sharp while its shadow tightens from far to contact */
-      tl.fromTo("#markImg", { "--mh": 0, "--mhb": "40px" }, { "--mh": 0.6, "--mhb": "22px", duration: 1.1, ease: "sine.out" }, 0.25);
+      /* 1 — the mark flies in and HITS the wall at HIT (the impact SFX lands here).
+             It accelerates in out of a defocus; its shadow converges onto it and
+             reaches contact exactly at impact; the halo flashes; a small recoil settles it. */
+      var HIT = 0.85; // tools/mix_sfx.py parses this — the impact SFX follows it
+      tl.fromTo("#markWrap", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25, ease: "sine.out" }, 0.25);
       tl.fromTo(
         "#markWrap",
-        { autoAlpha: 0, scale: 1.14, filter: "blur(16px)" },
-        { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 1.2, ease: "power3.out" },
-        0.45
+        { scale: 1.35, filter: "blur(14px)" },
+        { scale: 1, filter: "blur(0px)", duration: HIT - 0.25, ease: "power2.in", immediateRender: false },
+        0.25
       );
+      tl.to("#markWrap", { scale: 0.985, duration: 0.07, ease: "power2.out" }, HIT);
+      tl.to("#markWrap", { scale: 1, duration: 0.3, ease: "power2.out" }, HIT + 0.07);
       tl.fromTo(
         "#markImg",
-        { "--ms": 0, "--msx": "-16px", "--msy": "30px", "--msb": "36px" },
-        { "--ms": 0.34, "--msx": "-5px", "--msy": "9px", "--msb": "11px", duration: 1.25, ease: "power3.out", immediateRender: false },
-        0.45
+        { "--ms": 0, "--msx": "-16px", "--msy": "30px", "--msb": "36px", "--mh": 0, "--mhb": "40px" },
+        { "--ms": 0.34, "--msx": "-5px", "--msy": "9px", "--msb": "11px", "--mh": 0.4, "--mhb": "30px", duration: HIT - 0.25, ease: "power2.in" },
+        0.25
       );
+      tl.to("#markImg", { "--mh": 1.0, "--mhb": "18px", duration: 0.05, ease: "power2.out" }, HIT);
+      tl.to("#markImg", { "--mh": 0.6, "--mhb": "22px", duration: 0.7, ease: "power2.out" }, HIT + 0.05);
 
       /* 2 — specular rake across the glass */
       tl.fromTo("#spec", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: "sine.out" }, 1.55);
@@ -227,9 +233,11 @@
         tl.to("#c" + k, { color: INK, duration: 0.5, ease: "sine.inOut" }, t0 + 0.22);
       }
 
-      /* 6 — hold on the wall; the halo breathes once */
+      /* 6 — hold on the wall; the halo breathes through the longer hold */
       tl.to("#markImg", { "--mh": 0.78, duration: 1.2, ease: "sine.inOut" }, 5.0);
       tl.to("#markImg", { "--mh": 0.6, duration: 1.2, ease: "sine.inOut" }, 6.2);
+      tl.to("#markImg", { "--mh": 0.78, duration: 1.1, ease: "sine.inOut" }, 7.6);
+      tl.to("#markImg", { "--mh": 0.6, duration: 1.1, ease: "sine.inOut" }, 8.7);
 
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;
