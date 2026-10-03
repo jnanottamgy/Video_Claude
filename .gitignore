@@ -28,3 +28,10 @@ node_modules/
 out/
 dist/
 .cache/
+
+# Render outputs and frame sequences are reproducible from source (see each project's build script)
+**/renders/
+*.webm
+
+# Reference stills of private rooms used only for placement previews
+videos/shelf-wall-reveal/assets/reel-snapshot.png
