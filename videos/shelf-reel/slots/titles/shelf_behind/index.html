@@ -9,9 +9,8 @@
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
       /* BEHIND layer: composited UNDER the person cut-out. Output 54.100 -> 55.533 (43 frames).
-         "SHELF" lands at 54.88 (t 0.78): letters slam in, one light sweep, hold. The footage cuts to
-         the next shot at output frame 1665 (55.500, t 1.40), so the scene clip ends at t = 1.39 and
-         frame 43 is empty on purpose.
+         "SHELF" lands at 54.88 (t 0.78): letters slam in, one light sweep, holds to the cut (the
+         footage cuts at output frame 1666 = the window end, so all 43 frames are this shot).
          Ink: the S.H.E.L.F wall-sign navy (the bed sheet is light). Sized for the compositor's camera
          (push + 0.06 punch at 54.88 peak at ~1.11x about (520, 800), shake 7 px): pre-warp ink spans
          x 92..984 so it stays inside the frame on screen. His head pokes into the bottom of "HEL". */
@@ -71,7 +70,7 @@
   </head>
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="1.433333" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="1.39" data-track-index="0">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.433333" data-track-index="0">
         <div class="word" id="word" data-text="SHELF" aria-hidden="true" data-layout-allow-overflow></div>
       </div>
     </div>

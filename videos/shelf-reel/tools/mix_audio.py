@@ -265,7 +265,7 @@ def alpha_onsets(png_dir, t0, thresh=0.004, min_gap=0.05):
         a = cv2.imread(f"{png_dir}/{f}", cv2.IMREAD_UNCHANGED)
         cov.append(0.0 if a is None or a.shape[2] < 4 else float((a[::4, ::4, 3] > 128).mean()))
     cov = np.array(cov)
-    out, last = [], -1
+    out, last = [], -10 ** 9
     for k in range(1, len(cov)):
         if cov[k] - cov[k - 1] > thresh and (k - last) / FPS > min_gap:
             out.append((t0 + k / FPS, cov[k] - cov[k - 1]))
@@ -274,15 +274,21 @@ def alpha_onsets(png_dir, t0, thresh=0.004, min_gap=0.05):
 
 
 # ---------------- build ----------------
+# The picture shows source frame f+1 for EDL frame f (composite.Source seeks to (f+0.5)/30, and an
+# input seek returns the first frame at or after that time). Every overlay, matte and render was
+# built against that picture, so the audio follows it: one frame later in the source.
+PICTURE_OFFSET = 1 / FPS
+
+
 def stem_A(orig):
-    """The source mix laid out on the output timeline."""
+    """The source mix laid out on the output timeline, in sync with the picture."""
     A = np.zeros((int(TOTAL * SR) + SR, 2))
     for s in edl.LAYOUT:
         o = s["o"] / FPS
         n = s["n"] / FPS
         if s["audio"] == "orig":
             a, b = s.get("src_audio", (s["a"], s.get("b", s["a"])))
-            x = seg(orig, a / FPS, b / FPS)
+            x = seg(orig, a / FPS + PICTURE_OFFSET, b / FPS + PICTURE_OFFSET)
             if s["id"] in ("P6c_f", "P6d_f"):
                 x = tape_stop(x, 0.30)                     # the music winds down into the name card
             x = fade(x, s.get("fade_in", 0.03), 0.03)
@@ -291,7 +297,7 @@ def stem_A(orig):
             place(A, fade(rewind_audio(orig, n), 0.02, 0.02), o, gain=0.9)
         elif s["audio"] == "tail":
             a, b = s["src_audio"]
-            place(A, fade(seg(orig, a / FPS, b / FPS), 0.03, 1.4), o)
+            place(A, fade(seg(orig, a / FPS + PICTURE_OFFSET, b / FPS + PICTURE_OFFSET), 0.03, 1.4), o)
     return A
 
 
@@ -442,9 +448,10 @@ def stem_B(A):
 
     # ---- cues from the overlays themselves ----
     import composite
-    cues = {d.split("/")[2]: alpha_onsets(d, t0) for d, t0, _ in composite.OVERLAYS}   # e.g. "cards", "storm"
+    gaps = {"cards": 0.4, "problem": 0.08}            # a sliding card can register on consecutive frames: one ping each
+    cues = {d.split("/")[2]: alpha_onsets(d, t0, min_gap=gaps.get(d.split("/")[2], 0.05)) for d, t0, _ in composite.OVERLAYS}
     for t, dcov in cues.get("cards", []):
-        if t < 44.4:
+        if t < 44.3:                                   # the 44.4 tremble is not an arrival
             ping(t, 0.32, 0, "notification", rng.uniform(-0.3, 0.3))
     for name, lo, hi in (("storm_hook", 0, 3.4), ("storm", 44.6, 51.45)):
         for t, dcov in cues.get(name, []):

@@ -11,8 +11,9 @@
       /* BEHIND layer: composited UNDER the person cut-out. Output 85.450 -> 86.667 (37 frames).
          "simple" spoken at 85.75 (t 0.30): the calm beat - a clean fade/scale with a soft tracking
          settle, then a thin underline draws (it passes behind his head). The footage cuts to the
-         next shot at output frame 2599 (86.633), so the scene clip ends at t = 1.15: frames 36-37
-         are empty on purpose. */
+         next shot at output frame 2600 (86.667). The compositor places this window at output frame
+         2564 (round(85.45 * 30)), so frame 36 is the last bathroom frame and frame 37 is already the
+         next shot: the scene clip ends at t = 1.18 and frame 37 is empty on purpose. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
 
@@ -59,7 +60,7 @@
   </head>
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="1.233333" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="1.15" data-track-index="0">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.18" data-track-index="0">
         <div class="word" id="word" data-text="SIMPLE." aria-hidden="true" data-layout-allow-overflow></div>
         <div class="rule" id="rule" aria-hidden="true"></div>
       </div>

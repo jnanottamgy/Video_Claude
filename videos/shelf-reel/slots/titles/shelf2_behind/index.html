@@ -11,8 +11,8 @@
       /* BEHIND layer: composited UNDER the person cut-out. Output 87.950 -> 89.067 (34 frames).
          The payoff: "S.H.E.L.F" lands at 88.13 in the S.H.E.L.F wall-sign navy with blue dots, a blue
          light burst blooms behind the letters (backlit sign), the glass mark settles above it.
-         The compositor places this window at output frame 2638 and the footage cuts at 2671, so the
-         scene clip ends at t = 1.08: frames 1-33 cover the desk-chair shot, frame 34 is empty.
+         The compositor places this window at output frame 2638 (round(87.95 * 30)) and the footage
+         cuts at 2672 (= the window end), so all 34 frames are the desk-chair shot: holds to the cut.
          Camera-safe: the 0.12 punch at 88.13 peaks at ~1.17x about (480, 840) with 16 px shake, so all
          pre-warp content sits inside x 112..950 and y >= 330 (lands inside the frame on screen).
          His crown just kisses the bottom of "E". */
@@ -128,7 +128,7 @@
   </head>
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="1.133333" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="1.08" data-track-index="0">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.133333" data-track-index="0">
         <div class="burst" aria-hidden="true" data-layout-allow-overflow>
           <div class="bwrap" id="raysWrap"><div id="rays"></div></div>
           <div class="bwrap" id="bloomWrap"><div id="bloom"></div></div>

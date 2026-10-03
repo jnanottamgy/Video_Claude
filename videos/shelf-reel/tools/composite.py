@@ -85,6 +85,9 @@ class Source:
         self.p, self.pos, self.cache = None, -1, OrderedDict()
 
     def _open(self, f):
+        # Seeking to (f+0.5)/30 returns frame f+1 (the first frame at or after the seek time), so the
+        # picture shows source frame f+1 for EDL frame f. Everything downstream (mattes, overlays keyed to
+        # the on-screen cuts, the audio in mix_audio.PICTURE_OFFSET) is built on this, so keep it consistent.
         if self.p:
             self.p.kill()
         self.p = subprocess.Popen(["ffmpeg", "-v", "error", "-ss", f"{(f + 0.5) / FPS:.4f}", "-i", SRC, "-vf", DECODE_VF,

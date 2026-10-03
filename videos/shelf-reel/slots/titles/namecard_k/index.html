@@ -9,18 +9,23 @@
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
       /* FRONT layer (over the person). Output 68.633 -> 70.167 (46 frames); the freeze starts at
-         68.733 (t 0.10). Role lockup for Kartik: flush-left at x = 64 directly under the giant
-         "KARTIK" of kartik_behind (baseline y 618), left of his head, clear of the caption band. */
+         68.733 (t 0.10). Role lockup for Kartik: flush-left with the giant "KARTIK" of kartik_behind
+         (ink x = 109) and 22 px under its baseline (y 618), left of his head.
+         The compositor pushes the scene (and the behind layer) 1.06 -> 1.10x about (560, 840) during
+         the freeze but does not move front layers, so #cam replays that exact push (smoothstep) to
+         keep the card locked to the name. On screen the card stays inside x >= 64 and clear of the
+         caption band. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+      #cam { position: absolute; inset: 0; transform-origin: 560px 840px; }
 
-      .card { position: absolute; left: 64px; top: 640px; width: 300px; height: 90px; }
+      .card { position: absolute; left: 109px; top: 640px; width: 250px; height: 88px; }
       /* thin silver corner bracket + rule */
       .rule {
         position: absolute;
         left: 0;
         top: 0;
-        width: 276px;
+        width: 246px;
         height: 2px;
         background: linear-gradient(90deg, #ffffff 0%, #e3eaf4 45%, rgba(169, 184, 205, 0) 100%);
         box-shadow: 0 0 10px rgba(var(--glow), 0.6);
@@ -39,52 +44,60 @@
       .role {
         position: absolute;
         left: -1px;
-        top: 17px;
-        font: 700 31px/1 var(--font-brand);
-        letter-spacing: 0.18em;
+        top: 16px;
+        font: 700 28px/1 var(--font-brand);
+        letter-spacing: 0.14em;
         color: var(--silver-hi);
         white-space: nowrap;
-        text-shadow: 0 0 14px rgba(var(--glow), 0.55), 0 2px 10px rgba(0, 0, 0, 0.55);
+        text-shadow: 0 0 14px rgba(var(--glow), 0.55), 0 2px 10px rgba(0, 0, 0, 0.6);
       }
       .brand {
         position: absolute;
         left: 0;
-        top: 59px;
+        top: 56px;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 9px;
         white-space: nowrap;
       }
       .brand img {
         display: block;
-        width: 24px;
-        height: 28px;
+        width: 22px;
+        height: 25px;
         filter: drop-shadow(0 0 6px rgba(var(--glow), 0.7));
       }
       .brand span {
-        font: 600 22px/1 var(--font-brand);
-        letter-spacing: 0.36em;
+        font: 600 20px/1 var(--font-brand);
+        letter-spacing: 0.32em;
         color: #b4d6ff;
-        text-shadow: 0 0 12px rgba(var(--glow), 0.75), 0 2px 8px rgba(0, 0, 0, 0.5);
+        text-shadow: 0 0 12px rgba(var(--glow), 0.75), 0 2px 8px rgba(0, 0, 0, 0.55);
       }
     </style>
   </head>
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="1.533333" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="1.533333" data-track-index="0">
-        <div class="card" id="card">
-          <div class="rule" id="rule"></div>
-          <div class="tick" id="tick"></div>
-          <div class="role" id="role">CO-FOUNDER</div>
-          <div class="brand" id="brand"><img src="./design/shelf-mark.png" alt="" /><span>S.H.E.L.F</span></div>
+        <div id="cam">
+          <div class="card" id="card">
+            <div class="rule" id="rule"></div>
+            <div class="tick" id="tick"></div>
+            <div class="role" id="role">CO-FOUNDER</div>
+            <div class="brand" id="brand"><img src="./design/shelf-mark.png" alt="" /><span>S.H.E.L.F</span></div>
+          </div>
         </div>
       </div>
     </div>
     <script>
       var tl = gsap.timeline({ paused: true });
-      var T = 0.075; // freeze starts at 68.733 (t 0.10): already drawing on the first freeze frame
+      var T_FREEZE = 0.1; // 68.733
+      var smoothstep = function (p) { return p * p * (3 - 2 * p); }; // the compositor's camera ease
 
-      // snap in with a quick slide: bracket + rule draw, then the two lines slide in and sharpen
+      // follow the compositor's freeze push (1.06 -> 1.10 about (560, 840), 68.733 -> 70.167)
+      tl.fromTo("#cam", { scale: 1.06 }, { scale: 1.1, duration: 1.433333, ease: smoothstep }, T_FREEZE);
+
+      // snap in with a quick slide, already drawing on the first freeze frame:
+      // bracket + rule draw, then the two lines slide in and sharpen
+      var T = 0.075;
       tl.fromTo("#tick", { scaleY: 0 }, { scaleY: 1, duration: 0.14, ease: "power3.out" }, T);
       tl.fromTo("#rule", { scaleX: 0 }, { scaleX: 1, duration: 0.42, ease: "expo.out" }, T);
       tl.fromTo("#role", { x: -44, opacity: 0, filter: "blur(8px)" }, { x: 0, opacity: 1, filter: "blur(0px)", duration: 0.34, ease: "expo.out" }, T + 0.03);
