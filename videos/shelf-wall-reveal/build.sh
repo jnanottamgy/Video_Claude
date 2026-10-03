@@ -10,7 +10,9 @@ npx --yes hyperframes render . --skill=motion-graphics --format png-sequence -q 
 python3 tools/wall_warp.py --scale 0.60 --cx 298 --cy 748
 
 mkdir -p renders/out
-alpha_mov()  { ffmpeg -y -loglevel error -framerate 30 -i "$1/frame_%06d.png" -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le -alpha_bits 16 -vendor apl0 "$2"; }
+# QuickTime Animation: lossless RGBA, and ~5x smaller than ProRes 4444 here because it
+# run-length-encodes the ~97% of each frame that is transparent (15 MB vs 70 MB).
+alpha_mov()  { ffmpeg -y -loglevel error -framerate 30 -i "$1/frame_%06d.png" -c:v qtrle -pix_fmt argb "$2"; }
 alpha_webm() { ffmpeg -y -loglevel error -framerate 30 -i "$1/frame_%06d.png" -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 0 -crf 24 -auto-alt-ref 0 -row-mt 1 "$2"; }
 
 alpha_mov  renders/wall_png renders/out/SHELF_wall-overlay_alpha.mov
