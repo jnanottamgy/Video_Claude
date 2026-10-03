@@ -28,14 +28,18 @@
       #slamShake { position: absolute; left: 0; top: 0; width: 1080px; height: 1000px; }
       #slamBloom { position: absolute; left: 70px; top: 372px; width: 940px; height: 356px; opacity: 0;
         background: radial-gradient(closest-side, rgba(255, 74, 54, 0.78), rgba(255, 40, 30, 0.3) 55%, rgba(255, 40, 30, 0) 100%); }
-      #bigLabelFly { position: absolute; left: 0; top: 410px; width: 1080px; height: 30px; display: flex; justify-content: center; align-items: center; }
+      #bigLabelFly { position: absolute; left: 0; top: 392px; width: 1080px; height: 30px; display: flex; justify-content: center; align-items: center; }
       #bigLabel { font-size: 30px; color: rgba(255, 255, 255, 0.95); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); }
-      #bigClockFly { position: absolute; left: 0; top: 458px; width: 1080px; height: 184px; display: flex; justify-content: center; align-items: center; }
+      #bigClockFly { position: absolute; left: 0; top: 454px; width: 1080px; height: 184px; display: flex; justify-content: center; align-items: center; }
       .bigclock { display: flex; font-family: var(--font-mono); font-weight: 800; font-size: 184px; line-height: 184px; color: var(--alert);
         text-shadow: 0 0 8px rgba(255, 70, 56, 0.9), 0 0 34px rgba(255, 59, 48, 0.62), 0 0 96px rgba(255, 40, 30, 0.42), 0 6px 22px rgba(30, 0, 0, 0.35); }
       #bigClock { opacity: 0; filter: blur(16px); }
       .bigclock .d { width: 0.6em; text-align: center; }
-      .bigclock .k { width: 0.34em; text-align: center; }
+      .bigclock .k { position: relative; display: block; width: 0.34em; height: 184px; }
+      .bigclock .k i { position: absolute; left: 13px; width: 36px; height: 36px; border-radius: 7px; background: var(--alert);
+        box-shadow: 0 0 8px rgba(255, 70, 56, 0.9), 0 0 34px rgba(255, 59, 48, 0.62), 0 0 96px rgba(255, 40, 30, 0.42); }
+      .bigclock .k i:first-child { top: 40px; }
+      .bigclock .k i:last-child { top: 105px; }
 
       /* ---- exam pill (top-left) ---- */
       #examWrap { position: absolute; left: 64px; top: 236px; height: 64px; opacity: 0; }
@@ -47,12 +51,13 @@
       .plabel { font-size: 20px; color: rgba(245, 246, 248, 0.68); }
       .pclock { display: flex; align-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 30px; color: var(--text-1); }
       .pclock .col { position: relative; display: block; width: 0.6em; height: 52px; overflow: hidden;
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 11px, #000 41px, transparent 52px);
-        mask-image: linear-gradient(to bottom, transparent 0, #000 11px, #000 41px, transparent 52px); }
-      .pclock .strip { position: absolute; left: 0; top: 9px; width: 100%; display: block; }
-      .pclock .strip span, .pclock .one { display: block; width: 100%; height: 34px; line-height: 34px; text-align: center; }
-      .pclock .one { position: absolute; left: 0; top: 9px; }
-      .pclock .k { display: block; width: 0.34em; height: 52px; line-height: 50px; text-align: center; }
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9px, #000 43px, transparent 52px);
+        mask-image: linear-gradient(to bottom, transparent 0, #000 9px, #000 43px, transparent 52px); }
+      .pclock .row, .pclock .one { position: absolute; left: 0; top: 6px; display: block; width: 100%; height: 40px; line-height: 40px; text-align: center; }
+      .pclock .k { position: relative; display: block; width: 0.34em; height: 52px; }
+      .pclock .k i { position: absolute; left: 2.1px; width: 6px; height: 6px; border-radius: 1.6px; background: currentColor; }
+      .pclock .k i:first-child { top: 17.5px; }
+      .pclock .k i:last-child { top: 28.5px; }
       #examGlow { position: absolute; inset: 0; border-radius: 32px; opacity: 0;
         box-shadow: 0 0 24px 3px rgba(255, 59, 48, 0.95), 0 0 64px 12px rgba(255, 59, 48, 0.5); }
       .ghost { position: absolute; inset: 0; border-radius: 32px; opacity: 0; }
@@ -76,7 +81,7 @@
       #avatar { position: absolute; left: 192px; top: 362px; width: 112px; height: 112px; }
       #avatarPop, #avatarThump { position: absolute; inset: 0; }
       .avdisc { position: absolute; inset: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-      #avatarFace { background: linear-gradient(150deg, #b3c8ff 0%, #8577ff 52%, #b07cff 100%);
+      #avatarFace { background: linear-gradient(150deg, #93adff 0%, #6d5cf6 52%, #9d5cf2 100%);
         box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.34), inset 0 -8px 16px rgba(46, 24, 130, 0.32);
         font: 700 54px/1 var(--font-ui); color: #fff; text-shadow: 0 2px 8px rgba(40, 20, 120, 0.35); }
       #avatarGreen { background: var(--green); opacity: 0; box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.25); }
@@ -89,12 +94,14 @@
       #statusLive { position: absolute; left: 0; top: 0; height: 36px; display: flex; align-items: center; gap: 10px; opacity: 0; }
       #liveDot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px rgba(52, 199, 89, 0.85); }
       .tclock { display: flex; align-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 28px; color: rgba(245, 246, 248, 0.88); }
-      .tclock .col { position: relative; display: block; width: 0.6em; height: 36px; overflow: hidden;
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 6px, #000 30px, transparent 36px);
-        mask-image: linear-gradient(to bottom, transparent 0, #000 6px, #000 30px, transparent 36px); }
-      .tclock .strip { position: absolute; left: 0; top: 2px; width: 100%; display: block; }
-      .tclock .strip span { display: block; width: 100%; height: 32px; line-height: 32px; text-align: center; }
-      .tclock .k { display: block; width: 0.34em; height: 36px; line-height: 34px; text-align: center; }
+      .tclock .col { position: relative; display: block; width: 0.6em; height: 44px; overflow: hidden;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5px, #000 39px, transparent 44px);
+        mask-image: linear-gradient(to bottom, transparent 0, #000 5px, #000 39px, transparent 44px); }
+      .tclock .row { position: absolute; left: 0; top: 3px; display: block; width: 100%; height: 38px; line-height: 38px; text-align: center; }
+      .tclock .k { position: relative; display: block; width: 0.34em; height: 44px; }
+      .tclock .k i { position: absolute; left: 1.96px; width: 5.6px; height: 5.6px; border-radius: 1.5px; background: currentColor; }
+      .tclock .k i:first-child { top: 14px; }
+      .tclock .k i:last-child { top: 24.4px; }
       #callEnded { position: absolute; left: 849px; top: 249px; height: 38px; font: 700 28px/38px var(--font-ui); color: #fff; white-space: nowrap; opacity: 0; }
       #cardGlyph { position: absolute; left: 812px; top: 380px; width: 76px; height: 76px; border-radius: 50%;
         background: rgba(52, 199, 89, 0.17); box-shadow: inset 0 0 0 1.5px rgba(52, 199, 89, 0.38);
@@ -167,7 +174,7 @@
               <span id="bigLabel" class="lbl"><span id="bigDot" class="ldot"><span id="bigPing" class="ping"></span></span><span class="ltxt"><span class="ch">E</span><span class="ch">X</span><span class="ch">A</span><span class="ch">M</span><span class="ch"> </span><span class="ch">I</span><span class="ch">N</span></span></span>
             </div>
             <div id="bigClockFly">
-              <div id="bigClock" class="bigclock"><span class="d">0</span><span class="d">8</span><span class="k">:</span><span class="d">0</span><span class="d">0</span><span class="k">:</span><span class="d">0</span><span class="d">0</span></div>
+              <div id="bigClock" class="bigclock"><span class="d">0</span><span class="d">8</span><span class="k"><i></i><i></i></span><span class="d">0</span><span class="d">0</span><span class="k"><i></i><i></i></span><span class="d">0</span><span class="d">0</span></div>
             </div>
           </div>
         </div>
@@ -208,7 +215,7 @@
         var EXAM_DIGITS_W = 6 * 18 + 2 * 0.34 * 30;  // mono 30px cells
         var pillLabelCX = PILL_X + 22 + LBL20_W / 2;
         var pillDigitsCX = PILL_X + 22 + LBL20_W + 16 + EXAM_DIGITS_W / 2;
-        var BIG_LBL_CY = 410 + 15, BIG_CLK_CY = 458 + 92, BIG_CX = 540;
+        var BIG_LBL_CY = 392 + 15, BIG_CLK_CY = 454 + 92, BIG_CX = 540;
 
         var NAME28_W = 90.922, ENDED28_W = 144.875, TIMER28_W = 4 * 16.8 + 0.34 * 28;
         var CP_R = 1016;                                                   // call pill right edge
@@ -287,26 +294,28 @@
           var cols = [];
           layout.forEach(function (it) {
             if (it === ":") {
-              var k = document.createElement("span"); k.className = "k"; k.textContent = ":"; host.appendChild(k); return;
+              var k = document.createElement("span"); k.className = "k"; k.innerHTML = "<i></i><i></i>"; host.appendChild(k); return;
             }
+            // odometer column: a 4-row window (rows base-1 .. base+2) slides past a masked slot
             var col = document.createElement("span"); col.className = "col";
-            var strip = document.createElement("span"); strip.className = "strip";
-            for (var r = 0; r <= it.M; r++) { var s = document.createElement("span"); s.textContent = String(r % it.M); strip.appendChild(s); }
-            col.appendChild(strip); host.appendChild(col);
-            cols.push({ el: col, strip: strip, B: it.B, M: it.M, rowH: rowH, ev: null, n0: 0, dir: -1, idx: cols.length });
+            col.setAttribute("data-layout-allow-overflow", "");
+            var rows = [];
+            for (var r = 0; r < 4; r++) { var s = document.createElement("span"); s.className = "row"; col.appendChild(s); rows.push(s); }
+            host.appendChild(col);
+            cols.push({ el: col, rows: rows, B: it.B, M: it.M, rowH: rowH, ev: null, n0: 0, dir: -1, idx: cols.length });
           });
           return cols;
         }
         var examCols = buildOdometer($("pillClock"), [
           { B: 36000, M: 10 }, { B: 3600, M: 10 }, ":", { B: 600, M: 6 }, { B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }
-        ], 34);
+        ], 40);
         examCols.forEach(function (c) {
           c.n0 = Math.floor(V0 / c.B); c.dir = -1;
           var ev = [];
           for (var i = 1; i <= nTicks; i++) if ((V0 - (i - 1)) % c.B === 0) ev.push(ticks[i - 1]);
           c.ev = new Float64Array(ev);
         });
-        var callCols = buildOdometer($("callTimer"), [{ B: 600, M: 6 }, { B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }], 32);
+        var callCols = buildOdometer($("callTimer"), [{ B: 600, M: 6 }, { B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }], 38);
         var callTicks = [];
         for (var ct = 1; T_CONNECT + ct < T_END; ct++) callTicks.push(ct);
         callCols.forEach(function (c) {
@@ -327,8 +336,16 @@
           return c.n0 + c.dir * (a - partial);
         }
         function placeCol(c, p) {
-          var row = ((p % c.M) + c.M) % c.M;
-          c.strip.style.transform = "translate3d(0," + (-row * c.rowH).toFixed(2) + "px,0)";
+          var base = Math.floor(p + 1e-9);
+          for (var j = 0; j < 4; j++) {
+            var k = base - 1 + j;
+            var dg = String(((k % c.M) + c.M) % c.M);
+            var sp = c.rows[j];
+            if (sp.textContent !== dg) sp.textContent = dg;
+            var o = Math.abs(k - p) < 0.985 ? "1" : "0";  // rows fully outside the slot are hidden
+            if (sp.style.opacity !== o) sp.style.opacity = o;
+            sp.style.transform = "translate3d(0," + ((k - p) * c.rowH).toFixed(2) + "px,0)";
+          }
         }
 
         // final digits for the static glitch copies
@@ -341,7 +358,7 @@
           var cells = "";
           for (var q = 0; q < endStr.length; q++) {
             var ch = endStr.charAt(q);
-            cells += ch === ":" ? '<span class="k">:</span>' : '<span class="col"><span class="one">' + ch + "</span></span>";
+            cells += ch === ":" ? '<span class="k"><i></i><i></i></span>' : '<span class="col"><span class="one">' + ch + "</span></span>";
           }
           el.innerHTML = '<div class="pc"><span class="lbl plabel"><span class="ldot"></span><span class="ltxt">EXAM IN</span></span><span class="pclock">' + cells + "</span></div>";
           return el;
@@ -517,6 +534,7 @@
         tl.to("#shellRect", { attr: { x: cpL - SHELL_X, y: 0, width: cpW, height: 64, rx: 32 }, duration: MD, ease: ME }, T_MORPH);
         tl.to("#avatar", { x: cpL + 32 - AV_CX, y: PILL_CY - AV_CY, scale: 44 / 112, duration: MD, ease: ME }, T_MORPH);
         tl.fromTo("#avatarGreen", { opacity: 0 }, { opacity: 1, duration: 0.24, ease: "power1.inOut", immediateRender: false }, T_MORPH + 0.1);
+        tl.to("#avatarFace", { opacity: 0, duration: 0.04, ease: "none" }, T_MORPH + 0.36);
         tl.to("#callName", { x: cpL + 66 - NAME_X, y: PILL_CY - NAME_CY, scale: 28 / 42, duration: MD, ease: ME }, T_MORPH);
         tl.to("#callTimer", { x: cpL + 76 + NAME28_W - TIMER_X, y: PILL_CY - TIMER_CY, duration: MD, ease: ME }, T_MORPH);
         tl.to("#liveDot", { scale: 0, opacity: 0, duration: 0.2, ease: "power2.in" }, T_MORPH);

@@ -177,6 +177,16 @@
           return { rad: rad, sa: sa, ca: Math.sqrt(1 - sa * sa) };
         }
         function wrapPi(a) { a = (a + Math.PI) % 6.283185307; if (a < 0) a += 6.283185307; return a - Math.PI; }
+        // keeps tiles in transit off a face: anything inside the ellipse slides out to its rim
+        function pushOut(S, f, w) {
+          var dx = S.x - f[0], dy = S.y - f[1], d = Math.sqrt((dx * dx) / (f[2] * f[2]) + (dy * dy) / (f[3] * f[3]));
+          if (d >= 1 || d < 1e-4 || w <= 0) return S;
+          var k = lerp(1, 1 / d, w);
+          S.x = f[0] + dx * k; S.y = f[1] + dy * k;
+          return S;
+        }
+        function faceB(t) { var g = track(TB, t); return [g[0] + 5, g[1] + 70, 245, 175]; }   // Kartik, eyes to chin
+        function faceC(t) { var g = track(TC, t); return [g[0] - 10, g[1] + 5, 245, 245]; }   // Jnanottam in the nook
         var HEADB = { dx: 16, dy: -42, rx: 182, ry: 242 };
         function kick(t, t0, amp, tau) {
           if (t < t0) return 0;
@@ -216,6 +226,11 @@
         for (var q2 = rest.length - 1; q2 > 0; q2--) { var j = Math.floor(rnd() * (q2 + 1)); var tmp = rest[q2]; rest[q2] = rest[j]; rest[j] = tmp; }
         rest.forEach(function (idx, n) { ringOf[idx] = n % 2; });
 
+        function keepIn(o, kx, ky, x, y, sc) { // flip drift components that point at a nearby edge
+          var hw = (BASEW[o.type] * sc) / 2 + 40, hh = 55 * sc + 40;
+          if ((x - hw < 64 && o[kx] < 0) || (x + hw > 1016 && o[kx] > 0) || (y + hh > 1100 && x + hw > 940 && o[kx] > 0)) o[kx] = -o[kx];
+          if ((y - hh < 236 && o[ky] < 0) || (y + hh > 1284 && o[ky] > 0) || (y + hh > 1100 && x + hw > 940 && o[ky] > 0)) o[ky] = -o[ky];
+        }
         SPEC.forEach(function (sp, i) {
           var el = document.createElement("div");
           el.className = "tile tt";
@@ -236,12 +251,14 @@
             sw0: T.swirl + rr(0, 0.05),
             // scatter (shot C)
             cx: pc[0], cy: pc[1], cr: clamp(pc[2] + rr(-4, 4), -7, 7), cvx: 0, cvy: 0, cvr: rr(-0.8, 0.8),
-            sc0: T.scatter + rr(0, 0.05)
+            sc0: T.scatter - 0.0333 + rr(0, 0.03)
           };
           var da = rr(0, 6.283), dv = rr(3, 6.5);
           o.vx = Math.cos(da) * dv; o.vy = Math.sin(da) * dv;
           var dc = rr(0, 6.283), dvc = rr(4, 9);
           o.cvx = Math.cos(dc) * dvc; o.cvy = Math.sin(dc) * dvc;
+          keepIn(o, "vx", "vy", pa[0], pa[1], sp[1]);
+          keepIn(o, "cvx", "cvy", pc[0], pc[1], sp[1]);
           o.phi = (ringCount[o.ring]++ / RINGS[o.ring].n) * 6.2832 + rr(-0.1, 0.1) + o.ring * 0.4;
           // wide tiles ride slightly inside their ring so nothing leaves the frame
           o.rpen = Math.max(0, o.hw * RINGS[o.ring].s - 95) * 0.6;
@@ -340,19 +357,19 @@
             var c0 = ringCenter(o, o.sw0), B0 = stateB(o, o.sw0), pB0 = psiOf(o, B0, c0, o.sw0);
             o.faR = Math.hypot(o.fa.x - c0[0], o.fa.y - c0[1]);
             // start angle, unwrapped next to the target, biased to travel with the ring's spin
-            var d0 = wrapPi(Math.atan2(o.fa.y - c0[1], o.fa.x - c0[0]) - pB0);
-            if (d0 * R.dir < -2.2) d0 += R.dir * 6.283185307;
-            o.faPsi = pB0 + d0;
+            o.faPsi = pB0 + wrapPi(Math.atan2(o.fa.y - c0[1], o.fa.x - c0[0]) - pB0);
           }
           var A = o.fa, B = stateB(o, t), c = ringCenter(o, t);
           var u = prog(t, o.sw0, 0.9), p = EO(u);
-          var spin = -R.dir * (theta(t) - theta(o.sw0)) * R.spd;
-          var ang = lerp(o.faPsi + spin, psiOf(o, B, c, t), p);
-          var rad = lerp(o.faR, Math.hypot(B.x - c[0], B.y - c[1]), p);
-          return {
+          var rB = Math.hypot(B.x - c[0], B.y - c[1]);
+          var spin = -R.dir * (theta(t) - theta(o.sw0)) * R.spd * Math.min(1, rB / o.faR);
+          var ang = lerp(o.faPsi + spin, psiOf(o, B, c, t), P3O(u));
+          var rad = lerp(o.faR, rB, p);
+          var S = {
             x: c[0] + rad * Math.cos(ang), y: c[1] + rad * Math.sin(ang), s: lerp(A.s, B.s, P3O(u)), r: lerp(A.r, B.r, p),
             yaw: B.yaw * p, a: lerp(1, B.a, P3O(u)), b: Math.max(B.b, 10 * Math.pow(1 - u, 2.2)), z: B.z
           };
+          return t >= 6.9 ? pushOut(S, faceB(t), 1 - sstep(0.6, 1, u)) : S;
         }
 
         /* ---------------- phase C: scatter + tangle (Jnanottam in the nook) ---------------- */
@@ -375,10 +392,11 @@
           if (!o.fb) o.fb = stateB(o, o.sc0);
           var B = o.fb, C = stateC(o, t);
           var u = prog(t, o.sc0, 0.58), p = EO(u);
-          return {
+          var S = {
             x: lerp(B.x, C.x, p), y: lerp(B.y, C.y, p), s: lerp(B.s, C.s, P3O(u)), r: lerp(B.r, C.r, p),
             yaw: B.yaw * (1 - p), a: lerp(B.a, 1, P3O(u)), b: Math.max(B.b * (1 - u), 9 * (1 - sstep(0, 0.5, u))), z: C.z
           };
+          return pushOut(S, t >= 10.5 ? faceC(t) : faceB(t), 1);
         }
 
         function stateOf(o, t) {
@@ -481,7 +499,7 @@
           return t;
         });
         function drawTrails(t) {
-          var on = t >= T.swirl && t < T.scatter + 0.2;
+          var on = t >= T.swirl && t < 10.49;
           var g = track(TB, t);
           headEll.setAttribute("cx", (g[0] + HEADB.dx).toFixed(1));
           headEll.setAttribute("cy", (g[1] + HEADB.dy).toFixed(1));
@@ -501,7 +519,7 @@
               }
             }
             var draw = P3O(prog(t, T.swirl + 0.05 + k * 0.06, 0.7));
-            var fade = 1 - prog(t, T.scatter, 0.12);
+            var fade = 1 - prog(t, T.scatter - 0.07, 0.08);
             var spinBoost = sstep(9.3, 9.8, t);
             [[tr.back, back, 0.3], [tr.backG, back, 0.1], [tr.front, front, 0.55], [tr.frontG, front, 0.16]].forEach(function (it, idx) {
               var pth = it[0];
@@ -530,7 +548,7 @@
           world.style.visibility = v <= 0 ? "hidden" : "visible";
           if (v > 0 && v < 1) {
             var sc = lerp(0.94, 1, v);
-            world.style.transform = "translate(540px,960px) scale(" + sc.toFixed(3) + ") translate(-540px,-960px)";
+            world.style.transform = "scale(" + sc.toFixed(3) + ")";
           } else world.style.transform = "none";
           tiles.forEach(function (o) {
             var s = stateOf(o, t);

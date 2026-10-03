@@ -19,11 +19,31 @@
   var H = 150;
   var CX = 540; // storm centre = world transform origin (vertigo / collapse pivot)
   var CY = 760;
-  // safe area, pulled in so the vertigo (rotate 3.5deg, scale 1.06 about CX,CY) stays inside
-  // y 230..1290 and never touches the caption band (1290-1460) or the right rail.
-  var B = { x0: 66, x1: 1014, y0: 284, y1: 1214, railY: 1100, railX: 936 };
+  // safe area, pulled in so the vertigo (rotate 3deg, scale 1.045 about CX,CY) stays inside
+  // the reel's safe zones and never touches the caption band (1290-1460) or the right rail.
+  var B = { x0: 84, x1: 996, y0: 292, y1: 1212, railY: 1100, railX: 932 };
   // laptop shot (44.40-48.03 and the cold open): his eyes / nose / mouth / hand stay clear
   var FACE = { x0: 690, x1: 950, y0: 806, y1: 1088 };
+
+  var C = {
+    cr: { app: "unofficial", sender: "CR:", msg: "all the notes, units 1-5", badge: 12 },
+    teacher: { app: "official", sender: "Teacher:", msg: "syllabus copy attached", badge: 48 },
+    zaid: { app: "boys", sender: "Zaid:", msg: "solved PYQs", badge: 99 },
+    notes: { app: "pdf", msg: "Notes_FINAL_v3.pdf", mono: true, time: "2m" },
+    bro: { app: "ishaan", msg: "bro check the group", badge: 3 },
+    unit3: { app: "boys", msg: "who has unit 3??", badge: 23 },
+    u47: { app: "unofficial", msg: "47 new messages", badge: 47 },
+    exam: { app: "reminder", sender: "EXAM", msg: "in 8 hours", time: "now" },
+    img4: { app: "img", msg: "notes_unit4 (1).jpg", mono: true, time: "1m" },
+    o128: { app: "official", msg: "128 new messages", badge: 99 },
+    fwd: { app: "mail", msg: "Fwd: Fwd: notes", badge: 7, time: "5m" },
+    pyq: { app: "boys", sender: "Zaid:", msg: "PYQ_2022 (blurry).jpg", badge: 31 },
+    due: { app: "calendar", msg: "Assignment due 11:59 PM", time: "now" },
+    voice: { app: "ishaan", msg: "voice message (0:42)", badge: 4, time: "1m" },
+    syl: { app: "pdf", msg: "Syllabus copy.pdf", mono: true, time: "now" },
+    study: { app: "reminder", msg: "did you study??", time: "now" },
+  };
+  var GROUPS = [C.u47, C.o128, C.unit3, C.cr, C.teacher, C.zaid, C.pyq, C.u47, C.o128, C.unit3, C.zaid, C.teacher];
 
   var POOL = [
     { app: "unofficial", sender: "CR:", msg: "all the notes, units 1-5", badge: 12 },
@@ -33,7 +53,7 @@
     { app: "ishaan", msg: "bro check the group", badge: 3 },
     { app: "boys", msg: "who has unit 3??", badge: 23 },
     { app: "unofficial", msg: "47 new messages", badge: 47 },
-    { app: "reminder", sender: "EXAM", msg: "", time: "now" },
+    { app: "reminder", sender: "EXAM", msg: "in 8 hours", time: "now" },
     { app: "img", msg: "notes_unit4 (1).jpg", mono: true, time: "1m" },
     { app: "official", msg: "128 new messages", badge: 99 },
     { app: "mail", msg: "Fwd: Fwd: notes", badge: 7, time: "5m" },
@@ -74,8 +94,7 @@
     var poolIdx = 0;
     var order = [];
     function nextContent() {
-      // the three named groups lead the burst, then seeded shuffles of the whole pool
-      if (poolIdx < 3) return POOL[poolIdx++];
+      // seeded shuffles of the whole pool
       while (order.length <= poolIdx) {
         var idx = POOL.map(function (_, i) {
           return i;
@@ -114,8 +133,8 @@
     }
 
     // one card: content + landing pose; c.cur tracks the pose for later moves
-    function newCard(t, x, y, s, r, entry) {
-      var content = nextContent();
+    function newCard(t, x, y, s, r, entry, content) {
+      content = content || nextContent();
       var c = {
         t: t,
         cx: x,
@@ -164,7 +183,7 @@
       return best;
     }
     // best-candidate pick for pileups: random candidates, far from the most recent cards
-    function pickRecent(s, r, face, recentN, k) {
+    function pickRecent(s, r, face, recentN, k, centreBias) {
       var cs = candidates(s, r, face, 16);
       if (!cs.length) return null;
       var recent = cards.slice(-recentN).map(function (c) {
@@ -178,6 +197,12 @@
         var y = p[1] + R(-7, 7);
         if (!fits(x, y, s, r, face)) continue;
         var d = recent.length ? minDist(x, y, recent, 1.35) : 1e9;
+        if (centreBias) {
+          // denser middle, ragged edge: discount spots near the border of the safe area
+          var ex = Math.abs(x - CX) / ((B.x1 - B.x0) / 2);
+          var ey = Math.abs(y - CY) / ((B.y1 - B.y0) / 2);
+          d *= 1 - centreBias * Math.min(1, Math.max(ex, ey));
+        }
         if (d > bestD) {
           bestD = d;
           best = [x, y];
@@ -185,7 +210,7 @@
       }
       return best;
     }
-    function addFar(t, s, r, entry, face, seeds, ring) {
+    function addFar(t, s, r, entry, face, seeds, ring, content) {
       var p = null;
       for (var tries = 0; tries < 4 && !p; tries++) {
         p = pickFar(s, r, face, seeds, ring);
@@ -193,16 +218,34 @@
       }
       if (!p) p = [CX - 200, 420];
       seeds.push(p);
-      return newCard(t, p[0], p[1], s, r, entry);
+      return newCard(t, p[0], p[1], s, r, entry, content);
     }
-    function addPile(t, s, r, entry, face, recentN) {
+    function addPile(t, s, r, entry, face, recentN, content, centreBias) {
       var p = null;
       for (var tries = 0; tries < 4 && !p; tries++) {
-        p = pickRecent(s, r, face, recentN || 12, 22);
+        p = pickRecent(s, r, face, recentN || 12, 22, centreBias);
         if (!p) s *= 0.92;
       }
       if (!p) p = [CX - 200, 420];
-      return newCard(t, p[0], p[1], s, r, entry);
+      return newCard(t, p[0], p[1], s, r, entry, content);
+    }
+    // hero card: the legal spot nearest to a designed target
+    function addHero(t, s, r, entry, face, target, content) {
+      var best = null;
+      for (var tries = 0; tries < 5 && !best; tries++) {
+        var cs = candidates(s, r, face, 10);
+        var bd = 1e9;
+        for (var i = 0; i < cs.length; i++) {
+          var dd = Math.hypot(cs[i][0] - target[0], cs[i][1] - target[1]);
+          if (dd < bd) {
+            bd = dd;
+            best = cs[i];
+          }
+        }
+        if (!best) s *= 0.93;
+      }
+      if (!best) best = target;
+      return newCard(t, best[0], best[1], s, r, entry, content);
     }
 
     /* ---------------- the plan (storm-local times) ---------------- */
@@ -218,18 +261,18 @@
 
     // 1) "What": burst of 7 from the centre to a balanced ring around it
     var seeds1 = [[CX, CY]];
+    var burst = [C.cr, C.teacher, C.zaid, C.bro, C.img4, C.u47, C.fwd];
     for (var i = 0; i < 7; i++) {
-      var s1 = i < 2 ? R(0.88, 0.98) : R(0.7, 0.86);
-      addFar(T_WHAT + i * 0.016, s1, sgn() * R(2, 9), "burst", true, seeds1, [190, 470]);
+      var s1 = i < 3 ? R(0.84, 0.94) : R(0.68, 0.82);
+      addFar(T_WHAT + i * 0.016, s1, sgn() * R(2, 9), "burst", true, seeds1, [170, 410], burst[i]);
     }
-    // 2) "f*ck": two slam onto the pile (big, near the camera)
-    addPile(T_FCK, R(0.86, 1.0), sgn() * R(4, 11), "slam", true, 9);
-    addPile(T_FCK + 0.07, R(0.72, 0.86), sgn() * R(4, 12), "slam", true, 10);
-    // 3) "why are my notes"
-    [T_WHY, 1.22, 1.46].forEach(function (t) {
-      addPile(t, R(0.66, 0.86), sgn() * R(3, 12), "slam", true, 11);
-    });
-
+    // 2) "f*ck": the EXAM reminder slams in big, near the camera; a smaller one follows
+    addHero(T_FCK, 1.0, -4, "slam", true, [430, 640], C.exam);
+    addHero(T_FCK + 0.07, 0.66, 7, "slam", true, [800, 430], C.study);
+    // 3) "why are my notes" -> the notes file lands on "notes"
+    addPile(T_WHY, R(0.66, 0.8), sgn() * R(3, 12), "slam", true, 11, C.voice);
+    addPile(1.34, R(0.64, 0.78), sgn() * R(3, 12), "slam", true, 11, C.o128);
+    addHero(1.46, 0.78, 5, "slam", true, [380, 930], C.notes);
     // 4) "scattered": everything is flung out to every corner (rot -14..14, scale 0.55-1.0)
     var existing = cards.slice();
     var seeds4 = [[CX, CY]];
@@ -272,17 +315,18 @@
         c.px = best[0];
         c.py = best[1];
       });
-    for (i = 0; i < 4; i++) {
-      addFar(T_SCAT + 0.03 + i * 0.03, R(0.58, 0.78), sgn() * R(4, 14), "burst", true, seeds4, null);
-    }
+    // the files themselves fly out with them
+    [C.syl, C.pyq, C.due, C.unit3].forEach(function (ct, j) {
+      addFar(T_SCAT + 0.03 + j * 0.03, R(0.58, 0.76), sgn() * R(4, 14), "burst", true, seeds4, null, ct);
+    });
     // 5) "in so"
     addPile(2.17, R(0.6, 0.74), sgn() * R(3, 14), "slam", true, 14);
     addPile(2.3, R(0.58, 0.7), sgn() * R(3, 14), "slam", true, 14);
-    // 6) "many groups?": fast pileup of small cards
+    // 6) "many groups?": fast pileup of small group-chat cards
     var t6 = T_MANY;
     var g6 = 0.075;
     for (i = 0; i < 12; i++) {
-      addPile(t6, R(0.55, 0.66), sgn() * R(0, 14), "pop", true, 16);
+      addPile(t6, R(0.55, 0.66), sgn() * R(0, 14), "pop", true, 16, GROUPS[i]);
       t6 += g6;
       g6 = Math.max(0.034, g6 * 0.88);
     }
@@ -293,15 +337,16 @@
       var g7 = 0.21;
       var n7 = 0;
       while (t7 < T_PEAK) {
+        var late = (t7 - T_CUT2) / (T_PEAK - T_CUT2);
         var big = n7 % 4 === 1;
         var s7 = big ? R(0.84, 1.0) : R(0.55, 0.76);
         var kind = n7 % 5 === 3 ? "fly" : big ? "slam" : "pop";
-        addPile(t7, s7, sgn() * R(0, 14), kind, false, 14);
+        addPile(t7, s7, sgn() * R(0, 14), kind, false, 14, null, 0.25 + 0.5 * late);
         n7++;
         t7 += g7;
         g7 = Math.max(1 / 30, g7 * 0.915);
         if (t7 > 6.2 && g7 <= 1 / 30 && t7 < T_PEAK) {
-          addPile(t7 - 1 / 60, R(0.55, 0.8), sgn() * R(0, 14), "pop", false, 14);
+          addPile(t7 - 1 / 60, R(0.55, 0.8), sgn() * R(0, 14), "pop", false, 14, null, 0.75);
         }
       }
     }
@@ -353,8 +398,9 @@
         tl.fromTo(k.el, { opacity: 0 }, { opacity: 1, duration: d(0.06), ease: "power1.out" }, t0);
         tl.fromTo(k.el, { filter: "blur(9px)" }, { filter: "blur(0px)", duration: d(0.17), ease: "power2.out" }, t0);
       }
-      // older cards sink into the pile as new ones land on top
-      tl.fromTo(k.dim, { opacity: 0 }, { opacity: 0.42, duration: 2.4, ease: "sine.inOut" }, t0 + 0.45);
+      // older cards sink into the pile as new ones land on top: darker and softer with age
+      tl.fromTo(k.dim, { opacity: 0 }, { opacity: 0.46, duration: 2.4, ease: "sine.inOut" }, t0 + 0.45);
+      tl.fromTo(k.fly, { filter: "blur(0px)" }, { filter: "blur(1.6px)", duration: 2.2, ease: "sine.inOut", immediateRender: false }, t0 + 0.8);
 
       // ---- later moves ("scattered") ----
       c.moves.forEach(function (m) {
@@ -405,12 +451,12 @@
       tl.fromTo(
         world,
         { rotation: 0, scale: 1, x: 0 },
-        { rotation: 3.5, scale: 1.06, x: -10, duration: T_SUCK - T_CUT2, ease: "sine.in", immediateRender: false },
+        { rotation: 3, scale: 1.045, x: -8, duration: T_SUCK - T_CUT2, ease: "sine.in", immediateRender: false },
         T_CUT2 + OFF
       );
       // collapse: a breath out, then everything spirals into the centre
-      tl.fromTo(world, { rotation: 3.5, scale: 1.06 }, { rotation: 4.2, scale: 1.08, duration: 0.08, ease: "power2.out", immediateRender: false }, T_SUCK + OFF);
-      tl.fromTo(world, { rotation: 4.2, scale: 1.08 }, { rotation: 11, scale: 0.88, duration: 0.27, ease: "power3.in", immediateRender: false }, T_SUCK + OFF + 0.08);
+      tl.fromTo(world, { rotation: 3, scale: 1.045 }, { rotation: 3.6, scale: 1.065, duration: 0.08, ease: "power2.out", immediateRender: false }, T_SUCK + OFF);
+      tl.fromTo(world, { rotation: 3.6, scale: 1.065 }, { rotation: 11, scale: 0.88, duration: 0.27, ease: "power3.in", immediateRender: false }, T_SUCK + OFF + 0.08);
     }
 
     /* ---------------- badges count up (text driven by time) ---------------- */

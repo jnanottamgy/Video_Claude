@@ -53,15 +53,15 @@
       /* ---- the mark ---- */
       #markWrap {
         position: absolute;
-        left: 463px;  /* 154 x 176, centred on x = 540 */
-        top: 254px;
-        width: 154px;
-        height: 176px;
+        left: 455px;  /* 170 x 194 (art is 446 x 510), centred on x = 540 */
+        top: 240px;
+        width: 170px;
+        height: 194px;
       }
       #mark {
         display: block;
-        width: 154px;
-        height: 176px;
+        width: 170px;
+        height: 194px;
         filter: drop-shadow(0 0 22px rgba(var(--glow), 0.55)) drop-shadow(0 10px 18px rgba(4, 10, 26, 0.35));
       }
 
@@ -118,7 +118,7 @@
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="1.133333" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="1.05" data-track-index="0">
-        <div class="burst" aria-hidden="true">
+        <div class="burst" aria-hidden="true" data-layout-allow-overflow>
           <div class="bwrap" id="raysWrap"><div id="rays"></div></div>
           <div class="bwrap" id="bloomWrap"><div id="bloom"></div></div>
           <div id="streak"></div>
@@ -185,7 +185,7 @@
       tl.fromTo("#rays", { opacity: 0 }, { opacity: 0.8, duration: 0.06, ease: "power1.out" }, T_B);
       tl.to("#rays", { opacity: 0, duration: 0.6, ease: "power2.inOut", immediateRender: false }, T_B + 0.12);
       tl.fromTo("#streak", { scaleX: 0 }, { scaleX: 1, duration: 0.32, ease: "expo.out" }, T_B);
-      tl.fromTo("#streak", { opacity: 1 }, { opacity: 0, duration: 0.55, ease: "power2.in" }, T_B + 0.2);
+      tl.to("#streak", { opacity: 0, duration: 0.55, ease: "power2.in", immediateRender: false }, T_B + 0.2);
 
       // the mark settles above the word a beat later
       tl.fromTo("#markWrap", { y: -46, scale: 0.78 }, { y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, T_HIT + 0.1);
