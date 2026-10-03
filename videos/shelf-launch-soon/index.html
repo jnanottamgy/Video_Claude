@@ -115,11 +115,11 @@
       id="stage"
       data-composition-id="main"
       data-start="0"
-      data-duration="10"
+      data-duration="30"
       data-width="1080"
       data-height="640"
     >
-      <div id="scene" class="clip" data-start="0" data-duration="10" data-track-index="0">
+      <div id="scene" class="clip" data-start="0" data-duration="30" data-track-index="0">
         <div id="block">
           <div id="l1" class="line"><span id="cur1" class="cur"></span></div>
           <div id="l2" class="line"><span id="cur2" class="cur"></span></div>
@@ -183,14 +183,16 @@
       c2.forEach(function (el, i) { key(el, T2[i]); });
 
       /* idle blink for the rest of the hold */
-      for (var b = 0, t = 6.9; t < 10; t += 0.5, b++) tl.set("#cur2", { autoAlpha: b % 2 ? 1 : 0 }, t);
+      for (var b = 0, t = 6.9; t < 30; t += 0.5, b++) tl.set("#cur2", { autoAlpha: b % 2 ? 1 : 0 }, t);
 
       /* SOON lights up, then the launch bar fills most of the way */
       tl.fromTo("#l2", { "--lh": 0 }, { "--lh": 0.45, duration: 0.6, ease: "sine.out" }, 6.5);
       tl.fromTo("#bar", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: "sine.out" }, 6.55);
       tl.fromTo("#fill", { scaleX: 0 }, { scaleX: 1, duration: 0.9, ease: "power2.out" }, 6.6);
-      tl.fromTo("#shine", { x: -160 }, { x: 640, duration: 0.7, ease: "sine.inOut" }, 7.6);
-      tl.fromTo("#shine", { x: -160 }, { x: 640, duration: 0.7, ease: "sine.inOut", immediateRender: false }, 9.0);
+      /* a shine runs along the bar every 4.5s for the rest of the hold */
+      for (var st = 7.6, first = true; st + 0.7 <= 30; st += 4.5, first = false) {
+        tl.fromTo("#shine", { x: -160 }, { x: 640, duration: 0.7, ease: "sine.inOut", immediateRender: first }, st);
+      }
 
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;

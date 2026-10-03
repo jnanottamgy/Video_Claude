@@ -25,11 +25,15 @@ ffmpeg -y -loglevel error -framerate 30 -i renders/wall_png/frame_%06d.png -i "$
   -map 0:v -map 1:a -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 0 -crf 24 -auto-alt-ref 0 -row-mt 1 \
   -c:a libopus -b:a 160k -shortest renders/out/SHELF_wall-overlay_alpha.webm
 
+# Phone editors can't read alpha: the same overlay as two plain MP4s, exact when
+# stacked as MULTIPLY (bottom) + SCREEN (top). See tools/phone_versions.py.
+python3 tools/phone_versions.py
+
 # Preview needs the reel snapshot, which is kept out of git (it's a photo of a private room).
 if [ -f assets/reel-snapshot.png ]; then
   python3 -c "import sys; sys.path.insert(0,'tools'); import wall_warp as w, cv2; cv2.imwrite('renders/out/_bg.png', (w.snapshot_background('assets/reel-snapshot.png')*255).clip(0,255).astype('uint8'))"
   ffmpeg -y -loglevel error -loop 1 -framerate 30 -i renders/out/_bg.png -framerate 30 -i renders/wall_png/frame_%06d.png -i "$SFX" \
     -filter_complex "[0:v][1:v]overlay=0:0:format=auto:shortest=1,format=yuv420p[v]" -map "[v]" -map 2:a \
-    -c:v libx264 -preset slow -crf 18 -c:a aac -b:a 256k -shortest -movflags +faststart renders/out/SHELF_wall-preview.mp4
+    -t 12 -c:v libx264 -preset slow -crf 18 -c:a aac -b:a 256k -shortest -movflags +faststart renders/out/SHELF_wall-preview.mp4
 fi
 ls -la renders/out/

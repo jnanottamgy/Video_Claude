@@ -1,4 +1,4 @@
-"""Sound design for the S.H.E.L.F wall reveal + LAUNCHING SOON, as one 10s stem.
+"""Sound design for the S.H.E.L.F wall reveal + LAUNCHING SOON, as one 30s stem (silent after ~9s).
 
 Every cue is placed by the *measured* transient of its file (onset or peak), not
 by the file's start, so the sound lands on the frame where its visual happens.
@@ -23,7 +23,7 @@ import numpy as np
 from scipy.signal import resample
 
 SR = 48000
-DUR = 10.0
+DUR = 30.0
 SFX = "assets/sfx"
 OUT = "renders/out/SHELF_sfx.wav"
 TARGET_LUFS, TARGET_TP = -16.0, -1.5
@@ -45,7 +45,7 @@ RULE = 2.55
 DECODE0, DECODE_STEP, FLASH = 3.0, 0.24, 0.05   # word k lands at DECODE0+k*STEP, its letter flashes +FLASH
 CURSOR_IN = 4.55                                # from shelf-launch-soon: the cursor appears
 BAR = 6.6                                       # launch bar fills 6.6 -> 7.5
-SHINES = (7.6, 9.0)
+SHINES = (7.6,)                                 # later shines (every 4.5s) are silent: the hold stays quiet under the reel
 
 
 def load(name):
