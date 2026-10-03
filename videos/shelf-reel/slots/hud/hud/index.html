@@ -50,14 +50,14 @@
       #pillLabel, #pillClock { opacity: 0; }
       .plabel { font-size: 20px; color: rgba(245, 246, 248, 0.68); }
       .pclock { display: flex; align-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 30px; color: var(--text-1); }
-      .pclock .col { position: relative; display: block; width: 0.6em; height: 52px; overflow: hidden;
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9px, #000 43px, transparent 52px);
-        mask-image: linear-gradient(to bottom, transparent 0, #000 9px, #000 43px, transparent 52px); }
-      .pclock .row, .pclock .one { position: absolute; left: 0; top: 6px; display: block; width: 100%; height: 40px; line-height: 40px; text-align: center; }
-      .pclock .k { position: relative; display: block; width: 0.34em; height: 52px; }
+      .pclock .col { position: relative; display: block; width: 0.6em; height: 44px; overflow: hidden;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 8px, #000 36px, transparent 44px);
+        mask-image: linear-gradient(to bottom, transparent 0, #000 8px, #000 36px, transparent 44px); }
+      .pclock .row, .pclock .one { position: absolute; left: 0; top: 2px; display: block; width: 100%; height: 40px; line-height: 40px; text-align: center; }
+      .pclock .k { position: relative; display: block; width: 0.34em; height: 44px; }
       .pclock .k i { position: absolute; left: 2.1px; width: 6px; height: 6px; border-radius: 1.6px; background: currentColor; }
-      .pclock .k i:first-child { top: 17.5px; }
-      .pclock .k i:last-child { top: 28.5px; }
+      .pclock .k i:first-child { top: 13.5px; }
+      .pclock .k i:last-child { top: 24.5px; }
       #examGlow { position: absolute; inset: 0; border-radius: 32px; opacity: 0;
         box-shadow: 0 0 24px 3px rgba(255, 59, 48, 0.95), 0 0 64px 12px rgba(255, 59, 48, 0.5); }
       .ghost { position: absolute; inset: 0; border-radius: 32px; opacity: 0; }
@@ -95,8 +95,8 @@
       #liveDot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px rgba(52, 199, 89, 0.85); }
       .tclock { display: flex; align-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 28px; color: rgba(245, 246, 248, 0.88); }
       .tclock .col { position: relative; display: block; width: 0.6em; height: 44px; overflow: hidden;
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5px, #000 39px, transparent 44px);
-        mask-image: linear-gradient(to bottom, transparent 0, #000 5px, #000 39px, transparent 44px); }
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9px, #000 35px, transparent 44px);
+        mask-image: linear-gradient(to bottom, transparent 0, #000 9px, #000 35px, transparent 44px); }
       .tclock .row { position: absolute; left: 0; top: 3px; display: block; width: 100%; height: 38px; line-height: 38px; text-align: center; }
       .tclock .k { position: relative; display: block; width: 0.34em; height: 44px; }
       .tclock .k i { position: absolute; left: 1.96px; width: 5.6px; height: 5.6px; border-radius: 1.5px; background: currentColor; }
@@ -516,13 +516,13 @@
         tl.fromTo("#pillClock", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "none" }, 1.69);
 
         /* 3. in-call card slides down (15.90) */
-        tl.fromTo("#callLayer", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "power1.out" }, T_CARD);
+        tl.fromTo("#callLayer", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "power1.out" }, T_CARD);
         tl.fromTo("#callLayer", { y: -120 }, { y: 0, duration: 0.55, ease: "expo.out", immediateRender: false }, T_CARD);
         tl.fromTo("#callLayer", { filter: "blur(6px)" }, { filter: "blur(0px)", duration: 0.22, ease: "power2.out", immediateRender: false }, T_CARD);
-        tl.fromTo("#avatarPop", { scale: 0.55, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, T_CARD + 0.12);
-        tl.fromTo("#callName", { x: -18, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.18);
-        tl.fromTo("#callStatus", { x: -14, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.24);
-        tl.fromTo("#cardGlyph", { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2.2)" }, T_CARD + 0.28);
+        tl.fromTo("#avatarPop", { scale: 0.55, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, T_CARD + 0.03);
+        tl.fromTo("#callName", { x: -18, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.07);
+        tl.fromTo("#callStatus", { x: -14, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.11);
+        tl.fromTo("#cardGlyph", { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2.2)" }, T_CARD + 0.14);
         RIPPLES.forEach(function (t0, i) {
           tl.fromTo("#rip" + i, { scale: 1, opacity: 0.8 }, { scale: 1.95, opacity: 0, duration: 0.95, ease: "power2.out", immediateRender: false }, t0);
         });
@@ -530,7 +530,7 @@
         /* 4. connected (21.28): timer, green ring */
         tl.to("#statusCalling", { y: -14, opacity: 0, duration: 0.12, ease: "power2.in" }, T_CONNECT);
         tl.fromTo("#statusLive", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.34, ease: "expo.out", immediateRender: false }, T_CONNECT + 0.1);
-        tl.fromTo("#ripG", { scale: 1, opacity: 0.95 }, { scale: 2.05, opacity: 0, duration: 0.8, ease: "power2.out", immediateRender: false }, T_CONNECT);
+        tl.fromTo("#ripG", { scale: 1, opacity: 0.95 }, { scale: 1.9, opacity: 0, duration: 0.5, ease: "power2.out", immediateRender: false }, T_CONNECT);
         tl.to("#cardGlyph", { backgroundColor: "#34c759", duration: 0.18, ease: "power1.out" }, T_CONNECT);
         tl.to("#cardGlyphIcon", { fill: "#ffffff", duration: 0.18, ease: "power1.out" }, T_CONNECT);
 

@@ -21,7 +21,7 @@
   var CY = 760;
   // safe area, pulled in so the vertigo (rotate 3deg, scale 1.045 about CX,CY) stays inside
   // the reel's safe zones and never touches the caption band (1290-1460) or the right rail.
-  var B = { x0: 84, x1: 996, y0: 292, y1: 1212, railY: 1100, railX: 932 };
+  var B = { x0: 84, x1: 996, y0: 292, y1: 1212 };
   // laptop shot (44.40-48.03 and the cold open): his eyes / nose / mouth / hand stay clear
   var FACE = { x0: 690, x1: 950, y0: 806, y1: 1088 };
 
@@ -66,7 +66,7 @@
 
   /* opt = { off: seconds added to every storm-local time (hook: 0.2),
              full: true -> pileup + vertigo + collapse (storm), false -> stop full at 3.267 (hook),
-             seed } */
+             settleBy: (hook) local time by which every entry has landed, seed } */
   NK.buildStorm = function (tl, world, opt) {
     var OFF = opt.off || 0;
     var FULL = !!opt.full;
@@ -78,15 +78,48 @@
       return rnd() < 0.5 ? -1 : 1;
     }
 
+    // Placement test on the card's real outline (corners + edge points), both at rest and under
+    // the peak world transform (vertigo + the breath before the collapse: rotate 3.6deg,
+    // scale 1.065 about CX,CY, x -8), against the reel safe zones: x 64..1016, y >= 230,
+    // bottom kept ~60 px above the caption band for the drop shadow, right rail x > 938 for y > 1100.
+    var VR = (3.6 * Math.PI) / 180;
+    var VS = 1.065;
+    var VC = Math.cos(VR);
+    var VSN = Math.sin(VR);
+    function safePt(x, y, yMax) {
+      if (x < 66 || x > 1014 || y < 234 || y > yMax) return false;
+      if (y > 1100 && x > 936) return false;
+      return true;
+    }
     function fits(cx, cy, s, r, face) {
       var e = NK.ext(W, H, s, r);
-      var x0 = cx - e.hx;
-      var x1 = cx + e.hx;
-      var y0 = cy - e.hy;
-      var y1 = cy + e.hy;
-      if (x0 < B.x0 || x1 > B.x1 || y0 < B.y0 || y1 > B.y1) return false;
-      if (y1 > B.railY && x1 > B.railX) return false;
-      if (face && x1 > FACE.x0 && x0 < FACE.x1 && y1 > FACE.y0 && y0 < FACE.y1) return false;
+      if (cx - e.hx < B.x0 - 40 || cx + e.hx > B.x1 + 40 || cy - e.hy < B.y0 || cy + e.hy > B.y1) return false;
+      if (face && cx + e.hx > FACE.x0 && cx - e.hx < FACE.x1 && cy + e.hy > FACE.y0 && cy - e.hy < FACE.y1) return false;
+      var a = (r * Math.PI) / 180;
+      var ca = Math.cos(a);
+      var sa = Math.sin(a);
+      var hw = (W / 2) * s;
+      var hh = (H / 2) * s;
+      for (var i = 0; i <= 8; i++) {
+        // walk the outline: 8 points per edge pair
+        var u = -1 + (2 * i) / 8;
+        var pts = [
+          [u * hw, -hh],
+          [u * hw, hh],
+          [-hw, u * hh],
+          [hw, u * hh],
+        ];
+        for (var q = 0; q < 4; q++) {
+          var x = cx + pts[q][0] * ca - pts[q][1] * sa;
+          var y = cy + pts[q][0] * sa + pts[q][1] * ca;
+          if (!safePt(x, y, 1212)) return false;
+          var dx = x - CX;
+          var dy = y - CY;
+          var tx = CX + VS * (dx * VC - dy * VSN) - 8;
+          var ty = CY + VS * (dx * VSN + dy * VC);
+          if (!safePt(tx, ty, 1232)) return false;
+        }
+      }
       return true;
     }
 
@@ -117,7 +150,7 @@
       var e = NK.ext(W, H, s, r);
       step = step || 18;
       for (var y = B.y0 + e.hy; y <= B.y1 - e.hy; y += step) {
-        for (var x = B.x0 + e.hx; x <= B.x1 - e.hx; x += step) {
+        for (var x = B.x0 - 40 + e.hx; x <= B.x1 + 40 - e.hx; x += step) {
           if (fits(x, y, s, r, face)) out.push([x, y]);
         }
       }
@@ -373,7 +406,8 @@
       var r = c.r;
 
       // ---- entry ---- (late arrivals are shortened so nothing overlaps the collapse)
-      var cap = FULL ? Math.max(0.03, T_SUCK + OFF - t0 - 0.004) : 9;
+      // (hook: everything must be landed and sharp by opt.settleBy, its frozen last frame)
+      var cap = FULL ? Math.max(0.03, T_SUCK + OFF - t0 - 0.004) : opt.settleBy ? Math.max(0.05, opt.settleBy - t0) : 9;
       function d(v) {
         return Math.min(v, cap);
       }
@@ -384,7 +418,7 @@
         tl.fromTo(k.el, { filter: "blur(14px)" }, { filter: "blur(0px)", duration: d(0.34), ease: "power2.out" }, t0);
       } else if (c.entry === "slam") {
         tl.fromTo(k.el, { x: 0, y: -26 }, { x: 0, y: 0, duration: d(0.32), ease: "power4.out" }, t0);
-        tl.fromTo(k.el, { scale: s * 1.55, rotation: r + SG() * RR(6, 12) }, { scale: s, rotation: r, duration: d(0.32), ease: "power4.out" }, t0);
+        tl.fromTo(k.el, { scale: Math.min(s * 1.55, 1.24), rotation: r + SG() * RR(6, 12) }, { scale: s, rotation: r, duration: d(0.32), ease: "power4.out" }, t0);
         tl.fromTo(k.el, { opacity: 0 }, { opacity: 1, duration: d(0.07), ease: "power1.out" }, t0);
         tl.fromTo(k.el, { filter: "blur(12px)" }, { filter: "blur(0px)", duration: d(0.22), ease: "power2.out" }, t0);
       } else if (c.entry === "fly") {
@@ -395,7 +429,7 @@
         tl.fromTo(k.el, { filter: "blur(16px)" }, { filter: "blur(0px)", duration: d(0.26), ease: "power2.out" }, t0);
       } else {
         // pop: small fast slam onto the pile
-        tl.fromTo(k.el, { scale: s * 1.4, rotation: r + SG() * RR(4, 10) }, { scale: s, rotation: r, duration: d(0.24), ease: "back.out(1.6)" }, t0);
+        tl.fromTo(k.el, { scale: Math.min(s * 1.4, 1.2), rotation: r + SG() * RR(4, 10) }, { scale: s, rotation: r, duration: d(0.24), ease: "back.out(1.6)" }, t0);
         tl.fromTo(k.el, { opacity: 0 }, { opacity: 1, duration: d(0.06), ease: "power1.out" }, t0);
         tl.fromTo(k.el, { filter: "blur(9px)" }, { filter: "blur(0px)", duration: d(0.17), ease: "power2.out" }, t0);
       }

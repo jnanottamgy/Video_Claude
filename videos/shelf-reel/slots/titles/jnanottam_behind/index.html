@@ -123,10 +123,12 @@
       tl.fromTo("#l2", { x: 44 }, { x: 0, duration: T_FREEZE - T_IN, ease: "sine.inOut" }, T_IN);
 
       // freeze (63.50): glow pulse + brightness flash + one fast light sweep, then hold
-      tl.to(glows, { opacity: 0.95, duration: 0.05, ease: "power2.out", immediateRender: false }, T_FREEZE);
-      tl.to(glows, { opacity: 0.3, duration: 0.8, ease: "power2.out", immediateRender: false }, T_FREEZE + 0.05);
-      tl.fromTo(bases, { filter: "brightness(1)" }, { filter: "brightness(1.9)", duration: 0.05, ease: "power2.out" }, T_FREEZE);
-      tl.to(bases, { filter: "brightness(1)", duration: 0.6, ease: "power2.out", immediateRender: false }, T_FREEZE + 0.05);
+      // (the flash starts just after the last moving frame so its peak lands ON the first freeze frame)
+      var T_FLASH = T_FREEZE - 0.03;
+      tl.to(glows, { opacity: 0.95, duration: 0.05, ease: "power2.out", immediateRender: false }, T_FLASH);
+      tl.to(glows, { opacity: 0.3, duration: 0.8, ease: "power2.out", immediateRender: false }, T_FLASH + 0.05);
+      tl.fromTo(bases, { filter: "brightness(1)" }, { filter: "brightness(1.9)", duration: 0.05, ease: "power2.out" }, T_FLASH);
+      tl.to(bases, { filter: "brightness(1)", duration: 0.6, ease: "power2.out", immediateRender: false }, T_FLASH + 0.05);
       tl.fromTo(sheens, { "--p": "-30%" }, { "--p": "130%", duration: 0.42, ease: "power2.inOut", stagger: 0.06 }, T_FREEZE + 0.02);
 
       window.__timelines["main"] = tl;

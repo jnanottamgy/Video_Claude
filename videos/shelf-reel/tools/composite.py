@@ -35,9 +35,9 @@ FOUNDERS_AT = edl.BY_ID["P6a"]["o"] / FPS
 # overlay windows: (png dir, window start in output s, layer)
 OVERLAYS = [
     ("slots/notifs/storm_hook/renders/png", 0.000, "front"),
-    ("slots/hud/hud/renders/png", 14.300, "front"),
     ("slots/notifs/cards/renders/png", 30.000, "front"),
     ("slots/notifs/storm/renders/png", 44.600, "front"),
+    ("slots/hud/hud/renders/png", 14.300, "front"),          # over the storm: the racing clock must stay readable
     ("slots/titles/shelf_behind/renders/png", 54.100, "behind"),
     ("slots/titles/jnanottam_behind/renders/png", 60.600, "behind"),
     ("slots/titles/namecard_j/renders/png", 63.400, "front"),
@@ -168,7 +168,7 @@ class Comp:
     def __init__(self):
         self.src = Source()
         self.overlays, self.captions = overlay_index()
-        self.prev_mask = None
+        self.prev_mask, self.prev_f = None, None
         self.inpainted = {}
 
     # -- footage --
@@ -179,7 +179,9 @@ class Comp:
             return self.inpainted[f]
         fr = self.src.get(f)
         if seg_id not in NO_CAPTION_SEGS:
-            fr, self.prev_mask = fx.remove_captions(fr, self.prev_mask if temporal else None)
+            carry = self.prev_mask if temporal and self.prev_f == f - 1 else None     # only from the frame just before
+            fr, self.prev_mask = fx.remove_captions(fr, carry)
+            self.prev_f = f
         else:
             self.prev_mask = None
         if len(self.inpainted) > 6:

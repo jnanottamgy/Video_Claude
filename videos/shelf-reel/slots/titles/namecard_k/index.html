@@ -82,7 +82,7 @@
     </div>
     <script>
       var tl = gsap.timeline({ paused: true });
-      var T = 0.1; // freeze starts at 68.733
+      var T = 0.075; // freeze starts at 68.733 (t 0.10): already drawing on the first freeze frame
 
       // snap in with a quick slide: bracket + rule draw, then the two lines slide in and sharpen
       tl.fromTo("#tick", { scaleY: 0 }, { scaleY: 1, duration: 0.14, ease: "power3.out" }, T);

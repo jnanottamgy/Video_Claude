@@ -361,7 +361,7 @@ def stem_B(A):
         place(B, tick(2100), 15.07 + k, 0, 0.08)
     whoosh(O("P3"), 0.30, 0.3)
     ping(15.90, 0.18, 4, "pop")                                        # calling card slides in
-    place(B, blip(880, 1320, 0.09), 20.92)                             # connected (clear of "What's up bro?")
+    place(B, sfx("click-soft"), 21.26, onset(sfx("click-soft")), 0.14)  # connected: a soft click on the green pulse, under the voice
     place(B, tick(1200, 0.04), 22.0, 0, 0.25)
     impact(25.01, 0.35, "impact-bass-1", 0.22)                         # "today"
     ping(26.20, 0.20, 0, "pop")                                        # "notes?"
@@ -382,6 +382,9 @@ def stem_B(A):
         place(B, tick(2300 - (k % 3) * 300, 0.035), t, 0, 0.13)
         t += max(0.045, 0.32 * 0.93 ** k)
         k += 1
+    for th in (49.83, 50.94):                                          # an hour falls off the racing clock
+        place(B, thump(64, 0.4, 0.5), th, 0, 0.55)
+        place(B, tick(900, 0.06), th, 0, 0.30)
     glitch(51.45, "glitch-2", 0.38, 0.55)
     xr = sfx("whoosh")[::-1]
     place(B, xr, O("P6a"), len(xr) - int(0.16 * SR), 0.5)              # sucked out...

@@ -36,7 +36,7 @@
         "use strict";
         var D = 3.466667;
         var tl = gsap.timeline({ paused: true });
-        var storm = NK.buildStorm(tl, document.getElementById("world"), { off: 0.2, full: false, seed: 4465 });
+        var storm = NK.buildStorm(tl, document.getElementById("world"), { off: 0.2, full: false, settleBy: 3.4, seed: 4465 });
 
         var clock = { t: 0 };
         tl.fromTo(

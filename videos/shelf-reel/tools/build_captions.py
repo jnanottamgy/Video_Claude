@@ -99,14 +99,21 @@ PAGE = """<!doctype html>
 
 
 def items():
-    """(chunk, show, hide): each chunk shows from its first word until the next one appears or it ends."""
+    """(chunk, show, hide): each chunk shows from its first word until the next one appears or it ends,
+    and stays inside its shot: no caption is carried across a cut unless the speech itself is."""
+    import direction
     words = json.load(open("renders/words.json"))
     out = []
     for i, c in enumerate(words):
         nxt = words[i + 1]["t0"] if i + 1 < len(words) else TOTAL
         show, nxt_show = c["t0"] - 0.04, nxt - 0.04
         hide = nxt_show if nxt - c["t1"] < 0.35 else c["t1"] + 0.12
-        out.append((c, round(show, 3), round(min(hide, nxt_show), 3)))      # never two chunks at once
+        hide = min(hide, nxt_show)                                          # never two chunks at once
+        s0, s1 = next(((a, b) for a, b, *_ in direction.SHOTS if a <= c["t0"] + 0.01 < b), (0, TOTAL))
+        show = max(show, s0)
+        if c["t1"] <= s1 + 0.05:
+            hide = min(hide, s1)
+        out.append((c, round(show, 3), round(hide, 3)))
     return out
 
 
@@ -143,7 +150,11 @@ def write_project(d, its, w0, w1):
                 js.append(f'hl("#w{k}_{j}", {w["t0"] - w0:.3f}, {t1 - w0:.3f}, "{accent}");')
         spans.append(f'        <div class="cap" id="c{k}">{" ".join(ws)}</div>')
     dur = f"{(w1 - w0):.4f}"
-    open(f"{d}/index.html", "w").write(PAGE % {"dur": dur, "spans": "\n".join(spans), "js": "\n".join("      " + j for j in js)})
+    page = PAGE % {"dur": dur, "spans": "\n".join(spans), "js": "\n".join("      " + j for j in js)}
+    old = open(f"{d}/index.html").read() if os.path.exists(f"{d}/index.html") else None
+    if page != old:                                    # changed: its old render is stale
+        shutil.rmtree(f"{d}/renders/png", ignore_errors=True)
+        open(f"{d}/index.html", "w").write(page)
 
 
 def build():

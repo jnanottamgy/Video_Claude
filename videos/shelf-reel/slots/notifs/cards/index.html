@@ -63,10 +63,12 @@
         function arrive(c, t0) {
           tl.fromTo(
             c.el,
-            { y: -120, scale: 0.9, rotationX: -64, transformPerspective: 1600, opacity: 0 },
-            { y: 0, scale: 1, rotationX: 0, transformPerspective: 1600, opacity: 1, duration: 0.85, ease: "expo.out" },
+            { y: -120, rotationX: -64, transformPerspective: 1600 },
+            { y: 0, rotationX: 0, transformPerspective: 1600, duration: 0.8, ease: "back.out(1.25)" },
             t0
           );
+          tl.fromTo(c.el, { scale: 0.9 }, { scale: 1, duration: 0.7, ease: "expo.out" }, t0);
+          tl.fromTo(c.el, { opacity: 0 }, { opacity: 1, duration: 0.22, ease: "power2.out" }, t0);
           tl.fromTo(c.el, { filter: "blur(16px)" }, { filter: "blur(0px)", duration: 0.34, ease: "power2.out" }, t0);
           // light sheen sweeps across as it lands
           tl.fromTo(c.sheen, { x: -320, opacity: 1 }, { x: W + 80, opacity: 1, duration: 0.9, ease: "power2.inOut" }, t0 + 0.14);
@@ -105,7 +107,10 @@
         pulse(A, T_C + 0.36, 1.24);
 
         /* ---------- 44.40 hard cut: tremble + red alarm ---------- */
-        tl.fromTo("#stack", { scale: 1.035 }, { scale: 1, duration: 0.3, ease: "expo.out", immediateRender: false }, T_CUT);
+        tl.fromTo("#stack", { scale: 1.035 }, { scale: 1, duration: 0.15, ease: "expo.out", immediateRender: false }, T_CUT);
+        // anticipation: the stack sucks in for a beat, then blows apart
+        tl.fromTo("#stack", { scale: 1 }, { scale: 0.965, duration: T_BLOW - T_CUT - 0.15, ease: "power2.in", immediateRender: false }, T_CUT + 0.15);
+        tl.fromTo("#stack", { scale: 0.965 }, { scale: 1, duration: 0.12, ease: "power2.out", immediateRender: false }, T_BLOW);
         var rnd = NK.rng(4440);
         [A, B, C].forEach(function (c, ci) {
           var steps = Math.round((T_BLOW - T_CUT) * 30); // ~8 frames
@@ -138,20 +143,20 @@
 
         /* ---------- 44.65 "What": blow apart, off-screen, rotation + motion blur ---------- */
         var BLOW = [
-          { c: C, x: -980, y: -900, r: -34, s: 1.22 }, // top card: up-left
-          { c: B, x: 1340, y: -190, r: 38, s: 1.2 }, // middle card: hard right
-          { c: A, x: -1320, y: 170, r: -26, s: 1.16 }, // bottom card: left, slightly down
+          { c: C, x: -1050, y: -980, r: -38, s: 1.22 }, // top card: up-left
+          { c: B, x: 1500, y: -200, r: 42, s: 1.2 }, // middle card: hard right
+          { c: A, x: -1480, y: 190, r: -30, s: 1.16 }, // bottom card: left, slightly down
         ];
         BLOW.forEach(function (b, i) {
           var t0 = T_BLOW + i * 0.012;
           tl.fromTo(
             b.c.fly,
             { x: 0, y: 0, rotation: 0, scale: 1 },
-            { x: b.x, y: b.y, rotation: b.r, scale: b.s, duration: 0.62, ease: "power3.out", immediateRender: false },
+            { x: b.x, y: b.y, rotation: b.r, scale: b.s, duration: 0.85, ease: "power2.out", immediateRender: false },
             t0
           );
-          tl.fromTo(b.c.fly, { filter: "blur(0px)" }, { filter: "blur(18px)", duration: 0.1, ease: "power2.out", immediateRender: false }, t0);
-          tl.fromTo(b.c.fly, { opacity: 1 }, { opacity: 0, duration: 0.22, ease: "power1.in", immediateRender: false }, t0 + 0.28);
+          tl.fromTo(b.c.fly, { filter: "blur(0px)" }, { filter: "blur(14px)", duration: 0.12, ease: "power2.out", immediateRender: false }, t0);
+          tl.fromTo(b.c.fly, { opacity: 1 }, { opacity: 0, duration: 0.18, ease: "power1.in", immediateRender: false }, t0 + 0.4);
         });
 
         /* ---------- badge counts + timestamps: one state function driven by time ---------- */
