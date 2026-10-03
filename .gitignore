@@ -35,3 +35,10 @@ dist/
 
 # Reference stills of private rooms used only for placement previews
 videos/shelf-wall-reveal/assets/reel-snapshot.png
+
+# ...except audio that skills and projects ship as INPUTS. The blanket *.mp3 rule
+# above silently dropped media-use's whole offline SFX library from the first commit
+# (its manifest shipped, its 19 files didn't). Kept narrow: footage stays excluded.
+!.agents/skills/**/*.mp3
+!.agents/skills/**/*.wav
+!videos/*/assets/sfx/*.mp3
