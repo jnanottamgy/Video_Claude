@@ -165,8 +165,8 @@
         // Saturn-style rings seen from above, centred at mouth level: the near arc crosses his chest, the far arc
         // passes behind his head (occluded), the small halo rides his hairline. R = horizontal radius, Ry = vertical radius (kept when they tighten).
         var RINGS = [
-          { dx: -22, dy: 40, R: 335, Ry: 268, roll: -9, dir: 1, spd: 1.0, s: 0.5, n: 10 },
-          { dx: -14, dy: 50, R: 312, Ry: 280, roll: 11, dir: -1, spd: 0.9, s: 0.47, n: 9 },
+          { dx: -52, dy: 50, R: 302, Ry: 268, roll: -6, dir: 1, spd: 1.0, s: 0.5, n: 10 },
+          { dx: -46, dy: 58, R: 276, Ry: 280, roll: 5, dir: -1, spd: 0.9, s: 0.47, n: 9 },
           { dx: 8, dy: -214, R: 246, Ry: 66, roll: -4, dir: 1, spd: 1.25, s: 0.42, n: 6 }
         ];
         RINGS.forEach(function (R) {
@@ -178,18 +178,32 @@
           return { rad: rad, sa: sa, ca: Math.sqrt(1 - sa * sa) };
         }
         function wrapPi(a) { a = (a + Math.PI) % 6.283185307; if (a < 0) a += 6.283185307; return a - Math.PI; }
-        // keeps tiles in transit off a face: anything inside the ellipse slides out to its rim
+        // keeps tiles in transit off a face: if the tile's box touches the face ellipse, its centre slides
+        // radially outward (binary search) until the box clears it; w blends the correction in/out
+        function boxFaceD(x, y, hx, hy, f) {
+          var px = clamp(f[0], x - hx, x + hx), py = clamp(f[1], y - hy, y + hy);
+          return Math.sqrt(Math.pow((px - f[0]) / f[2], 2) + Math.pow((py - f[1]) / f[3], 2));
+        }
         function pushOut(S, f, w, o) {
-          var ex = f[2] + o.hw * S.s * Math.cos(((S.yaw || 0) * Math.PI) / 180) * 0.9, ey = f[3] + 55 * S.s;
-          var dx = S.x - f[0], dy = S.y - f[1], d = Math.sqrt((dx * dx) / (ex * ex) + (dy * dy) / (ey * ey));
-          if (d >= 1 || d < 1e-4 || w <= 0) return S;
-          var k = lerp(1, 1 / d, w);
-          S.x = f[0] + dx * k; S.y = f[1] + dy * k;
+          if (w <= 0) return S;
+          var hx = o.hw * S.s * Math.abs(Math.cos(((S.yaw || 0) * Math.PI) / 180)) + 6, hy = 55 * S.s + 6;
+          if (boxFaceD(S.x, S.y, hx, hy, f) >= 1) return S;
+          // escape radially; if that would leave the frame, escape straight up instead
+          function escape(dx, dy) {
+            var lo = 0, hi = 1;
+            while (boxFaceD(S.x + dx * hi, S.y + dy * hi, hx, hy, f) < 1 && hi < 4096) hi *= 2;
+            for (var it = 0; it < 16; it++) { var mid = (lo + hi) / 2; if (boxFaceD(S.x + dx * mid, S.y + dy * mid, hx, hy, f) < 1) lo = mid; else hi = mid; }
+            return [S.x + dx * hi, S.y + dy * hi, hi];
+          }
+          var vx = S.x - f[0], vy = S.y - f[1], vl = Math.hypot(vx, vy);
+          var e = vl < 1 ? escape(0, -1) : escape(vx / vl, vy / vl);
+          if (e[0] - hx < 8 || e[0] + hx > 1072) { var up = escape(0, -1); if (up[0] - hx >= 8 && up[0] + hx <= 1072) e = up; }
+          S.x = lerp(S.x, e[0], w); S.y = lerp(S.y, e[1], w);
           return S;
         }
-        function faceB(t) { var g = track(TB, t); return [g[0] + 5, g[1] + 72, 168, 150]; }   // Kartik: brow to chin
-        function faceC(t) { var g = track(TC, t); return [g[0] - 10, g[1] + 8, 170, 215]; }   // Jnanottam in the nook
-        var HEADB = { dx: 16, dy: -42, rx: 182, ry: 242 };
+        function faceB(t) { var g = track(TB, t); return [g[0] + 5, g[1] + 50, 150, 140]; }   // Kartik: brow to chin
+        function faceC(t) { var g = track(TC, t); return [g[0] - 10, g[1] + 30, 150, 175]; }  // Jnanottam in the nook
+        var HEADB = { dx: 16, dy: -30, rx: 198, ry: 256 };
         function kick(t, t0, amp, tau) {
           if (t < t0) return 0;
           var u = t - t0;
@@ -215,7 +229,7 @@
           var f = clamp((t - TH0) / THDT, 0, THN - 1.001), i = Math.floor(f);
           return lerp(THT[i], THT[i + 1], f - i);
         }
-        function radiusK(t) { return 1 - 0.19 * P3IO(prog(t, T.all, 0.5)); } // "all of it": tightest
+        function radiusK(t) { return 1 - 0.14 * P3IO(prog(t, T.all, 0.5)); } // "all of it": tightest
 
         /* ---------------- build the tiles ---------------- */
         var layer = document.getElementById("tiles");
@@ -279,7 +293,7 @@
             o.vr * dt * w
           ];
         }
-        function faceA(t) { var g = track(TA, t); return [g[0] - 5, g[1] + 25, 168, 205]; } // Jnanottam at the mirror
+        function faceA(t) { var g = track(TA, t); return [g[0], g[1] + 35, 150, 175]; }     // Jnanottam at the mirror
         function flightBend(o, x0, y0, x1, y1, bend) { // control point of a spray path, always bowing away from his face
           var dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, mxp = (x0 + x1) / 2, myp = (y0 + y1) / 2;
           var f = faceA(o.spawn);
@@ -356,7 +370,7 @@
           if (depth > 0) { // passing behind his head: hide where the head would cover it
             var hx = g[0] + HEADB.dx, hy = g[1] + HEADB.dy;
             var dd = Math.sqrt(Math.pow((x - hx) / HEADB.rx, 2) + Math.pow((y - hy) / HEADB.ry, 2));
-            a *= lerp(1, sstep(0.74, 1.04, dd), clamp(depth / 40, 0, 1));
+            a *= lerp(1, sstep(0.8, 1.12, dd), clamp(depth / 40, 0, 1));
           }
           var speed = Math.abs(omega(t) * R.spd) * rad * p;
           return {

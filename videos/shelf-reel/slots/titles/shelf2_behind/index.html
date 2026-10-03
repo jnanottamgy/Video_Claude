@@ -9,94 +9,105 @@
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
       /* BEHIND layer: composited UNDER the person cut-out. Output 87.950 -> 89.067 (34 frames).
-         The payoff: "S.H.E.L.F" lands at 88.13 (t 0.18) with a blue light burst behind the letters,
-         the glass mark settles above it. The footage cuts to the next shot at output frame 2671
-         (89.033), so the scene clip ends at t = 1.05: frames 33-34 are empty on purpose. */
+         The payoff: "S.H.E.L.F" lands at 88.13 in the S.H.E.L.F wall-sign navy with blue dots, a blue
+         light burst blooms behind the letters (backlit sign), the glass mark settles above it.
+         The compositor places this window at output frame 2638 and the footage cuts at 2671, so the
+         scene clip ends at t = 1.08: frames 1-33 cover the desk-chair shot, frame 34 is empty.
+         Camera-safe: the 0.12 punch at 88.13 peaks at ~1.17x about (480, 840) with 16 px shake, so all
+         pre-warp content sits inside x 112..950 and y >= 330 (lands inside the frame on screen).
+         His crown just kisses the bottom of "E". */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
 
-      /* ---- light burst (centre of the word: x 540, y 545) ---- */
-      .burst { position: absolute; left: 540px; top: 545px; pointer-events: none; }
+      /* ---- light burst (centre of the word: x 531, y 559) ---- */
+      .burst { position: absolute; left: 531px; top: 559px; pointer-events: none; }
       .bwrap { position: absolute; left: 0; top: 0; width: 0; height: 0; }
       #bloom {
         position: absolute;
-        left: -620px;
-        top: -360px;
-        width: 1240px;
-        height: 720px;
+        left: -560px;
+        top: -320px;
+        width: 1120px;
+        height: 640px;
         border-radius: 50%;
-        background: radial-gradient(ellipse at center, rgba(235, 244, 255, 0.95) 0%, rgba(120, 180, 255, 0.75) 18%, rgba(79, 157, 255, 0.42) 38%, rgba(31, 95, 214, 0.16) 58%, rgba(31, 95, 214, 0) 72%);
+        background: radial-gradient(ellipse at center, rgba(240, 247, 255, 0.98) 0%, rgba(150, 198, 255, 0.85) 16%, rgba(79, 157, 255, 0.5) 36%, rgba(31, 95, 214, 0.18) 56%, rgba(31, 95, 214, 0) 72%);
       }
       #rays {
         position: absolute;
-        left: -760px;
-        top: -760px;
-        width: 1520px;
-        height: 1520px;
+        left: -700px;
+        top: -700px;
+        width: 1400px;
+        height: 1400px;
         border-radius: 50%;
-        background: repeating-conic-gradient(from 0deg, rgba(150, 200, 255, 0) 0deg 7deg, rgba(150, 200, 255, 0.85) 9deg, rgba(150, 200, 255, 0) 11deg 18deg);
+        background: repeating-conic-gradient(from 0deg, rgba(79, 157, 255, 0) 0deg 7deg, rgba(79, 157, 255, 0.85) 9deg, rgba(79, 157, 255, 0) 11deg 18deg);
         -webkit-mask-image: radial-gradient(circle at center, transparent 0%, #000 14%, rgba(0, 0, 0, 0.6) 32%, transparent 60%);
         mask-image: radial-gradient(circle at center, transparent 0%, #000 14%, rgba(0, 0, 0, 0.6) 32%, transparent 60%);
       }
       #streak {
         position: absolute;
-        left: -780px;
-        top: -9px;
-        width: 1560px;
-        height: 18px;
-        border-radius: 9px;
-        background: linear-gradient(90deg, rgba(79, 157, 255, 0) 0%, rgba(79, 157, 255, 0.75) 26%, #ffffff 50%, rgba(79, 157, 255, 0.75) 74%, rgba(79, 157, 255, 0) 100%);
-        box-shadow: 0 0 24px rgba(var(--glow), 0.9);
+        left: -560px;
+        top: -8px;
+        width: 1120px;
+        height: 16px;
+        border-radius: 8px;
+        background: linear-gradient(90deg, rgba(79, 157, 255, 0) 0%, rgba(79, 157, 255, 0.85) 24%, #ffffff 50%, rgba(79, 157, 255, 0.85) 76%, rgba(79, 157, 255, 0) 100%);
+        box-shadow: 0 0 22px rgba(var(--glow), 0.9);
         filter: blur(1.5px);
       }
 
       /* ---- the mark ---- */
       #markWrap {
         position: absolute;
-        left: 455px;  /* 170 x 194 (art is 446 x 510), centred on x = 540 */
-        top: 240px;
-        width: 170px;
-        height: 194px;
+        left: 471px;  /* 120 x 137 (art is 446 x 510), centred on x = 531 */
+        top: 331px;
+        width: 120px;
+        height: 137px;
       }
       #mark {
         display: block;
-        width: 170px;
-        height: 194px;
-        filter: drop-shadow(0 0 22px rgba(var(--glow), 0.55)) drop-shadow(0 10px 18px rgba(4, 10, 26, 0.35));
+        width: 120px;
+        height: 137px;
+        filter: drop-shadow(0 0 16px rgba(var(--glow), 0.5)) drop-shadow(0 8px 14px rgba(0, 0, 0, 0.3));
       }
 
-      /* ---- the word: .giant look, letters silver, dots S.H.E.L.F-blue ---- */
+      /* ---- the word: wall-sign navy letters, S.H.E.L.F-blue dots ---- */
       .row {
         position: absolute;
         left: 0;
-        width: 1080px;
-        top: 444px;  /* baseline 632, cap 458-632 */
+        width: 1062px;  /* centres the word on x = 531 */
+        top: 471px;     /* cap 484-634, baseline 634 */
         display: flex;
         justify-content: center;
       }
       .word {
         position: relative;
         display: flex;
-        font: 800 238px/0.9 var(--font-brand);
+        font: 800 206px/0.9 var(--font-brand);
         white-space: nowrap;
-        filter: drop-shadow(0 0 30px rgba(var(--glow), 0.35)) drop-shadow(0 3px 5px rgba(4, 10, 26, 0.22)) drop-shadow(0 14px 28px rgba(4, 10, 26, 0.36));
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2)) drop-shadow(0 12px 24px rgba(0, 0, 0, 0.3));
       }
       .slot { position: relative; display: inline-block; }
       .slot.dot { margin: 0 -0.03em; }
       .slot .in { position: relative; display: block; }
       .slot .b {
+        position: relative;
         display: block;
-        background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 50%, #a9b8cd 100%);
+        background: linear-gradient(180deg, #0d1b36 0%, #152b55 55%, #1f3a6e 100%);
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
       }
-      .slot.dot .b { background: linear-gradient(180deg, #9cc8ff 0%, var(--shelf-blue) 55%, var(--shelf-blue-deep) 100%); -webkit-background-clip: text; background-clip: text; }
+      .slot.dot .b { background: linear-gradient(180deg, #7fb6ff 0%, var(--shelf-blue) 50%, var(--shelf-blue-deep) 100%); -webkit-background-clip: text; background-clip: text; }
+      .slot .hl {
+        position: absolute;
+        left: 0;
+        top: -3px;
+        color: rgba(165, 200, 255, 0.55);
+      }
       .slot .g {
         position: absolute;
         left: 0;
         top: 0;
-        color: rgb(var(--glow));
+        color: var(--shelf-blue);
         filter: blur(24px);
         opacity: 0;
       }
@@ -105,11 +116,11 @@
         left: 0;
         top: 0;
         display: flex;
-        color: #ffffff;
+        color: #8fc0ff;
         --p: -30%;
         -webkit-mask-image: linear-gradient(104deg, transparent calc(var(--p) - 10%), #000 var(--p), transparent calc(var(--p) + 10%));
         mask-image: linear-gradient(104deg, transparent calc(var(--p) - 10%), #000 var(--p), transparent calc(var(--p) + 10%));
-        opacity: 0.9;
+        opacity: 0.75;
       }
       .sheen span { display: inline-block; }
       .sheen span.dot { margin: 0 -0.03em; opacity: 0; }
@@ -117,7 +128,7 @@
   </head>
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="1.133333" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="1.05" data-track-index="0">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.08" data-track-index="0">
         <div class="burst" aria-hidden="true" data-layout-allow-overflow>
           <div class="bwrap" id="raysWrap"><div id="rays"></div></div>
           <div class="bwrap" id="bloomWrap"><div id="bloom"></div></div>
@@ -130,11 +141,16 @@
       </div>
     </div>
     <script>
-      // ---- letter builder: slot > in > (g = blue bloom copy, b = silver letter / blue dot); plus a sheen copy
+      // ---- letter builder: slot > in > (g blue bloom, hl top-edge highlight, b navy letter / blue dot); plus a sheen copy
       function el(tag, cls, text) {
         var e = document.createElement(tag);
         if (cls) e.className = cls;
         if (text) e.textContent = text;
+        return e;
+      }
+      function layered(e) {
+        e.setAttribute("data-layout-allow-overlap", "");
+        e.setAttribute("data-layout-allow-occlusion", "");
         return e;
       }
       function buildWord(line) {
@@ -145,19 +161,14 @@
           var isDot = ch === ".";
           var slot = el("span", "slot" + (isDot ? " dot" : ""));
           var inn = el("span", "in");
-          var g = el("span", "g", ch);
+          inn.appendChild(layered(el("span", "g", ch)));
+          inn.appendChild(layered(el("span", "hl", ch)));
           var b = el("span", "b", ch);
-          g.setAttribute("data-layout-allow-overlap", "");
-          g.setAttribute("data-layout-allow-occlusion", "");
           b.setAttribute("data-layout-allow-occlusion", "");
-          inn.appendChild(g);
           inn.appendChild(b);
           slot.appendChild(inn);
           line.appendChild(slot);
-          var s = el("span", isDot ? "dot" : "", ch);
-          s.setAttribute("data-layout-allow-overlap", "");
-          s.setAttribute("data-layout-allow-occlusion", "");
-          sheen.appendChild(s);
+          sheen.appendChild(layered(el("span", isDot ? "dot" : "", ch)));
         }
         line.appendChild(sheen);
       }
@@ -168,27 +179,29 @@
       var inners = gsap.utils.toArray("#word > .slot > .in");
       var glows = gsap.utils.toArray("#word .g");
 
-      // the hit: "S.H.E.L.F" at 88.13 (t 0.18). Letters land centre-out, light bursts behind them.
+      // the hit: "S.H.E.L.F" at 88.13 (the compositor's punch frame is t 0.20 here). Letters land
+      // centre-out while the light bursts behind them.
       var T_HIT = 0.12;
       var ST = { each: 0.02, from: "center" };
       tl.fromTo(slots, { scale: 1.38, y: -10 }, { scale: 1, y: 0, duration: 0.36, ease: "back.out(1.5)", stagger: ST }, T_HIT);
       tl.fromTo(inners, { opacity: 0, filter: "blur(18px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.22, ease: "power2.out", stagger: ST }, T_HIT);
-      tl.fromTo(glows, { opacity: 0 }, { opacity: 0.75, duration: 0.07, ease: "power2.out", stagger: ST }, T_HIT + 0.04);
-      tl.to(glows, { opacity: 0.2, duration: 0.45, ease: "power2.out", stagger: ST, immediateRender: false }, T_HIT + 0.12);
+      tl.fromTo(glows, { opacity: 0 }, { opacity: 0.5, duration: 0.07, ease: "power2.out", stagger: ST }, T_HIT + 0.04);
+      tl.to(glows, { opacity: 0, duration: 0.4, ease: "power2.out", stagger: ST, immediateRender: false }, T_HIT + 0.12);
 
-      // light burst behind the letters: bloom + rays expand, an anamorphic streak shoots out
+      // light burst behind the letters: bloom + rays expand, an anamorphic streak shoots out;
+      // a soft blue backlight stays behind the word
       var T_B = T_HIT + 0.05;
-      tl.fromTo("#bloomWrap", { scale: 0.22 }, { scale: 1.12, duration: 0.6, ease: "expo.out" }, T_B);
+      tl.fromTo("#bloomWrap", { scale: 0.22 }, { scale: 1.1, duration: 0.6, ease: "expo.out" }, T_B);
       tl.fromTo("#bloom", { opacity: 0 }, { opacity: 1, duration: 0.05, ease: "power1.out" }, T_B);
-      tl.to("#bloom", { opacity: 0.32, duration: 0.6, ease: "power2.out", immediateRender: false }, T_B + 0.06);
-      tl.fromTo("#raysWrap", { scale: 0.45, rotation: -8 }, { scale: 1.2, rotation: 6, duration: 0.85, ease: "expo.out" }, T_B);
-      tl.fromTo("#rays", { opacity: 0 }, { opacity: 0.8, duration: 0.06, ease: "power1.out" }, T_B);
+      tl.to("#bloom", { opacity: 0.4, duration: 0.6, ease: "power2.out", immediateRender: false }, T_B + 0.06);
+      tl.fromTo("#raysWrap", { scale: 0.45, rotation: -8 }, { scale: 1.15, rotation: 6, duration: 0.85, ease: "expo.out" }, T_B);
+      tl.fromTo("#rays", { opacity: 0 }, { opacity: 0.85, duration: 0.06, ease: "power1.out" }, T_B);
       tl.to("#rays", { opacity: 0, duration: 0.6, ease: "power2.inOut", immediateRender: false }, T_B + 0.12);
       tl.fromTo("#streak", { scaleX: 0 }, { scaleX: 1, duration: 0.32, ease: "expo.out" }, T_B);
       tl.to("#streak", { opacity: 0, duration: 0.55, ease: "power2.in", immediateRender: false }, T_B + 0.2);
 
       // the mark settles above the word a beat later
-      tl.fromTo("#markWrap", { y: -46, scale: 0.78 }, { y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, T_HIT + 0.1);
+      tl.fromTo("#markWrap", { y: -40, scale: 0.78 }, { y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, T_HIT + 0.1);
       tl.fromTo("#mark", { opacity: 0, filter: "blur(12px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, T_HIT + 0.1);
 
       // one light sweep across the word

@@ -10,17 +10,18 @@
     <style>
       /* BEHIND layer: composited UNDER the person cut-out. Output 66.100 -> 70.167 (122 frames).
          "Kartik" spoken at 66.30 (t 0.20): the letters track in (converge + sharpen). A slow drift
-         locks the word flush-left (ink x = 64) exactly at the freeze (68.733, t 2.633), where it
-         flashes brighter and holds. namecard_k (front) sits flush-left under it. */
+         locks the word flush-left exactly at the freeze (68.733, t 2.633), where it flashes brighter
+         and holds. Camera-safe: pre-warp ink x 109..974 lands at ~64..1016 on screen at the 1.10x
+         freeze push about (560, 840). namecard_k (front) sits flush-left under it, same camera. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
 
       .line {
         position: absolute;
-        left: 47px;  /* ink of the first K starts at x = 64 */
-        top: 428px;  /* cap 442-618, baseline 618 */
+        left: 94px;  /* ink of the first K starts at x = 109 (pre-warp) */
+        top: 446px;  /* cap 459-618, baseline 618 */
         display: flex;
-        font: 800 240px/0.9 var(--font-brand);
+        font: 800 218px/0.9 var(--font-brand);
         white-space: nowrap;
         filter: drop-shadow(0 0 30px rgba(var(--glow), 0.35)) drop-shadow(0 3px 5px rgba(4, 10, 26, 0.22)) drop-shadow(0 14px 28px rgba(4, 10, 26, 0.36));
       }
@@ -118,7 +119,7 @@
       // slow drift: the word slides left and sinks with his head (keeps the occlusion steady),
       // locking flush-left at the freeze
       var T_FREEZE = 2.6333;
-      tl.fromTo("#l1", { x: 40, y: -28 }, { x: 0, y: 0, duration: T_FREEZE - T_IN, ease: "sine.inOut" }, T_IN);
+      tl.fromTo("#l1", { x: 12, y: -28 }, { x: 0, y: 0, duration: T_FREEZE - T_IN, ease: "sine.inOut" }, T_IN);
 
       // freeze (68.733): glow pulse + brightness flash + one fast light sweep, then hold
       // (the flash starts just after the last moving frame so its peak lands ON the first freeze frame)
