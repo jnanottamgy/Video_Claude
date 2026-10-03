@@ -162,11 +162,11 @@
 
         /* ---------------- orbit rig around Kartik's head (shot B) ---------------- */
         var F = 1300; // camera distance for the perspective divide
-        // Saturn-style rings seen from above: the near arc passes under his chin, the far arc over his hair,
-        // the small halo rides his hairline. R = horizontal radius, Ry = vertical radius (kept when they tighten).
+        // Saturn-style rings seen from above, centred at mouth level: the near arc crosses his chest, the far arc
+        // passes behind his head (occluded), the small halo rides his hairline. R = horizontal radius, Ry = vertical radius (kept when they tighten).
         var RINGS = [
-          { dx: -45, dy: -22, R: 335, Ry: 266, roll: -9, dir: 1, spd: 1.0, s: 0.5, n: 10 },
-          { dx: -35, dy: -14, R: 312, Ry: 276, roll: 11, dir: -1, spd: 0.9, s: 0.47, n: 9 },
+          { dx: -22, dy: 40, R: 335, Ry: 268, roll: -9, dir: 1, spd: 1.0, s: 0.5, n: 10 },
+          { dx: -14, dy: 50, R: 312, Ry: 280, roll: 11, dir: -1, spd: 0.9, s: 0.47, n: 9 },
           { dx: 8, dy: -214, R: 246, Ry: 66, roll: -4, dir: 1, spd: 1.25, s: 0.42, n: 6 }
         ];
         RINGS.forEach(function (R) {
@@ -238,7 +238,7 @@
           el.className = "tile tt";
           el.setAttribute("data-layout-allow-occlusion", ""); // tiles pile and orbit in depth on purpose
           el.id = "tile-" + i;
-          el.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true">' + ICON[sp[0]] + '</svg><div class="label">' + LABEL[sp[0]] + "</div>";
+          el.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true">' + ICON[sp[0]] + '</svg><div class="label" data-layout-allow-occlusion>' + LABEL[sp[0]] + "</div>";
           layer.appendChild(el);
           var pa = PLAN_A[i], pc = PLAN_C[i];
           var o = {
@@ -279,22 +279,32 @@
             o.vr * dt * w
           ];
         }
+        function faceA(t) { var g = track(TA, t); return [g[0] - 5, g[1] + 25, 168, 205]; } // Jnanottam at the mirror
+        function flightBend(o, x0, y0, x1, y1, bend) { // control point of a spray path, always bowing away from his face
+          var dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, mxp = (x0 + x1) / 2, myp = (y0 + y1) / 2;
+          var f = faceA(o.spawn);
+          var tt = clamp(((f[0] - x0) * dx + (f[1] - y0) * dy) / (L * L), 0, 1);
+          var near = Math.hypot(x0 + dx * tt - f[0], y0 + dy * tt - f[1]) < 330;
+          var b = near ? Math.max(Math.abs(bend), 0.34) : Math.abs(bend);
+          if (-dy * (mxp - f[0]) + dx * (myp - f[1]) < 0) b = -b;
+          return [mxp - dy * b, myp + dx * b];
+        }
         function stateA(o, t) {
           var st = o.spawn;
           if (t < st) return null;
           if (o.role === "copy") {
             var u = prog(t, st, 0.56), p = EO(u);
             var x0 = HERO.x, y0 = HERO.y, x1 = o.ax, y1 = o.ay;
-            var dx = x1 - x0, dy = y1 - y0;
-            var mx = (x0 + x1) / 2 - dy * o.bend, my = (y0 + y1) / 2 + dx * o.bend;
+            if (!o.cp) o.cp = flightBend(o, x0, y0, x1, y1, o.bend);
             var qq = 1 - p;
-            var x = qq * qq * x0 + 2 * qq * p * mx + p * p * x1;
-            var y = qq * qq * y0 + 2 * qq * p * my + p * p * y1;
+            var x = qq * qq * x0 + 2 * qq * p * o.cp[0] + p * p * x1;
+            var y = qq * qq * y0 + 2 * qq * p * o.cp[1] + p * p * y1;
             var d = drift(o, t, st + 0.2);
-            return {
+            var S = {
               x: x + d[0], y: y + d[1], s: o.cs * lerp(0.3, 1, P3O(u)), r: lerp(o.spin0, o.ar, P3O(u)) + d[2],
               a: clamp(u / 0.1, 0, 1), b: 7 * (1 - sstep(0, 0.5, u)), z: 100 + o.i
             };
+            return u < 1 ? pushOut(S, faceA(t), 1, o) : S;
           }
           // hero / final: pop at the hero spot
           var pu = prog(t, st, 0.44);
@@ -308,10 +318,14 @@
           if (o.role === "hero" && t >= o.heroEnd) {
             var lu = prog(t, o.heroEnd, 0.62), lp = EO(lu);
             var d2 = drift(o, t, o.heroEnd + 0.35);
-            x = lerp(x, o.ax, lp) + d2[0]; y = lerp(y, o.ay, lp) + d2[1];
+            if (!o.cp) o.cp = flightBend(o, HERO.x, HERO.y, o.ax, o.ay, 0.12);
+            var lq = 1 - lp;
+            x = lq * lq * x + 2 * lq * lp * o.cp[0] + lp * lp * o.ax + d2[0];
+            y = lq * lq * y + 2 * lq * lp * o.cp[1] + lp * lp * o.ay + d2[1];
             s = lerp(s, o.cs, P3O(lu)); r = lerp(0, o.ar, lp) + d2[2];
             b = Math.max(b, 4.5 * (1 - sstep(0, 0.42, lu)));
             z = lu < 1 ? 880 : 100 + o.i;
+            if (lu < 1) { var SH = pushOut({ x: x, y: y, s: s }, faceA(t), 1, o); x = SH.x; y = SH.y; }
           } else if (o.role === "final" && t >= o.heroEnd) {
             var fu = P3IO(prog(t, o.heroEnd, 0.5));
             var d3 = drift(o, t, o.heroEnd + 0.2);
@@ -372,7 +386,7 @@
             x: c[0] + rad * Math.cos(ang), y: c[1] + rad * Math.sin(ang), s: lerp(A.s, B.s, P3O(u)), r: lerp(A.r, B.r, p),
             yaw: B.yaw * p, a: lerp(1, B.a, P3O(u)), b: Math.max(B.b, 10 * Math.pow(1 - u, 2.2)), z: B.z
           };
-          return t >= T.cutB ? pushOut(S, faceB(t), 1 - sstep(0.6, 1, u), o) : S;
+          return t >= T.cutB - 0.001 ? pushOut(S, faceB(t), 1 - sstep(0.6, 1, u), o) : S;
         }
 
         /* ---------------- phase C: scatter + tangle (Jnanottam in the nook) ---------------- */
@@ -399,7 +413,7 @@
             x: lerp(B.x, C.x, p), y: lerp(B.y, C.y, p), s: lerp(B.s, C.s, P3O(u)), r: lerp(B.r, C.r, p),
             yaw: B.yaw * (1 - p), a: lerp(B.a, 1, P3O(u)), b: Math.max(B.b * (1 - u), 9 * (1 - sstep(0, 0.5, u))), z: C.z
           };
-          return pushOut(S, t >= T.cutC ? faceC(t) : faceB(t), 1, o);
+          return pushOut(S, t >= T.cutC - 0.001 ? faceC(t) : faceB(t), 1, o);
         }
 
         function stateOf(o, t) {
