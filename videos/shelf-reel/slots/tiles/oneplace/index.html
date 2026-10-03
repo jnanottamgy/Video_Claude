@@ -120,9 +120,10 @@
         position: absolute;
         top: -20%;
         left: 0;
-        width: 46%;
+        width: 56%;
         height: 140%;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.08) 30%, rgba(255, 255, 255, 0.42) 50%, rgba(255, 255, 255, 0.08) 70%, rgba(255, 255, 255, 0) 100%);
+        opacity: 0;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 28%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0.1) 72%, rgba(255, 255, 255, 0) 100%);
       }
     </style>
   </head>
@@ -297,7 +298,10 @@
         tl.fromTo(".shelf-line", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.36, ease: "power3.out", stagger: 0.03 }, T.inOne + 0.2);
 
         // "place": one light sweep across the glass, then it glows and holds
-        tl.fromTo("#band", { xPercent: -140, skewX: -16 }, { xPercent: 300, skewX: -16, duration: 0.4, ease: "power2.inOut" }, T.place);
+        // the band only exists while it crosses (parked off-panel its skewed corner would leak into the clip)
+        tl.fromTo("#band", { opacity: 0 }, { opacity: 1, duration: 0.04, ease: "none", immediateRender: false }, T.place);
+        tl.fromTo("#band", { xPercent: -130, skewX: -16 }, { xPercent: 250, skewX: -16, duration: 0.42, ease: "power2.inOut" }, T.place);
+        tl.fromTo("#band", { opacity: 1 }, { opacity: 0, duration: 0.04, ease: "none", immediateRender: false }, T.place + 0.38);
         tl.fromTo("#aura", { opacity: 0.35 }, { opacity: 1, duration: 0.3, ease: "power2.out", immediateRender: false }, T.place + 0.06);
         tl.fromTo("#panel", { borderColor: "rgba(150, 195, 255, 0.45)" }, { borderColor: "rgba(205, 228, 255, 0.9)", duration: 0.24, ease: "power2.out", immediateRender: false }, T.place + 0.06);
         tl.fromTo("#mark", { scale: 1 }, { scale: 1.06, duration: 0.14, ease: "power2.out", immediateRender: false }, T.place + 0.08);
