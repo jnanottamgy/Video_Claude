@@ -250,7 +250,7 @@
             bend: rr(-0.22, 0.22), spin0: rr(-24, 24),
             // orbit
             ring: ringOf[i], phi: 0, rj: rr(-0.05, 0.05),
-            sw0: T.cutB - 0.0333 + rr(0, 0.04),
+            sw0: T.cutB - 0.0333, swd: rr(0.8, 1.0), // every tile lets go on the same frame
             // scatter (shot C)
             cx: pc[0], cy: pc[1], cr: clamp(pc[2] + rr(-5, 5), -8, 8), cvx: 0, cvy: 0, cvr: rr(-0.8, 0.8),
             sc0: T.cutC - 0.0667 + rr(0, 0.03)
@@ -362,7 +362,7 @@
             o.faPsi = pB0 + wrapPi(Math.atan2(o.fa.y - c0[1], o.fa.x - c0[0]) - pB0);
           }
           var A = o.fa, B = stateB(o, t), c = ringCenter(o, t);
-          var u = prog(t, o.sw0, 0.9), p = EO(u);
+          var u = prog(t, o.sw0, o.swd), p = EO(u);
           var rB = Math.hypot(B.x - c[0], B.y - c[1]);
           var spin = -R.dir * (theta(t) - theta(o.sw0)) * R.spd * Math.min(1, rB / o.faR);
           var ang = lerp(o.faPsi + spin, psiOf(o, B, c, t), P3O(u));
@@ -403,7 +403,7 @@
 
         function stateOf(o, t) {
           if (t < o.sw0) return stateA(o, t);
-          if (t < o.sc0) return o.sw0 + 0.9 > t ? stateSwirl(o, t) : stateB(o, t);
+          if (t < o.sc0) return o.sw0 + o.swd > t ? stateSwirl(o, t) : stateB(o, t);
           if (t < o.sc0 + 0.58) return stateScatter(o, t);
           return stateC(o, t);
         }
@@ -543,17 +543,16 @@
         /* ---------------- per-frame render ---------------- */
         var world = document.getElementById("world");
         function vanish(t) { // hard reset: 83.30 -> nothing visible on the last frame (83.367)
-          if (t < T.cutD - 0.045) return 1;   // ... frame 394 (83.233)
-          if (t < T.cutD - 0.015) return 0.55; // frame 395 (83.267): collapse starts
-          if (t < T.cutD + 0.015) return 0.12; // frame 396 (83.300): ghost on the cut
-          return 0;                            // frames 397-398: nothing
+          if (t < T.cutD - 0.045) return 1;    // ... frame 394 (83.233)
+          if (t < T.cutD - 0.015) return 0.42;  // frame 395 (83.267): the tangle snaps shut
+          return 0;                             // frames 396-398 (83.300 on, the next shot): nothing
         }
         function render(t) {
           var v = vanish(t);
           world.style.opacity = v.toFixed(3);
           world.style.visibility = v <= 0 ? "hidden" : "visible";
           if (v > 0 && v < 1) {
-            var sc = lerp(0.94, 1, v);
+            var sc = lerp(0.9, 1, v);
             world.style.transform = "scale(" + sc.toFixed(3) + ")";
           } else world.style.transform = "none";
           tiles.forEach(function (o) {
