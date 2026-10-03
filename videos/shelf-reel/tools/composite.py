@@ -2,8 +2,9 @@
 
 Per output frame (edl.py says which source frames, direction.py says what happens):
   source frame(s)  -> old burned-in captions inpainted -> grade (PROBLEM / S.H.E.L.F mood)
-  -> camera (push, punch, shake) -> whip smear at marked cuts -> sunglasses glint
+  -> camera (push, punch, shake) -> sunglasses glint
   -> freeze treatment + "behind" words, then the person matte re-laid on top (words sit behind him)
+  -> whip smear at marked cuts (scene only)
   -> front overlays (HUD, notifications, tiles, name cards) -> looks (red alarm, chroma, glitch,
      flash, light leak, VHS, fade) -> vignette + grain -> captions LAST
 and encodes H.264 BT.709 (limited range, the safe delivery default).
@@ -68,11 +69,15 @@ def overlay_index():
     return idx, cap
 
 
+HOLD_LAST = {"slots/tiles/oneplace/renders/png": 111}    # its frame 112 is empty: hold the panel through the shot's last frame
+
+
 def layer_frames(index, n, layer):
     out = []
     for d, f0, cnt, lay in index:
         if lay == layer and f0 <= n < f0 + cnt:
-            im = fx.load_rgba(f"{d}/frame_{n - f0 + 1:06d}.png")
+            k = min(n - f0 + 1, HOLD_LAST.get(d, cnt))
+            im = fx.load_rgba(f"{d}/frame_{k:06d}.png")
             if im is not None:
                 out.append(im)
     return out
@@ -85,12 +90,12 @@ class Source:
         self.p, self.pos, self.cache = None, -1, OrderedDict()
 
     def _open(self, f):
-        # Seeking to (f+0.5)/30 returns frame f+1 (the first frame at or after the seek time), so the
-        # picture shows source frame f+1 for EDL frame f. Everything downstream (mattes, overlays keyed to
-        # the on-screen cuts, the audio in mix_audio.PICTURE_OFFSET) is built on this, so keep it consistent.
+        # Seek a hundredth of a frame before f, written to 6 decimals: the 30 fps output grid then starts
+        # exactly on frame f. (Half a frame early duplicates frame f; exactly f/30 rounded to 4 decimals can
+        # land after f's timestamp and skip it; (f+0.5)/30 returns f+1. Verified against a straight decode.)
         if self.p:
             self.p.kill()
-        self.p = subprocess.Popen(["ffmpeg", "-v", "error", "-ss", f"{(f + 0.5) / FPS:.4f}", "-i", SRC, "-vf", DECODE_VF,
+        self.p = subprocess.Popen(["ffmpeg", "-v", "error", "-ss", f"{max(0.0, f - 0.01) / FPS:.6f}", "-i", SRC, "-vf", DECODE_VF,
                                    "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE, bufsize=W * H * 3 * 4)
         self.pos = f
 
@@ -220,16 +225,6 @@ class Comp:
         M = camera_at(t)
         img = warp(img, M)
 
-        # whip smear across marked cuts (2 frames either side)
-        for tw, dxn in D.WHIP:
-            k = 1 - abs(t - tw) * FPS / 2.5
-            if k > 0:
-                L = int(70 * k) | 1
-                kern = np.zeros((1, L), np.float32)
-                kern[0, :] = 1.0 / L
-                img = cv2.filter2D(img, -1, kern, borderType=cv2.BORDER_REFLECT101)
-                img = np.roll(img, int(dxn * 30 * k * (1 if t < tw else -1)), axis=1)
-
         for tg, gx, gy, size, dur in D.GLINT:
             if tg <= t < tg + dur:
                 u = (t - tg) / dur
@@ -263,6 +258,17 @@ class Comp:
                     img = fx.screen(img, np.clip(rim * 1.6, 0, 1))
             else:
                 img = bg
+
+        # whip smear across marked cuts (2 frames either side): after the behind-words and the person,
+        # so the whole scene smears together; the UI layers below stay sharp
+        for tw, dxn in D.WHIP:
+            k = 1 - abs(t - tw) * FPS / 2.5
+            if k > 0:
+                L = int(70 * k) | 1
+                kern = np.zeros((1, L), np.float32)
+                kern[0, :] = 1.0 / L
+                img = cv2.filter2D(img, -1, kern, borderType=cv2.BORDER_REFLECT101)
+                img = np.roll(img, int(dxn * 30 * k * (1 if t < tw else -1)), axis=1)
 
         for layer in layer_frames(self.overlays, n, "front"):
             img = fx.over(img, layer)

@@ -274,10 +274,10 @@ def alpha_onsets(png_dir, t0, thresh=0.004, min_gap=0.05):
 
 
 # ---------------- build ----------------
-# The picture shows source frame f+1 for EDL frame f (composite.Source seeks to (f+0.5)/30, and an
-# input seek returns the first frame at or after that time). Every overlay, matte and render was
-# built against that picture, so the audio follows it: one frame later in the source.
-PICTURE_OFFSET = 1 / FPS
+# The picture shows exactly EDL frame f (composite.Source seeks half a frame early), so the source
+# audio is read at the same source times. Kept as a named constant: if the decode ever changes, this
+# is the one place the audio must follow it.
+PICTURE_OFFSET = 0.0
 
 
 def stem_A(orig):

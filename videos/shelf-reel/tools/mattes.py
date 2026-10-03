@@ -31,7 +31,7 @@ RANGES = {
 
 
 def frames(a, b):
-    p = subprocess.Popen(["ffmpeg", "-v", "error", "-ss", f"{(a + 0.5) / edl.FPS:.4f}", "-i", "renders/source.mp4",
+    p = subprocess.Popen(["ffmpeg", "-v", "error", "-ss", f"{max(0.0, a - 0.01) / edl.FPS:.6f}", "-i", "renders/source.mp4",
                           "-frames:v", str(b - a + 1), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE)
     for n in range(a, b + 1):
         buf = p.stdout.read(W * H * 3)
