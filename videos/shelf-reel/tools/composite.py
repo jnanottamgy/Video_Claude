@@ -261,6 +261,14 @@ class Comp:
 
         for layer in layer_frames(self.overlays, n, "front"):
             img = fx.over(img, layer)
+        if seg["kind"] == "rewind":            # the cold open's notification storm rewinds with the tape
+            hook = next((o for o in self.overlays if o[0].startswith("slots/notifs/storm_hook")), None)
+            if hook:
+                k = (n - seg["o"]) / (seg["n"] - 1)
+                idx = int(round((hook[2] - 1) * (1 - ease_io(k)))) + 1
+                layer = fx.load_rgba(f"{hook[0]}/frame_{idx:06d}.png")
+                if layer is not None:
+                    img = fx.over(img, layer)
 
         # looks
         for t0, t1, k in D.RED:

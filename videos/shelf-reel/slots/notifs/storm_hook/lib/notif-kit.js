@@ -45,9 +45,12 @@
         '<svg viewBox="0 0 48 48" aria-hidden="true">' +
         '<path d="M14 4.5h14.5L38 14v27.5a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3v-34a3 3 0 0 1 3-3z" fill="#fff"/>' +
         '<path d="M28.5 4.5V12a2 2 0 0 0 2 2H38z" fill="#ffc9c4"/>' +
-        '<rect x="15" y="19" width="14" height="2.6" rx="1.3" fill="#ffc9c4"/>' +
-        '<rect x="15" y="24" width="18" height="2.6" rx="1.3" fill="#ffc9c4"/>' +
-        '<text x="24.5" y="39.5" text-anchor="middle" font-family="Inter, sans-serif" font-weight="800" font-size="10.5" fill="' + c + '">PDF</text>' +
+        '<rect x="15" y="18" width="13" height="2.6" rx="1.3" fill="#ffc9c4"/>' +
+        '<rect x="15" y="23" width="18" height="2.6" rx="1.3" fill="#ffc9c4"/>' +
+        '<rect x="13.5" y="29.5" width="21.5" height="10" rx="2.6" fill="' + c + '"/>' +
+        '<rect x="16.5" y="33.4" width="4.2" height="2.4" rx="1.2" fill="#fff"/>' +
+        '<rect x="22.3" y="33.4" width="4.2" height="2.4" rx="1.2" fill="#fff"/>' +
+        '<rect x="28.1" y="33.4" width="4.2" height="2.4" rx="1.2" fill="#fff"/>' +
         "</svg>"
       );
     },
@@ -121,7 +124,7 @@
   }
 
   /* ---------- card factory ----------
-     o = { app, title?, sender?, msg, mono?, time?, badge? (number|"99+"|null), w?, h?, id? }
+     o = { app, title?, sender?, msg, mono?, time?, badge? (number|"99+"|null), w?, h?, id?, decorative? }
      returns { el (.nk-card), fly, notif, badge, dim, sheen, alarm, setBadge(n) } */
   NK.card = function (o) {
     var app = NK.APPS[o.app] || NK.APPS.unofficial;
@@ -131,6 +134,8 @@
     var el = div("nk-card");
     if (o.id) el.id = o.id;
     el.setAttribute("data-layout-allow-overflow", "");
+    // storm cards are deliberate, overlapping set dressing: skip the text-layout audit
+    if (o.decorative) el.setAttribute("data-layout-ignore", "");
     el.style.setProperty("--nk-w", w + "px");
     el.style.setProperty("--nk-h", h + "px");
 

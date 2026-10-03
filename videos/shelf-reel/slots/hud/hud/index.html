@@ -23,21 +23,21 @@
       .lbl .ch { display: inline-block; white-space: pre; }
 
       /* ---- big slam clock ---- */
-      #slamScrim { position: absolute; left: -100px; top: 226px; width: 1280px; height: 640px; opacity: 0;
-        background: radial-gradient(closest-side, rgba(14, 6, 8, 0.58), rgba(14, 6, 8, 0.38) 52%, rgba(14, 6, 8, 0) 100%); }
+      #slamScrim { position: absolute; left: -100px; top: 206px; width: 1280px; height: 680px; opacity: 0;
+        background: radial-gradient(closest-side, rgba(12, 5, 7, 0.7), rgba(12, 5, 7, 0.46) 50%, rgba(12, 5, 7, 0) 100%); }
       #slamShake { position: absolute; left: 0; top: 0; width: 1080px; height: 1000px; }
       #slamBloom { position: absolute; left: 70px; top: 372px; width: 940px; height: 356px; opacity: 0;
         background: radial-gradient(closest-side, rgba(255, 74, 54, 0.78), rgba(255, 40, 30, 0.3) 55%, rgba(255, 40, 30, 0) 100%); }
       #bigLabelFly { position: absolute; left: 0; top: 392px; width: 1080px; height: 30px; display: flex; justify-content: center; align-items: center; }
-      #bigLabel { font-size: 30px; color: rgba(255, 255, 255, 0.95); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); }
+      #bigLabel { font-size: 30px; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 18px rgba(0, 0, 0, 0.5); }
       #bigClockFly { position: absolute; left: 0; top: 454px; width: 1080px; height: 184px; display: flex; justify-content: center; align-items: center; }
       .bigclock { display: flex; font-family: var(--font-mono); font-weight: 800; font-size: 184px; line-height: 184px; color: var(--alert);
-        text-shadow: 0 0 8px rgba(255, 70, 56, 0.9), 0 0 34px rgba(255, 59, 48, 0.62), 0 0 96px rgba(255, 40, 30, 0.42), 0 6px 22px rgba(30, 0, 0, 0.35); }
+        text-shadow: 0 0 1px rgba(255, 120, 108, 0.7), 0 0 18px rgba(255, 59, 48, 0.55), 0 0 60px rgba(255, 40, 30, 0.4), 0 10px 30px rgba(50, 0, 0, 0.45); }
       #bigClock { opacity: 0; filter: blur(16px); }
       .bigclock .d { width: 0.6em; text-align: center; }
       .bigclock .k { position: relative; display: block; width: 0.34em; height: 184px; }
       .bigclock .k i { position: absolute; left: 13px; width: 36px; height: 36px; border-radius: 7px; background: var(--alert);
-        box-shadow: 0 0 8px rgba(255, 70, 56, 0.9), 0 0 34px rgba(255, 59, 48, 0.62), 0 0 96px rgba(255, 40, 30, 0.42); }
+        box-shadow: 0 0 18px rgba(255, 59, 48, 0.55), 0 0 60px rgba(255, 40, 30, 0.4), 0 10px 30px rgba(50, 0, 0, 0.45); }
       .bigclock .k i:first-child { top: 40px; }
       .bigclock .k i:last-child { top: 105px; }
 
@@ -47,7 +47,7 @@
       #examPill.hud-pill, .exam-static.hud-pill { position: relative; padding: 0 24px 0 22px; gap: 0; background: rgba(14, 14, 16, 0.84);
         box-shadow: 0 0 0 1.5px rgba(255, 110, 100, 0.26) inset, 0 10px 26px rgba(0, 0, 0, 0.42); }
       .pc { display: flex; align-items: center; gap: 16px; }
-      #pillContent { opacity: 0; }
+      #pillLabel, #pillClock { opacity: 0; }
       .plabel { font-size: 20px; color: rgba(245, 246, 248, 0.68); }
       .pclock { display: flex; align-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 30px; color: var(--text-1); }
       .pclock .col { position: relative; display: block; width: 0.6em; height: 52px; overflow: hidden;
@@ -309,10 +309,13 @@
         var examCols = buildOdometer($("pillClock"), [
           { B: 36000, M: 10 }, { B: 3600, M: 10 }, ":", { B: 600, M: 6 }, { B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }
         ], 40);
+        // the very first tick (08:00:00 -> 07:59:59, the moment the clock lands) rolls as a
+        // right-to-left carry cascade; every later tick rolls all changing columns together
+        var CASCADE = { 1: 0, 10: 0.035, 60: 0.07, 600: 0.105, 3600: 0.14, 36000: 0.175 };
         examCols.forEach(function (c) {
           c.n0 = Math.floor(V0 / c.B); c.dir = -1;
           var ev = [];
-          for (var i = 1; i <= nTicks; i++) if ((V0 - (i - 1)) % c.B === 0) ev.push(ticks[i - 1]);
+          for (var i = 1; i <= nTicks; i++) if ((V0 - (i - 1)) % c.B === 0) ev.push(ticks[i - 1] + (i === 1 ? CASCADE[c.B] : 0));
           c.ev = new Float64Array(ev);
         });
         var callCols = buildOdometer($("callTimer"), [{ B: 600, M: 6 }, { B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }], 38);
@@ -495,25 +498,27 @@
         tl.fromTo("#slamBloom", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.05, ease: "power2.out" }, T_SLAM);
         tl.to("#slamBloom", { opacity: 0, scale: 1.35, duration: 0.65, ease: "power2.out" }, T_SLAM + 0.05);
 
-        /* 2. shrink + fly into the top-left pill (15.70 -> 16.10) */
-        tl.to("#bigLabelFly", { scale: 1.04, duration: 0.09, ease: "power2.out" }, 1.3);
-        tl.to("#bigClockFly", { scale: 1.04, duration: 0.09, ease: "power2.out" }, 1.32);
-        tl.to("#slamScrim", { opacity: 0, duration: 0.22, ease: "power1.in" }, 1.4);
-        tl.to("#bigLabelFly", { x: pillLabelCX - BIG_CX, y: PILL_CY - BIG_LBL_CY, scale: 20 / 30, duration: 0.36, ease: "power4.inOut" }, 1.4);
-        tl.to("#bigClockFly", { x: pillDigitsCX - BIG_CX, y: PILL_CY - BIG_CLK_CY, scale: 30 / 184, duration: 0.38, ease: "power4.inOut" }, 1.42);
-        tl.fromTo("#bigLabelFly", { filter: "blur(0px)" }, { filter: "blur(6px)", duration: 0.17, ease: "power2.in", immediateRender: false }, 1.4);
-        tl.to("#bigLabelFly", { filter: "blur(0px)", duration: 0.17, ease: "power2.out" }, 1.57);
-        tl.fromTo("#bigClockFly", { filter: "blur(0px)" }, { filter: "blur(10px)", duration: 0.18, ease: "power2.in", immediateRender: false }, 1.42);
-        tl.to("#bigClockFly", { filter: "blur(0px)", duration: 0.18, ease: "power2.out" }, 1.6);
-        tl.to("#bigLabelFly", { opacity: 0, duration: 0.06, ease: "none" }, 1.71);
-        tl.to("#bigClockFly", { opacity: 0, duration: 0.06, ease: "none" }, 1.75);
-        tl.fromTo("#examWrap", { opacity: 0, scaleX: 0.35, scaleY: 0.6 }, { opacity: 1, scaleX: 1, scaleY: 1, duration: 0.3, ease: "expo.out" }, 1.56);
-        tl.fromTo("#pillContent", { opacity: 0 }, { opacity: 1, duration: 0.07, ease: "none" }, 1.71);
+        /* 2. shrink + fly into the top-left pill (15.66 -> 16.05); blur peaks at max velocity */
+        tl.to("#bigLabelFly", { scale: 1.04, duration: 0.08, ease: "power2.out" }, 1.27);
+        tl.to("#bigClockFly", { scale: 1.04, duration: 0.08, ease: "power2.out" }, 1.29);
+        tl.to("#slamScrim", { opacity: 0, duration: 0.22, ease: "power1.in" }, 1.36);
+        tl.to("#bigLabelFly", { x: pillLabelCX - BIG_CX, y: PILL_CY - BIG_LBL_CY, scale: 20 / 30, duration: 0.34, ease: "power3.inOut" }, 1.36);
+        tl.to("#bigClockFly", { x: pillDigitsCX - BIG_CX, y: PILL_CY - BIG_CLK_CY, scale: 30 / 184, duration: 0.37, ease: "power3.inOut" }, 1.38);
+        tl.fromTo("#bigLabelFly", { filter: "blur(0px)" }, { filter: "blur(5px)", duration: 0.17, ease: "sine.in", immediateRender: false }, 1.36);
+        tl.to("#bigLabelFly", { filter: "blur(0px)", duration: 0.17, ease: "sine.out" }, 1.53);
+        tl.fromTo("#bigClockFly", { filter: "blur(0px)" }, { filter: "blur(9px)", duration: 0.185, ease: "sine.in", immediateRender: false }, 1.38);
+        tl.to("#bigClockFly", { filter: "blur(0px)", duration: 0.185, ease: "sine.out" }, 1.565);
+        tl.fromTo("#examWrap", { opacity: 0, scaleX: 0.35, scaleY: 0.6 }, { opacity: 1, scaleX: 1, scaleY: 1, duration: 0.3, ease: "expo.out" }, 1.5);
+        // hand-off: flying copies dissolve into the pill's own label / digits before the first tick (16.07)
+        tl.to("#bigLabelFly", { opacity: 0, duration: 0.05, ease: "none" }, 1.65);
+        tl.fromTo("#pillLabel", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "none" }, 1.64);
+        tl.to("#bigClockFly", { opacity: 0, duration: 0.05, ease: "none" }, 1.7);
+        tl.fromTo("#pillClock", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "none" }, 1.69);
 
         /* 3. in-call card slides down (15.90) */
-        tl.fromTo("#callLayer", { opacity: 0 }, { opacity: 1, duration: 0.16, ease: "power1.out" }, T_CARD);
-        tl.fromTo("#callLayer", { y: -170 }, { y: 0, duration: 0.62, ease: "expo.out", immediateRender: false }, T_CARD);
-        tl.fromTo("#callLayer", { filter: "blur(10px)" }, { filter: "blur(0px)", duration: 0.32, ease: "power2.out", immediateRender: false }, T_CARD);
+        tl.fromTo("#callLayer", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "power1.out" }, T_CARD);
+        tl.fromTo("#callLayer", { y: -120 }, { y: 0, duration: 0.55, ease: "expo.out", immediateRender: false }, T_CARD);
+        tl.fromTo("#callLayer", { filter: "blur(6px)" }, { filter: "blur(0px)", duration: 0.22, ease: "power2.out", immediateRender: false }, T_CARD);
         tl.fromTo("#avatarPop", { scale: 0.55, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, T_CARD + 0.12);
         tl.fromTo("#callName", { x: -18, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.18);
         tl.fromTo("#callStatus", { x: -14, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.24);
@@ -523,20 +528,22 @@
         });
 
         /* 4. connected (21.28): timer, green ring */
-        tl.to("#statusCalling", { y: -16, opacity: 0, duration: 0.16, ease: "power2.in" }, T_CONNECT);
-        tl.fromTo("#statusLive", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.36, ease: "expo.out", immediateRender: false }, T_CONNECT + 0.06);
+        tl.to("#statusCalling", { y: -14, opacity: 0, duration: 0.12, ease: "power2.in" }, T_CONNECT);
+        tl.fromTo("#statusLive", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.34, ease: "expo.out", immediateRender: false }, T_CONNECT + 0.1);
         tl.fromTo("#ripG", { scale: 1, opacity: 0.95 }, { scale: 2.05, opacity: 0, duration: 0.8, ease: "power2.out", immediateRender: false }, T_CONNECT);
         tl.to("#cardGlyph", { backgroundColor: "#34c759", duration: 0.18, ease: "power1.out" }, T_CONNECT);
         tl.to("#cardGlyphIcon", { fill: "#ffffff", duration: 0.18, ease: "power1.out" }, T_CONNECT);
 
         /* 5. card collapses into the top-right pill (done by 22.0) */
-        var MD = 0.52, ME = "power4.inOut";
+        var MD = 0.5, ME = "power3.inOut";
         tl.to("#shellRect", { attr: { x: cpL - SHELL_X, y: 0, width: cpW, height: 64, rx: 32 }, duration: MD, ease: ME }, T_MORPH);
         tl.to("#avatar", { x: cpL + 32 - AV_CX, y: PILL_CY - AV_CY, scale: 44 / 112, duration: MD, ease: ME }, T_MORPH);
         tl.fromTo("#avatarGreen", { opacity: 0 }, { opacity: 1, duration: 0.24, ease: "power1.inOut", immediateRender: false }, T_MORPH + 0.1);
         tl.to("#avatarFace", { opacity: 0, duration: 0.04, ease: "none" }, T_MORPH + 0.36);
         tl.to("#callName", { x: cpL + 66 - NAME_X, y: PILL_CY - NAME_CY, scale: 28 / 42, duration: MD, ease: ME }, T_MORPH);
         tl.to("#callTimer", { x: cpL + 76 + NAME28_W - TIMER_X, y: PILL_CY - TIMER_CY, duration: MD, ease: ME }, T_MORPH);
+        tl.to("#callTimer", { opacity: 0, duration: 0.08, ease: "power1.in" }, T_MORPH);
+        tl.to("#callTimer", { opacity: 1, duration: 0.12, ease: "power1.out" }, T_MORPH + MD - 0.1);
         tl.to("#liveDot", { scale: 0, opacity: 0, duration: 0.2, ease: "power2.in" }, T_MORPH);
         tl.to("#cardGlyph", { scale: 0.5, opacity: 0, duration: 0.22, ease: "power2.in" }, T_MORPH);
 

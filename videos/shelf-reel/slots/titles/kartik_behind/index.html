@@ -115,9 +115,10 @@
       tl.fromTo(glows, { opacity: 0 }, { opacity: 0.55, duration: 0.18, ease: "power2.out" }, T_IN + 0.08);
       tl.to(glows, { opacity: 0.12, duration: 0.6, ease: "power2.inOut", immediateRender: false }, T_IN + 0.3);
 
-      // slow drift: the word slides left and locks flush-left at the freeze
+      // slow drift: the word slides left and sinks with his head (keeps the occlusion steady),
+      // locking flush-left at the freeze
       var T_FREEZE = 2.6333;
-      tl.fromTo("#l1", { x: 40 }, { x: 0, duration: T_FREEZE - T_IN, ease: "sine.inOut" }, T_IN);
+      tl.fromTo("#l1", { x: 40, y: -28 }, { x: 0, y: 0, duration: T_FREEZE - T_IN, ease: "sine.inOut" }, T_IN);
 
       // freeze (68.733): glow pulse + brightness flash + one fast light sweep, then hold
       tl.to(glows, { opacity: 0.95, duration: 0.05, ease: "power2.out", immediateRender: false }, T_FREEZE);

@@ -336,6 +336,11 @@ def stem_B(A):
     place(B, buzz(0.42, 0.30), O("P1a") + 0.80)
     whoosh(O("P1a") + 0.30, 0.30, 0, -3)                               # crash zoom
     whoosh(O("P1b") + 0.95, 0.25, 0, 2)                                # eyes open
+    # a bed under the wordless intro, so it never drops to digital silence: room tone + a low tension drone
+    n_bed = int((O("P1e") + 0.6 - O("P1a")) * SR)
+    room = filt(stereo(rng.standard_normal(n_bed)), "bandpass", [70, 2200], 2)
+    place(B, fade(room / np.abs(room).max(), 0.4, 0.6), O("P1a"), 0, 0.022)
+    place(B, fade(drone(n_bed / SR, 55, 78, 0.20), 1.2, 0.6), O("P1a"))
     for k in range(int((O("P1e") - O("P1b")) / 0.5)):                  # the clock is running
         place(B, tick(1900 if k % 2 == 0 else 1500), O("P1b") + k * 0.5, 0, 0.18 + 0.02 * k)
     whoosh(O("P1c") + 0.05, 0.40, -0.3, -2)

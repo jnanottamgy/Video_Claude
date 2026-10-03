@@ -9,23 +9,25 @@
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
       /* BEHIND layer: composited UNDER the person cut-out. Output 54.100 -> 55.533 (43 frames).
-         "SHELF" lands at 54.88 (t = 0.78). The footage cuts to the next shot at output frame 1665
-         (55.500, t = 1.40), so the scene clip ends at t = 1.39 and frame 43 is empty. */
+         "SHELF" lands at 54.88 (t 0.78): letters slam in, one light sweep, hold. The footage cuts to
+         the next shot at output frame 1665 (55.500, t 1.40), so the scene clip ends at t = 1.39 and
+         frame 43 is empty on purpose. The word spans the frame on the pillow; his head pokes into
+         the bottom of "HEL". */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
 
-      /* giant word = .giant look (Sora 800, silver gradient, blue glow), split into letter slots */
+      /* giant word = .giant look (Sora 800, silver gradient, blue glow) + a soft navy depth shadow */
       .word {
         position: absolute;
-        left: 58px;
-        top: 409px;
+        left: 58px;  /* ink 64..1016 */
+        top: 409px;  /* cap 427-650, baseline 650 */
         display: flex;
         font: 800 305px/0.9 var(--font-brand);
         white-space: nowrap;
-        /* .giant glow + a soft navy depth shadow so silver reads on the light pillow */
         filter: drop-shadow(0 0 30px rgba(var(--glow), 0.35)) drop-shadow(0 3px 5px rgba(4, 10, 26, 0.22)) drop-shadow(0 14px 28px rgba(4, 10, 26, 0.36));
       }
       .slot { position: relative; display: inline-block; transform-origin: 50% 62%; }
+      .slot .in { position: relative; display: block; }
       .slot .b {
         display: block;
         background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 50%, #a9b8cd 100%);
@@ -33,7 +35,6 @@
         background-clip: text;
         color: transparent;
       }
-      /* blue bloom copy behind each letter (impact flash) */
       .slot .g {
         position: absolute;
         left: 0;
@@ -60,30 +61,56 @@
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="1.433333" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="1.39" data-track-index="0">
-        <div class="word" id="word" aria-hidden="true" data-layout-allow-overflow data-layout-allow-overlap data-layout-allow-occlusion>
-          <span class="slot"><span class="g" data-layout-allow-overlap>S</span><span class="b">S</span></span>
-          <span class="slot"><span class="g" data-layout-allow-overlap>H</span><span class="b">H</span></span>
-          <span class="slot"><span class="g" data-layout-allow-overlap>E</span><span class="b">E</span></span>
-          <span class="slot"><span class="g" data-layout-allow-overlap>L</span><span class="b">L</span></span>
-          <span class="slot"><span class="g" data-layout-allow-overlap>F</span><span class="b">F</span></span>
-          <div class="sheen" id="sheen"><span data-layout-allow-overlap>S</span><span data-layout-allow-overlap>H</span><span data-layout-allow-overlap>E</span><span data-layout-allow-overlap>L</span><span data-layout-allow-overlap>F</span></div>
-        </div>
+        <div class="word" id="word" data-text="SHELF" aria-hidden="true" data-layout-allow-overflow></div>
       </div>
     </div>
     <script>
+      // ---- letter builder: slot > in > (g = blue bloom copy, b = silver letter); plus one sheen copy
+      function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text) e.textContent = text;
+        return e;
+      }
+      function buildWord(line) {
+        var text = line.getAttribute("data-text");
+        var sheen = el("div", "sheen");
+        sheen.id = "sheen";
+        for (var i = 0; i < text.length; i++) {
+          var ch = text[i];
+          var slot = el("span", "slot");
+          var inn = el("span", "in");
+          var g = el("span", "g", ch);
+          var b = el("span", "b", ch);
+          g.setAttribute("data-layout-allow-overlap", "");
+          g.setAttribute("data-layout-allow-occlusion", "");
+          b.setAttribute("data-layout-allow-occlusion", "");
+          inn.appendChild(g);
+          inn.appendChild(b);
+          slot.appendChild(inn);
+          line.appendChild(slot);
+          var s = el("span", "", ch);
+          s.setAttribute("data-layout-allow-overlap", "");
+          s.setAttribute("data-layout-allow-occlusion", "");
+          sheen.appendChild(s);
+        }
+        line.appendChild(sheen);
+      }
+      buildWord(document.getElementById("word"));
+
       var tl = gsap.timeline({ paused: true });
-      var slots = gsap.utils.toArray("#word .slot");
-      var glows = gsap.utils.toArray("#word .slot .g");
+      var slots = gsap.utils.toArray("#word > .slot");
+      var inners = gsap.utils.toArray("#word > .slot > .in");
+      var glows = gsap.utils.toArray("#word .g");
 
       // letters slam in on "SHELF" (54.88 = t 0.78): scale 1.24 -> 1 with a small compress-overshoot,
       // motion blur resolving to sharp, short left-to-right stagger
       var T_HIT = 0.72, ST = 0.04;
       tl.fromTo(slots, { scale: 1.24, y: -18 }, { scale: 1, y: 0, duration: 0.34, ease: "back.out(1.8)", stagger: ST }, T_HIT);
-      tl.fromTo(slots, { opacity: 0 }, { opacity: 1, duration: 0.08, ease: "power1.out", stagger: ST }, T_HIT);
-      tl.fromTo(slots, { filter: "blur(16px)" }, { filter: "blur(0px)", duration: 0.2, ease: "power2.out", stagger: ST }, T_HIT);
+      tl.fromTo(inners, { opacity: 0, filter: "blur(16px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out", stagger: ST }, T_HIT);
       // impact bloom per letter, decaying to a low hum
       tl.fromTo(glows, { opacity: 0 }, { opacity: 0.6, duration: 0.06, ease: "power2.out", stagger: ST }, T_HIT + 0.04);
-      tl.to(glows, { opacity: 0.16, duration: 0.3, ease: "power2.out", stagger: ST, immediateRender: false }, T_HIT + 0.1);
+      tl.to(glows, { opacity: 0.16, duration: 0.3, ease: "power2.out", stagger: ST, immediateRender: false }, T_HIT + 0.11);
       // a slow push keeps the hold alive
       tl.fromTo("#word", { scale: 1 }, { scale: 1.025, duration: 0.62, ease: "power1.out" }, T_HIT + 0.08);
       // one light sweep across the settled word

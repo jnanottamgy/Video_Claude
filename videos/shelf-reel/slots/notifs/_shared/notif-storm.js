@@ -151,6 +151,7 @@
           badge: content.badge === undefined ? null : content.badge,
           w: W,
           h: H,
+          decorative: true,
         },
         px: x,
         py: y,
