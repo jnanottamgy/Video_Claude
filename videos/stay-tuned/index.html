@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Sora"; font-weight: 600; src: url("assets/fonts/sora-latin-600-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Sora"; font-weight: 700; src: url("assets/fonts/sora-latin-700-normal.woff2") format("woff2"); }
+
+      /* The S.H.E.L.F language on black: silver type, one cool blue for light. */
+      :root {
+        --glow: 90, 160, 255;
+        --soft: #93b4e3;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+
+      /* Light behind the title: blooms on the hit, then breathes. */
+      #bloom {
+        position: absolute;
+        left: 50%;
+        top: 880px;
+        width: 1300px;
+        height: 760px;
+        margin: -380px 0 0 -650px;
+        background: radial-gradient(ellipse at center, rgba(70, 130, 240, 0.30) 0%, rgba(40, 80, 170, 0.10) 38%, rgba(0, 0, 0, 0) 70%);
+        filter: blur(30px);
+        opacity: 0;
+      }
+
+      /* Anamorphic streak across the title line. */
+      #streak {
+        position: absolute;
+        left: 50%;
+        top: 862px;
+        width: 1400px;
+        height: 60px;
+        margin-left: -700px;
+        opacity: 0;
+      }
+      #streakHalo {
+        position: absolute;
+        inset: 14px 0;
+        background: linear-gradient(90deg, rgba(60, 130, 255, 0), rgba(90, 160, 255, 0.45) 50%, rgba(60, 130, 255, 0));
+        filter: blur(14px);
+      }
+      #streakCore {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 28px;
+        height: 3px;
+        background: linear-gradient(90deg, rgba(150, 200, 255, 0), rgba(235, 246, 255, 1) 50%, rgba(150, 200, 255, 0));
+        filter: blur(1px);
+      }
+
+      #title {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 800px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transform-origin: 50% 90px;
+      }
+      #l1 {
+        display: flex;
+        font: 700 88px/1.15 "Sora", sans-serif;
+        letter-spacing: 0.12em;
+        white-space: nowrap;
+      }
+      /* silver fill (clipped gradient) + blue glow */
+      #l1 .ch {
+        display: inline-block;
+        background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 52%, #a9b8cd 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 22px rgba(var(--glow), 0.42);
+        opacity: 0;
+      }
+      #rule {
+        width: 640px;
+        height: 2px;
+        margin: 30px 0 34px;
+        background: linear-gradient(90deg, rgba(79, 157, 255, 0), rgba(150, 205, 255, 0.95) 50%, rgba(79, 157, 255, 0));
+        box-shadow: 0 0 14px rgba(var(--glow), 0.6);
+        transform: scaleX(0);
+        opacity: 0;
+      }
+      #l2 {
+        display: flex;
+        font: 600 52px/1.2 "Sora", sans-serif;
+        letter-spacing: 0.5em;
+        margin-right: -0.5em; /* trailing tracking would push the line off-centre */
+        color: var(--soft);
+        white-space: nowrap;
+      }
+      #l2 .ch { display: inline-block; opacity: 0; text-shadow: 0 0 16px rgba(var(--glow), 0.35); }
+
+      /* Specular sweep: a band that is neutral grey except at its bright centre. With
+         overlay blending, grey leaves pixels unchanged and black stays black, so the
+         light only catches the lettering and its glow. */
+      #sheen {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 780px;
+        height: 150px;
+        background: linear-gradient(105deg, #808080 0%, #808080 44%, #ffffff 50%, #808080 56%, #808080 100%);
+        background-size: 300% 100%;
+        background-position: 100% 0%;
+        mix-blend-mode: overlay;
+        opacity: 0;
+      }
+
+      /* Fixed-seed grain; overlay leaves pure black untouched. */
+      #grain {
+        position: absolute;
+        inset: 0;
+        opacity: 0.08;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='11' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+        background-size: 200px 200px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="3" data-width="1080" data-height="1920">
+      <div id="scene" class="clip" data-start="0" data-duration="3" data-track-index="0">
+        <div id="bloom"></div>
+        <div id="streak"><div id="streakHalo"></div><div id="streakCore"></div></div>
+        <div id="title">
+          <div id="l1"></div>
+          <div id="rule"></div>
+          <div id="l2"></div>
+        </div>
+        <div id="sheen"></div>
+        <div id="grain"></div>
+      </div>
+    </div>
+
+    <script>
+      var L1 = "STAY TUNED IN", L2 = "TO KNOW";
+      // HIT: the letters lock here. tools/mix_sfx.py parses this — the impact follows it.
+      var HIT = 0.9;
+
+      /* `swept`: these letters sit under #sheen during the light sweep. The audit counts
+         #sheen as an opaque cover, but it blends as overlay: its grey is neutral and only
+         its bright centre lights the type (verified by snapshot at 1.85s). The audit reads
+         data-layout-allow-occlusion on the COVERED text element itself, not inherited. */
+      function letters(id, text, swept) {
+        var host = document.getElementById(id), out = [];
+        for (var i = 0; i < text.length; i++) {
+          var s = document.createElement("span");
+          s.className = "ch";
+          if (swept) s.setAttribute("data-layout-allow-occlusion", "");
+          s.textContent = text[i] === " " ? " " : text[i];
+          host.appendChild(s); out.push(s);
+        }
+        return out;
+      }
+      var a = letters("l1", L1, true), b = letters("l2", L2);
+      var tl = gsap.timeline({ paused: true });
+
+      /* 1 — light ignites and rakes out across the title line */
+      tl.fromTo("#streak", { autoAlpha: 0, scaleX: 0.15 }, { autoAlpha: 1, scaleX: 1, duration: 0.55, ease: "power2.out" }, 0.08);
+      tl.fromTo("#bloom", { autoAlpha: 0, scale: 0.7 }, { autoAlpha: 0.55, scale: 1, duration: HIT - 0.2, ease: "power2.in" }, 0.2);
+
+      /* 2 — STAY TUNED IN: letters fade in spread wide and soft, then accelerate
+             together and lock, sharp, on the hit */
+      var mid = (a.length - 1) / 2;
+      a.forEach(function (el, i) {
+        tl.fromTo(el, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.35, ease: "sine.out" }, 0.22 + Math.abs(i - mid) * 0.012);
+        tl.fromTo(
+          el,
+          { x: (i - mid) * 36, filter: "blur(12px)" },
+          { x: 0, filter: "blur(0px)", duration: HIT - 0.22, ease: "power2.in", immediateRender: false },
+          0.22
+        );
+      });
+
+      /* 3 — the hit: bloom flash, the title punches, the streak flares and goes */
+      tl.to("#bloom", { autoAlpha: 1, duration: 0.05, ease: "power2.out" }, HIT);
+      tl.to("#bloom", { autoAlpha: 0.5, duration: 0.8, ease: "power2.out" }, HIT + 0.05);
+      tl.fromTo("#title", { scale: 1 }, { scale: 1.025, duration: 0.06, ease: "power2.out" }, HIT);
+      tl.to("#title", { scale: 1, duration: 0.35, ease: "power2.out" }, HIT + 0.06);
+      tl.to("#streak", { scaleX: 1.35, duration: 0.08, ease: "power2.out" }, HIT);
+      tl.to("#streak", { autoAlpha: 0, duration: 0.45, ease: "sine.in" }, HIT + 0.08);
+
+      /* 4 — rule draws out, then TO KNOW rises letter by letter */
+      tl.fromTo("#rule", { autoAlpha: 0, scaleX: 0 }, { autoAlpha: 1, scaleX: 1, duration: 0.45, ease: "power2.out" }, 1.0);
+      b.forEach(function (el, i) {
+        tl.fromTo(el, { autoAlpha: 0, y: 16, filter: "blur(6px)" }, { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 1.08 + i * 0.045);
+      });
+
+      /* 5 — light sweeps across the type */
+      tl.fromTo("#sheen", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.12, ease: "sine.out" }, 1.45);
+      tl.fromTo("#sheen", { backgroundPosition: "100% 0%" }, { backgroundPosition: "0% 0%", duration: 0.7, ease: "power2.inOut", immediateRender: false }, 1.45);
+      tl.to("#sheen", { autoAlpha: 0, duration: 0.15, ease: "sine.in" }, 2.0);
+
+      /* 6 — a slow push-in under the hold, then fade to black */
+      tl.to("#title", { scale: 1.035, duration: 2.1 - 0.41, ease: "sine.inOut" }, HIT + 0.41);
+      tl.to(["#title", "#bloom", "#rule"], { autoAlpha: 0, duration: 0.42, ease: "sine.in" }, 2.56);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
