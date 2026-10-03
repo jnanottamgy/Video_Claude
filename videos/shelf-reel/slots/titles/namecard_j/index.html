@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
+        <div class="notif" id="n1" style="left: 70px; top: 400px">
+          <div class="icon" style="background: #34c759"></div>
+          <div class="body">
+            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
+            <div class="msg">Inter on dark glass, transparent canvas</div>
+          </div>
+        </div>
+        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
+      </div>
+    </div>
+    <script>
+      var tl = gsap.timeline({ paused: true });
+      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
+      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

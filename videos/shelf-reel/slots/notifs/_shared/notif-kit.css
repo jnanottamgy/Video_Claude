@@ -1,0 +1,112 @@
+/* notif-kit.css — the ONE notification-card design shared by the notifs slot
+   (cards / storm / storm_hook). Master copy lives in slots/notifs/_shared/;
+   each project carries its own copy in lib/ (run _shared/sync.sh after edits).
+
+   Built on design/shelf.css: .notif (dark phone banner), --phone-card, --alert,
+   --text-1/--text-2, --font-ui. Retheme of the registry notification-stack /
+   notification-pileup / notification-cascade cards to the PROBLEM world. */
+
+/* wrapper: GSAP owns x / y / scale / rotation / opacity / filter here */
+.nk-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--nk-w, 940px);
+  height: var(--nk-h, 150px);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+/* inner wrapper: second, independent transform channel (tremble / blow-apart) */
+.nk-fly {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+}
+
+/* the banner itself = design-system .notif, sized by the wrapper */
+.nk-card .notif.nk {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  align-items: center;
+  gap: 26px;
+  padding: 0 32px 0 30px;
+  border-radius: 34px;
+  background: linear-gradient(180deg, rgba(46, 46, 52, 0.95) 0%, rgba(26, 26, 30, 0.95) 58%, rgba(20, 20, 24, 0.96) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.13),
+    0 0 0 1.5px rgba(255, 255, 255, 0.07),
+    0 26px 60px rgba(0, 0, 0, 0.44),
+    0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* app icon tile: colored rounded square with a soft top gloss */
+.nk-card .notif.nk .icon {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 20px;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0) 62%);
+  background-color: var(--nk-c, #5e5ce6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.12), 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+.nk-card .notif.nk .icon.round { border-radius: 50%; }
+.nk-card .notif.nk .icon svg { width: 54px; height: 54px; display: block; }
+
+.nk-card .notif.nk .body { flex: 1; min-width: 0; }
+.nk-card .notif.nk .title { font: 700 33px/1.2 var(--font-ui); letter-spacing: -0.005em; color: var(--text-1); }
+.nk-card .notif.nk .time { font: 500 26px/1 var(--font-ui); color: var(--text-2); }
+.nk-card .notif.nk .msg {
+  margin-top: 6px;
+  font: 500 31px/1.3 var(--font-ui);
+  color: rgba(245, 246, 248, 0.84);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nk-card .notif.nk .msg b { font-weight: 700; color: #ffffff; }
+.nk-card .notif.nk .msg.mono { font-family: var(--font-mono); font-weight: 500; font-size: 29px; letter-spacing: -0.01em; }
+
+/* effects layer: clipped to the banner shape, sits over icon + text, under the badge */
+.nk-fx {
+  position: absolute;
+  inset: 0;
+  border-radius: 34px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.nk-sheen {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  width: 260px;
+  height: calc(100% + 40px);
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.08) 62%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0;
+}
+.nk-dim { position: absolute; inset: 0; background: #050507; opacity: 0; }
+.nk-alarm {
+  position: absolute;
+  inset: 0;
+  border-radius: 34px;
+  box-shadow: inset 0 0 0 3px rgba(255, 59, 48, 0.9), inset 0 0 46px rgba(255, 59, 48, 0.32);
+  opacity: 0;
+}
+
+/* red unread badge, pinned to the icon's top-right corner, grows leftwards */
+.nk-card .notif.nk .badge {
+  top: 10px;
+  left: auto;
+  right: calc(100% - 120px);
+  z-index: 3;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 13px;
+  border-radius: 23px;
+  font: 800 27px/46px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  box-shadow: 0 0 0 4px rgba(30, 30, 35, 0.98), 0 0 20px rgba(255, 59, 48, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35);
+  transform-origin: 50% 50%;
+}

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>notifs / cards</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <!-- shared notification card (master: slots/notifs/_shared) -->
+    <link rel="stylesheet" href="./lib/notif-kit.css" />
+    <script src="./lib/notif-kit.js"></script>
+    <style>
+      #stage { position: relative; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      #stack { position: absolute; inset: 0; transform-origin: 540px 590px; }
+      .nk-card { left: 70px; top: 330px; }
+    </style>
+  </head>
+  <body>
+    <!--
+      notifs/cards — output window 30.000 -> 45.600 s (15.6 s = 468 frames), layer FRONT.
+      Group-chat notification cards stack like a lock screen as the friends name each group:
+        30.22 Unofficial Group · 37.01 Official Class Group · 40.40 Boys Group
+      44.40 hard cut: stack trembles, badges pulse red. 44.65 "What": the three cards blow apart.
+      Nothing visible after 45.30.
+    -->
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="15.6" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="15.6" data-track-index="0">
+        <div id="stack"></div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        "use strict";
+        var D = 15.6;
+        var W = 940;
+        var H = 150;
+        // cue times, local seconds (= output time - 30.000)
+        var T_A = 0.223; // "unofficial group"
+        var T_B = 7.01; // "the official class group"
+        var T_C = 10.4; // "also in the boys group"
+        var T_CUT = 14.4; // hard cut to the laptop
+        var T_BLOW = 14.653; // "What"
+
+        var SLOT_Y = [0, 185, 370]; // newest at y=330, older pushed down 185 px each
+        var SLOT_S = [1, 0.95, 0.9];
+        var SLOT_DIM = [0, 0.26, 0.44];
+
+        var stack = document.getElementById("stack");
+        var A = NK.card({ id: "card-a", app: "unofficial", sender: "CR:", msg: "all the notes, units 1-5", time: "now", badge: 12, w: W, h: H });
+        var B = NK.card({ id: "card-b", app: "official", sender: "Teacher:", msg: "syllabus copy attached", time: "now", badge: 48, w: W, h: H });
+        var C = NK.card({ id: "card-c", app: "boys", sender: "Zaid:", msg: "solved PYQs", time: "now", badge: "99+", w: W, h: H });
+        // oldest first in the DOM so the newest card paints on top
+        [A, B, C].forEach(function (c) {
+          stack.appendChild(c.el);
+          gsap.set(c.el, { transformOrigin: "50% 0%", opacity: 0 });
+        });
+
+        var tl = gsap.timeline({ paused: true });
+
+        /* ---------- arrival of one card at the top slot ---------- */
+        function arrive(c, t0) {
+          tl.fromTo(
+            c.el,
+            { y: -120, scale: 0.9, rotationX: -64, transformPerspective: 1600, opacity: 0 },
+            { y: 0, scale: 1, rotationX: 0, transformPerspective: 1600, opacity: 1, duration: 0.85, ease: "expo.out" },
+            t0
+          );
+          tl.fromTo(c.el, { filter: "blur(16px)" }, { filter: "blur(0px)", duration: 0.34, ease: "power2.out" }, t0);
+          // light sheen sweeps across as it lands
+          tl.fromTo(c.sheen, { x: -320, opacity: 1 }, { x: W + 80, opacity: 1, duration: 0.9, ease: "power2.inOut" }, t0 + 0.14);
+          // badge pops after the card lands
+          tl.fromTo(c.badge, { scale: 0 }, { scale: 1, duration: 0.5, ease: "back.out(2.8)" }, t0 + 0.2);
+        }
+
+        /* ---------- older card pushed down one slot ---------- */
+        function push(c, from, t0) {
+          var to = from + 1;
+          tl.fromTo(
+            c.el,
+            { y: SLOT_Y[from], scale: SLOT_S[from] },
+            { y: SLOT_Y[to], scale: SLOT_S[to], duration: 0.75, ease: "expo.out", immediateRender: false },
+            t0 + 0.02
+          );
+          tl.fromTo(c.dim, { opacity: SLOT_DIM[from] }, { opacity: SLOT_DIM[to], duration: 0.6, ease: "power2.out", immediateRender: false }, t0 + 0.02);
+        }
+
+        /* ---------- badge tick: punchy pulse while the count climbs ---------- */
+        function pulse(c, t0, peak) {
+          tl.fromTo(c.badge, { scale: 1 }, { scale: peak, duration: 0.12, ease: "power2.out", immediateRender: false }, t0);
+          tl.fromTo(c.badge, { scale: peak }, { scale: 1, duration: 0.4, ease: "back.out(2.2)", immediateRender: false }, t0 + 0.12);
+        }
+
+        arrive(A, T_A);
+
+        arrive(B, T_B);
+        push(A, 0, T_B);
+        pulse(A, T_B + 0.3, 1.24);
+
+        arrive(C, T_C);
+        push(B, 0, T_C);
+        push(A, 1, T_C);
+        pulse(B, T_C + 0.3, 1.24);
+        pulse(A, T_C + 0.36, 1.24);
+
+        /* ---------- 44.40 hard cut: tremble + red alarm ---------- */
+        tl.fromTo("#stack", { scale: 1.035 }, { scale: 1, duration: 0.3, ease: "expo.out", immediateRender: false }, T_CUT);
+        var rnd = NK.rng(4440);
+        [A, B, C].forEach(function (c, ci) {
+          var steps = Math.round((T_BLOW - T_CUT) * 30); // ~8 frames
+          var px = 0, py = 0, pr = 0;
+          for (var k = 0; k < steps; k++) {
+            var t = T_CUT + k / 30;
+            var u = (k + 1) / steps;
+            var amp = 2.5 + 7 * u;
+            var last = k === steps - 1;
+            var nx = last ? 0 : amp * (rnd() * 2 - 1);
+            var ny = last ? 0 : amp * 0.7 * (rnd() * 2 - 1);
+            var nr = last ? 0 : (0.5 + 1.2 * u) * (rnd() * 2 - 1);
+            var dur = last ? T_BLOW - t : 1 / 30;
+            tl.fromTo(
+              c.fly,
+              { x: px, y: py, rotation: pr },
+              { x: nx, y: ny, rotation: nr, duration: dur, ease: "sine.inOut", immediateRender: false },
+              t
+            );
+            px = nx;
+            py = ny;
+            pr = nr;
+          }
+          tl.fromTo(c.alarm, { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "power2.out" }, T_CUT + 0.02 * ci);
+          // red badge pulse
+          tl.fromTo(c.badge, { scale: 1 }, { scale: 1.34, duration: 0.09, ease: "power2.out", immediateRender: false }, T_CUT + 0.01);
+          tl.fromTo(c.badge, { scale: 1.34 }, { scale: 1.06, duration: 0.08, ease: "power2.in", immediateRender: false }, T_CUT + 0.1);
+          tl.fromTo(c.badge, { scale: 1.06 }, { scale: 1.4, duration: 0.07, ease: "power2.out", immediateRender: false }, T_CUT + 0.18);
+        });
+
+        /* ---------- 44.65 "What": blow apart, off-screen, rotation + motion blur ---------- */
+        var BLOW = [
+          { c: C, x: -980, y: -900, r: -34, s: 1.22 }, // top card: up-left
+          { c: B, x: 1340, y: -190, r: 38, s: 1.2 }, // middle card: hard right
+          { c: A, x: -1320, y: 170, r: -26, s: 1.16 }, // bottom card: left, slightly down
+        ];
+        BLOW.forEach(function (b, i) {
+          var t0 = T_BLOW + i * 0.012;
+          tl.fromTo(
+            b.c.fly,
+            { x: 0, y: 0, rotation: 0, scale: 1 },
+            { x: b.x, y: b.y, rotation: b.r, scale: b.s, duration: 0.62, ease: "power3.out", immediateRender: false },
+            t0
+          );
+          tl.fromTo(b.c.fly, { filter: "blur(0px)" }, { filter: "blur(18px)", duration: 0.1, ease: "power2.out", immediateRender: false }, t0);
+          tl.fromTo(b.c.fly, { opacity: 1 }, { opacity: 0, duration: 0.22, ease: "power1.in", immediateRender: false }, t0 + 0.28);
+        });
+
+        /* ---------- badge counts + timestamps: one state function driven by time ---------- */
+        var keysA = [[0, 12], [T_B + 0.3, 12], [T_B + 0.75, 19], [T_C + 0.36, 19], [T_C + 0.8, 27], [T_CUT, 27], [T_BLOW, 41]];
+        var keysB = [[0, 48], [T_C + 0.3, 48], [T_C + 0.75, 56], [T_CUT, 56], [T_BLOW, 73]];
+        function applyState(t) {
+          A.setBadge(NK.lerpKeys(keysA, t));
+          B.setBadge(NK.lerpKeys(keysB, t));
+          var ta = t < T_B + 0.2 ? "now" : t < T_C + 0.2 ? "1m" : "2m";
+          var tb = t < T_C + 0.2 ? "now" : "1m";
+          if (A.timeEl.textContent !== ta) A.timeEl.textContent = ta;
+          if (B.timeEl.textContent !== tb) B.timeEl.textContent = tb;
+        }
+        var clock = { t: 0 };
+        tl.fromTo(
+          clock,
+          { t: 0 },
+          { t: D, duration: D, ease: "none", onUpdate: function () { applyState(clock.t); } },
+          0
+        );
+        applyState(0);
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>titles / simple_behind</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* BEHIND layer: composited UNDER the person cut-out. Output 85.450 -> 86.667 (37 frames).
+         "simple" spoken at 85.75 (t 0.30): the calm beat - a clean fade/scale with a soft tracking
+         settle, then a thin underline draws (it passes behind his head). The footage cuts to the
+         next shot at output frame 2599 (86.633), so the scene clip ends at t = 1.15: frames 36-37
+         are empty on purpose. */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+
+      .word {
+        position: absolute;
+        left: 81px;  /* ink 85..994, centred on x = 540 */
+        top: 597px;  /* cap 611-775, baseline 775 */
+        display: flex;
+        font: 800 225px/0.9 var(--font-brand);
+        white-space: nowrap;
+        transform-origin: 50% 70%;
+        filter: drop-shadow(0 0 30px rgba(var(--glow), 0.35)) drop-shadow(0 3px 5px rgba(4, 10, 26, 0.22)) drop-shadow(0 14px 28px rgba(4, 10, 26, 0.36));
+      }
+      .slot { position: relative; display: inline-block; }
+      .slot .in { position: relative; display: block; }
+      .slot .b {
+        display: block;
+        background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 50%, #a9b8cd 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .slot .g {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: rgb(var(--glow));
+        filter: blur(24px);
+        opacity: 0;
+      }
+      /* thin silver underline with the blue glow */
+      .rule {
+        position: absolute;
+        left: 85px;
+        top: 806px;
+        width: 909px;
+        height: 5px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, rgba(227, 234, 244, 0) 0%, #e3eaf4 9%, #ffffff 50%, #e3eaf4 91%, rgba(227, 234, 244, 0) 100%);
+        box-shadow: 0 0 16px rgba(var(--glow), 0.75), 0 0 3px rgba(var(--glow), 0.9), 0 6px 14px rgba(4, 10, 26, 0.35);
+        transform-origin: 0% 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="1.233333" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.15" data-track-index="0">
+        <div class="word" id="word" data-text="SIMPLE." aria-hidden="true" data-layout-allow-overflow></div>
+        <div class="rule" id="rule" aria-hidden="true"></div>
+      </div>
+    </div>
+    <script>
+      // ---- letter builder: slot > in > (g = blue bloom copy, b = silver letter)
+      function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text) e.textContent = text;
+        return e;
+      }
+      function buildWord(line) {
+        var text = line.getAttribute("data-text");
+        for (var i = 0; i < text.length; i++) {
+          var ch = text[i];
+          var slot = el("span", "slot");
+          var inn = el("span", "in");
+          var g = el("span", "g", ch);
+          var b = el("span", "b", ch);
+          g.setAttribute("data-layout-allow-overlap", "");
+          g.setAttribute("data-layout-allow-occlusion", "");
+          b.setAttribute("data-layout-allow-occlusion", "");
+          inn.appendChild(g);
+          inn.appendChild(b);
+          slot.appendChild(inn);
+          line.appendChild(slot);
+        }
+      }
+      buildWord(document.getElementById("word"));
+
+      var tl = gsap.timeline({ paused: true });
+      var slots = gsap.utils.toArray("#word > .slot");
+      var inners = gsap.utils.toArray("#word > .slot > .in");
+      var glows = gsap.utils.toArray("#word .g");
+      var n = slots.length;
+
+      // calm reveal on "simple" (85.75 = t 0.30): soft scale-down, fade, blur -> sharp, tracking settles
+      var T_IN = 0.26;
+      tl.fromTo("#word", { scale: 1.09, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.85, ease: "power3.out" }, T_IN);
+      tl.fromTo(slots, { x: function (i) { return (i - (n - 1) / 2) * 16; } }, { x: 0, duration: 0.85, ease: "power3.out" }, T_IN);
+      tl.fromTo(inners, { filter: "blur(10px)" }, { filter: "blur(0px)", duration: 0.5, ease: "power2.out" }, T_IN);
+      tl.fromTo(glows, { opacity: 0 }, { opacity: 0.18, duration: 0.6, ease: "power2.out" }, T_IN + 0.1);
+      // a thin underline draws left -> right
+      tl.fromTo("#rule", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 0.55);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

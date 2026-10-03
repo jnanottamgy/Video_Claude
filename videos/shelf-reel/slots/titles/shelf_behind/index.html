@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>titles / shelf_behind</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* BEHIND layer: composited UNDER the person cut-out. Output 54.100 -> 55.533 (43 frames).
+         "SHELF" lands at 54.88 (t = 0.78). The footage cuts to the next shot at output frame 1665
+         (55.500, t = 1.40), so the scene clip ends at t = 1.39 and frame 43 is empty. */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+
+      /* giant word = .giant look (Sora 800, silver gradient, blue glow), split into letter slots */
+      .word {
+        position: absolute;
+        left: 58px;
+        top: 409px;
+        display: flex;
+        font: 800 305px/0.9 var(--font-brand);
+        white-space: nowrap;
+        /* .giant glow + a soft navy depth shadow so silver reads on the light pillow */
+        filter: drop-shadow(0 0 30px rgba(var(--glow), 0.35)) drop-shadow(0 3px 5px rgba(4, 10, 26, 0.22)) drop-shadow(0 14px 28px rgba(4, 10, 26, 0.36));
+      }
+      .slot { position: relative; display: inline-block; transform-origin: 50% 62%; }
+      .slot .b {
+        display: block;
+        background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 50%, #a9b8cd 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      /* blue bloom copy behind each letter (impact flash) */
+      .slot .g {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: rgb(var(--glow));
+        filter: blur(26px);
+        opacity: 0;
+      }
+      /* specular sweep: a white copy of the word, masked to a moving diagonal band */
+      .sheen {
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: flex;
+        color: #ffffff;
+        --p: -30%;
+        -webkit-mask-image: linear-gradient(104deg, transparent calc(var(--p) - 11%), #000 var(--p), transparent calc(var(--p) + 11%));
+        mask-image: linear-gradient(104deg, transparent calc(var(--p) - 11%), #000 var(--p), transparent calc(var(--p) + 11%));
+        opacity: 0.92;
+      }
+      .sheen span { display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="1.433333" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.39" data-track-index="0">
+        <div class="word" id="word" aria-hidden="true" data-layout-allow-overflow data-layout-allow-overlap data-layout-allow-occlusion>
+          <span class="slot"><span class="g" data-layout-allow-overlap>S</span><span class="b">S</span></span>
+          <span class="slot"><span class="g" data-layout-allow-overlap>H</span><span class="b">H</span></span>
+          <span class="slot"><span class="g" data-layout-allow-overlap>E</span><span class="b">E</span></span>
+          <span class="slot"><span class="g" data-layout-allow-overlap>L</span><span class="b">L</span></span>
+          <span class="slot"><span class="g" data-layout-allow-overlap>F</span><span class="b">F</span></span>
+          <div class="sheen" id="sheen"><span data-layout-allow-overlap>S</span><span data-layout-allow-overlap>H</span><span data-layout-allow-overlap>E</span><span data-layout-allow-overlap>L</span><span data-layout-allow-overlap>F</span></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      var tl = gsap.timeline({ paused: true });
+      var slots = gsap.utils.toArray("#word .slot");
+      var glows = gsap.utils.toArray("#word .slot .g");
+
+      // letters slam in on "SHELF" (54.88 = t 0.78): scale 1.24 -> 1 with a small compress-overshoot,
+      // motion blur resolving to sharp, short left-to-right stagger
+      var T_HIT = 0.72, ST = 0.04;
+      tl.fromTo(slots, { scale: 1.24, y: -18 }, { scale: 1, y: 0, duration: 0.34, ease: "back.out(1.8)", stagger: ST }, T_HIT);
+      tl.fromTo(slots, { opacity: 0 }, { opacity: 1, duration: 0.08, ease: "power1.out", stagger: ST }, T_HIT);
+      tl.fromTo(slots, { filter: "blur(16px)" }, { filter: "blur(0px)", duration: 0.2, ease: "power2.out", stagger: ST }, T_HIT);
+      // impact bloom per letter, decaying to a low hum
+      tl.fromTo(glows, { opacity: 0 }, { opacity: 0.6, duration: 0.06, ease: "power2.out", stagger: ST }, T_HIT + 0.04);
+      tl.to(glows, { opacity: 0.16, duration: 0.3, ease: "power2.out", stagger: ST, immediateRender: false }, T_HIT + 0.1);
+      // a slow push keeps the hold alive
+      tl.fromTo("#word", { scale: 1 }, { scale: 1.025, duration: 0.62, ease: "power1.out" }, T_HIT + 0.08);
+      // one light sweep across the settled word
+      tl.fromTo("#sheen", { "--p": "-30%" }, { "--p": "130%", duration: 0.36, ease: "power2.inOut" }, 1.0);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>notifs / storm_hook</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <!-- shared notification card + storm engine (master: slots/notifs/_shared) -->
+    <link rel="stylesheet" href="./lib/notif-kit.css" />
+    <script src="./lib/notif-kit.js"></script>
+    <script src="./lib/notif-storm.js"></script>
+    <style>
+      #stage { position: relative; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      #world { position: absolute; inset: 0; transform-origin: 540px 760px; }
+    </style>
+  </head>
+  <body>
+    <!--
+      notifs/storm_hook — output window 0.000 -> 3.467 s (3.4667 s = 104 frames), layer FRONT.
+      Cold-open teaser of the storm (same footage as 44.40-47.87, so it is the storm's own plan
+      shifted +0.2 s): What 0.25 burst · f*ck 0.80 · why are my notes 1.18-1.66 ·
+      scattered 1.96 fling outward · many groups? 2.80-3.25 fast pileup of small cards.
+      His face (x ~700-990, y ~750-1060) is kept clear. Does NOT clear: the last frame is full
+      (the compositor freezes it and rewinds).
+    -->
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="3.466667" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="3.466667" data-track-index="0">
+        <div id="world"></div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        "use strict";
+        var D = 3.466667;
+        var tl = gsap.timeline({ paused: true });
+        var storm = NK.buildStorm(tl, document.getElementById("world"), { off: 0.2, full: false, seed: 4465 });
+
+        var clock = { t: 0 };
+        tl.fromTo(
+          clock,
+          { t: 0 },
+          { t: D, duration: D, ease: "none", onUpdate: function () { storm.applyState(clock.t); } },
+          0
+        );
+        storm.applyState(0);
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

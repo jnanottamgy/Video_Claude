@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>titles / kartik_behind</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* BEHIND layer: composited UNDER the person cut-out. Output 66.100 -> 70.167 (122 frames).
+         "Kartik" spoken at 66.30 (t 0.20): the letters track in (converge + sharpen). A slow drift
+         locks the word flush-left (ink x = 64) exactly at the freeze (68.733, t 2.633), where it
+         flashes brighter and holds. namecard_k (front) sits flush-left under it. */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+
+      .line {
+        position: absolute;
+        left: 47px;  /* ink of the first K starts at x = 64 */
+        top: 428px;  /* cap 442-618, baseline 618 */
+        display: flex;
+        font: 800 240px/0.9 var(--font-brand);
+        white-space: nowrap;
+        filter: drop-shadow(0 0 30px rgba(var(--glow), 0.35)) drop-shadow(0 3px 5px rgba(4, 10, 26, 0.22)) drop-shadow(0 14px 28px rgba(4, 10, 26, 0.36));
+      }
+      .slot { position: relative; display: inline-block; }
+      .slot .in { position: relative; display: block; }
+      .slot .b {
+        display: block;
+        background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 50%, #a9b8cd 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: brightness(1);
+      }
+      .slot .g {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: rgb(var(--glow));
+        filter: blur(24px);
+        opacity: 0;
+      }
+      .sheen {
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: flex;
+        color: #ffffff;
+        --p: -30%;
+        -webkit-mask-image: linear-gradient(104deg, transparent calc(var(--p) - 10%), #000 var(--p), transparent calc(var(--p) + 10%));
+        mask-image: linear-gradient(104deg, transparent calc(var(--p) - 10%), #000 var(--p), transparent calc(var(--p) + 10%));
+        opacity: 0.9;
+      }
+      .sheen span { display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="4.066667" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="4.066667" data-track-index="0">
+        <div class="line" id="l1" data-text="KARTIK" aria-hidden="true" data-layout-allow-overflow></div>
+      </div>
+    </div>
+    <script>
+      // ---- letter builder: slot > in > (g = blue bloom copy, b = silver letter); plus one sheen copy
+      var KERN = { KA: -0.01, RT: -0.02 }; // restore kerning lost by splitting letters into boxes
+      function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text) e.textContent = text;
+        return e;
+      }
+      function buildWord(line) {
+        var text = line.getAttribute("data-text");
+        var sheen = el("div", "sheen");
+        for (var i = 0; i < text.length; i++) {
+          var ch = text[i];
+          var k = KERN[(text[i - 1] || "") + ch] || 0;
+          var slot = el("span", "slot");
+          var inn = el("span", "in");
+          var g = el("span", "g", ch);
+          var b = el("span", "b", ch);
+          g.setAttribute("data-layout-allow-overlap", "");
+          g.setAttribute("data-layout-allow-occlusion", "");
+          b.setAttribute("data-layout-allow-occlusion", "");
+          inn.appendChild(g);
+          inn.appendChild(b);
+          slot.appendChild(inn);
+          var s = el("span", "", ch);
+          s.setAttribute("data-layout-allow-overlap", "");
+          s.setAttribute("data-layout-allow-occlusion", "");
+          if (k) { slot.style.marginLeft = k + "em"; s.style.marginLeft = k + "em"; }
+          line.appendChild(slot);
+          sheen.appendChild(s);
+        }
+        line.appendChild(sheen);
+      }
+      buildWord(document.getElementById("l1"));
+
+      var tl = gsap.timeline({ paused: true });
+      var slots = gsap.utils.toArray(".line > .slot");
+      var inners = gsap.utils.toArray(".line > .slot > .in");
+      var glows = gsap.utils.toArray(".line > .slot .g");
+      var bases = gsap.utils.toArray(".line > .slot .b");
+
+      // track-in on "Kartik" (66.30 = t 0.20): letters start spread wide and converge, blur -> sharp
+      var T_IN = 0.17;
+      var n = slots.length;
+      tl.fromTo(slots, {
+        x: function (i) { return (i - (n - 1) / 2) * 78; },
+        opacity: 0,
+      }, { x: 0, opacity: 1, duration: 0.7, ease: "expo.out", stagger: { each: 0.025, from: "center" } }, T_IN);
+      tl.fromTo(inners, { filter: "blur(18px)", scale: 1.14 }, { filter: "blur(0px)", scale: 1, duration: 0.5, ease: "power3.out", stagger: { each: 0.025, from: "center" } }, T_IN);
+      tl.fromTo(glows, { opacity: 0 }, { opacity: 0.55, duration: 0.18, ease: "power2.out" }, T_IN + 0.08);
+      tl.to(glows, { opacity: 0.12, duration: 0.6, ease: "power2.inOut", immediateRender: false }, T_IN + 0.3);
+
+      // slow drift: the word slides left and locks flush-left at the freeze
+      var T_FREEZE = 2.6333;
+      tl.fromTo("#l1", { x: 40 }, { x: 0, duration: T_FREEZE - T_IN, ease: "sine.inOut" }, T_IN);
+
+      // freeze (68.733): glow pulse + brightness flash + one fast light sweep, then hold
+      tl.to(glows, { opacity: 0.95, duration: 0.05, ease: "power2.out", immediateRender: false }, T_FREEZE);
+      tl.to(glows, { opacity: 0.3, duration: 0.8, ease: "power2.out", immediateRender: false }, T_FREEZE + 0.05);
+      tl.fromTo(bases, { filter: "brightness(1)" }, { filter: "brightness(1.9)", duration: 0.05, ease: "power2.out" }, T_FREEZE);
+      tl.to(bases, { filter: "brightness(1)", duration: 0.6, ease: "power2.out", immediateRender: false }, T_FREEZE + 0.05);
+      tl.fromTo(".line > .sheen", { "--p": "-30%" }, { "--p": "130%", duration: 0.42, ease: "power2.inOut" }, T_FREEZE + 0.02);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
