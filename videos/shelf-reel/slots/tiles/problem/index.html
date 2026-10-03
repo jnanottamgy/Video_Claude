@@ -156,7 +156,7 @@
         // clutter spots around Jnanottam (shot A) and scatter spots around him in the nook (shot C):
         // seeded annealing, offline; faces, the caption band 1290-1460 and the IG rail stay clear.
         var PLAN_A = [[388,291,-0.4],[921,682,-3.1],[503,580,0.3],[930,279,0.0],[139,1136,2.1],[163,287,0.1],[142,944,-0.2],[835,831,0.5],[605,489,-0.9],[186,1044,-0.5],[218,493,3.8],[655,280,-0.4],[311,589,-0.8],[801,371,-5.0],[230,850,-0.5],[805,1245,0.2],[502,394,-2.1],[223,1229,1.9],[181,688,-0.2],[833,1159,-0.1],[844,941,0.2],[774,584,-1.9],[882,475,0.6],[525,712,-1.5],[217,393,-0.1]];
-        var PLAN_C = [[899,805,0.1],[726,473,-2.4],[144,716,4.3],[204,966,1.1],[143,1072,2.6],[162,519,1.4],[148,846,-5.1],[251,294,-2.4],[251,1164,1.7],[543,621,1.8],[853,926,1.3],[291,627,2.7],[190,1247,0.2],[201,395,1.8],[599,295,-0.6],[830,1245,-0.3],[888,380,-0.1],[827,690,0.2],[890,1043,-1.1],[446,1246,-1.1],[433,514,-0.2],[895,277,-1.4],[495,393,0.9],[632,1146,0.5],[862,572,-0.3]];
+        var PLAN_C = [[899,805,0.1],[726,473,-2.4],[144,716,4.3],[204,966,1.1],[143,1072,2.6],[162,519,1.4],[148,846,-5.1],[251,294,-2.4],[251,1164,1.7],[543,621,1.8],[853,926,1.3],[291,627,2.7],[190,1247,0.2],[201,395,1.8],[599,295,-0.6],[830,1245,-0.3],[888,380,-0.1],[827,690,0.2],[890,1043,-1.1],[446,1246,-1.1],[433,514,-0.2],[895,277,-1.4],[495,393,0.9],[690,1205,0.5],[862,572,-0.3]];
         var HERO = { x: 525, y: 712 };
 
         /* ---------------- orbit rig around Kartik's head (shot B) ---------------- */
@@ -226,7 +226,7 @@
           var o = {
             i: i, el: el, type: sp[0], cs: sp[1], role: sp[2], spawn: sp[3], heroEnd: sp[4],
             hw: BASEW[sp[0]] / 2,
-            ax: pa[0], ay: pa[1], ar: clamp(pa[2] + rr(-4, 4), -7, 7),
+            ax: pa[0], ay: pa[1], ar: clamp(pa[2] + rr(-5.5, 5.5), -8, 8),
             // slow drift
             vx: 0, vy: 0, vr: rr(-0.55, 0.55), bobA: rr(2, 4), bobW: rr(1.5, 2.6), bobP: rr(0, 6.283),
             // spray-out bulge for copies
@@ -488,13 +488,13 @@
           RINGS.forEach(function (R, k) {
             var tr = trails[k];
             if (!on) { tr.back.style.visibility = tr.front.style.visibility = tr.backG.style.visibility = tr.frontG.style.visibility = "hidden"; return; }
-            var cx = g[0] + R.dx, cy = g[1] + R.dy, rad = R.R * radiusK(t) * 0.985;
+            var cx = g[0] + R.dx, cy = g[1] + R.dy, G = ringGeo(R, t), rad = G.rad * 0.985;
             var back = "", front = "";
             for (var n = 0; n <= 40; n++) {
               var ph = (n / 40) * Math.PI; // 0..pi: far half (Z > 0)
               for (var h = 0; h < 2; h++) {
                 var phi = h === 0 ? ph : ph + Math.PI;
-                var X = rad * Math.cos(phi), Z = rad * Math.sin(phi), oy = -Z * R.sa, depth = Z * R.ca;
+                var X = rad * Math.cos(phi), Z = rad * Math.sin(phi), oy = -Z * G.sa, depth = Z * G.ca;
                 var rx = X * R.cb - oy * R.sb, ry = X * R.sb + oy * R.cb, p = F / (F + depth);
                 var seg = (n === 0 ? "M" : "L") + (cx + rx * p).toFixed(1) + " " + (cy + ry * p).toFixed(1);
                 if (h === 0) back += seg; else front += seg;
@@ -538,7 +538,9 @@
             var el = o.el;
             if (!s || s.a <= 0.003 || s.s <= 0.002) { el.style.visibility = "hidden"; return; }
             el.style.visibility = "visible";
-            el.style.transform = "translate(-50%,-50%) translate(" + s.x.toFixed(2) + "px," + s.y.toFixed(2) + "px) rotate(" + s.r.toFixed(2) + "deg) scale(" + s.s.toFixed(4) + ")";
+            var yaw = s.yaw || 0;
+            el.style.transform = "translate(-50%,-50%) translate(" + s.x.toFixed(2) + "px," + s.y.toFixed(2) + "px) rotate(" + s.r.toFixed(2) + "deg)" +
+              (Math.abs(yaw) > 0.05 ? " perspective(900px) rotateY(" + yaw.toFixed(2) + "deg)" : "") + " scale(" + s.s.toFixed(4) + ")";
             el.style.opacity = s.a.toFixed(3);
             el.style.filter = s.b > 0.15 ? "blur(" + s.b.toFixed(2) + "px)" : "none";
             el.style.zIndex = String(s.z);
