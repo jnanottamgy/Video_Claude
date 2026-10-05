@@ -420,6 +420,30 @@
     }
   };
 
+  // churn: the oldest live solid banner sinks back into the pile and vanishes just before t,
+  // making room for the arrival on t (a real notification stack drops its oldest)
+  P.recycle = function (t, n) {
+    var tt = WA.hit(t);
+    for (var c = 0; c < (n || 1); c++) {
+      var old = null;
+      for (var i = 0; i < this.items.length; i++) {
+        var it = this.items[i];
+        if (it.ghost || it.recycled || it.keep || it.born > tt - 0.4) continue;
+        if (it.a.ch("o").at(tt - 0.3) < 0.99) continue;
+        if (!old || it.born < old.born) old = it;
+      }
+      if (!old) return;
+      old.recycled = true;
+      var a = old.a;
+      var t0 = tt - 0.3;
+      var d = 0.26;
+      var cur = a.pose(t0);
+      a.ch("s").add(t0, d, cur.s * 0.62, "power2.in");
+      a.ch("d").add(t0, d, 0.75, "power1.out");
+      a.ch("o").add(t0 + 0.1, d - 0.1, 0, "power1.in");
+    }
+  };
+
   // offset that keeps an oversized entry frame (scale s0, rotation r0) inside the safe rect: the
   // banner grows inward from the edge instead of spilling over it
   P.inward = function (p, s0, r0, h) {
@@ -458,7 +482,7 @@
       for (var m = 0; m < samples.length && ok; m++) {
         var ps = a.pose(samples[m][0]);
         var amp = k * samples[m][1];
-        var pts = this.points(ps.x + dx * amp, ps.y + dy * amp, ps.s, ps.r, it.h, 6);
+        var pts = this.points(ps.x + dx * amp, ps.y + dy * amp, ps.s, ps.r + (dr || 0) * samples[m][1], it.h, 6);
         for (var i = 0; i < pts.length && ok; i++) {
           var q = pts[i];
           if (q[1] < 280 || q[1] > 1240 || q[0] < 30 || q[0] > 1050) ok = false;

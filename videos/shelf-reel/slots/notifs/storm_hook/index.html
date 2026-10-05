@@ -28,9 +28,9 @@
         1.000 1.200 1.400 1.600 1.833   "why are my notes" (the notes file lands on the 1.614 snare)
         1.967  "scattered": everything is flung outward again
         2.033 2.233 2.433 2.633   then "many groups?": small banners pile up on 2.833 3.033 3.233
-        3.30-3.40  the ghosts behind the title solidify as the title glitches out; the last frame is FULL
+        3.40-3.43  the title is gone: the ghosts behind it solidify; the last frame is FULL
       Keep-clear: his face (x 665-990, y 765-1150, widened for the camera punches) at all times; the
-      hook title band (x 140-940, y 300-648) holds only ghost banners (55 % opacity) until 3.30.
+      hook title band (x 140-940, y 300-648) holds only ghost banners (55 % opacity) until 3.40.
     -->
     <div id="stage" data-composition-id="main" data-start="0" data-duration="3.466667" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="3.466667" data-track-index="0">
@@ -49,6 +49,7 @@
           cy: 900,
           peak: { s: 1.035, r: 0, dx: 0, dy: 0 }, // the DROP punch
         });
+        S.ageScale = 0.86; // a small, crowded frame: older banners recede further to make room
         S.zones.push({ x0: 665, y0: 765, x1: 990, y1: 1150, t0: -1, t1: 9 }); // his face + hand
         S.ghostZones.push({ x0: 140, y0: 300, x1: 940, y1: 648, t0: -1, t1: 3.3 }); // the hook title
         var SOLID = { x0: 0, y0: 650, x1: 1080, y1: 1300 };
@@ -58,7 +59,8 @@
         function pickSolid(t, key, s, r, k, es) {
           return S.pick(t, { s: s, r: r || [0, 9], h: S.hOf(key), region: SOLID, k: k || 3, es: es || 1 });
         }
-        function solid(key, t, s, entry, r) {
+        function solid(key, t, s, entry, r, churn) {
+          if (churn) S.recycle(t, churn);
           var p = pickSolid(t, key, s, r, 3, WA.ENTRY_SCALE[(entry || { type: "slam" }).type]);
           if (!p) return null;
           return S.add(key, t, p, entry || { type: "slam" });
@@ -118,17 +120,32 @@
         });
 
         /* ---------- "why are my notes" ---------- */
-        solid("b_blur", 1.001, [0.56, 0.66], { type: "pop" });
-        solid("u_all", 1.205, [0.6, 0.7], { type: "slam" });
-        solid("i_bro", 1.409, [0.6, 0.68], { type: "slam" });
-        solid("p_fwd", 1.614, [0.6, 0.68], { type: "slam" }); // "notes" on the snare
-        solid("l_rec", 1.818, [0.54, 0.6], { type: "pop" });
+        solid("b_blur", 1.001, [0.56, 0.66], { type: "pop" }, null, 1);
+        solid("u_all", 1.205, [0.6, 0.7], { type: "slam" }, null, 1);
+        solid("i_bro", 1.409, [0.6, 0.68], { type: "slam" }, null, 1);
+        solid("p_fwd", 1.614, [0.6, 0.68], { type: "slam" }, null, 1); // "notes" on the snare
+        solid("l_rec", 1.818, [0.54, 0.6], { type: "pop" }, null, 1);
 
         /* ---------- 1.967 "scattered": flung outward again ---------- */
         var T_SCAT = WA.hit(1.963);
         var seeds = [LAP];
-        S.items
-          .filter(function (it) { return it.a.ch("o").at(T_SCAT) > 0.01; })
+        var live = S.items.filter(function (it) { return it.a.ch("o").at(T_SCAT) > 0.01 && !it.recycled; });
+        // the four oldest, most buried banners are flung right out of frame (left, away from his face)
+        var gone = live
+          .filter(function (it) { return !it.ghost && !it.recycled; })
+          .sort(function (a, b) { return a.born - b.born; })
+          .slice(0, 4);
+        gone.forEach(function (it, i) {
+          var cur = it.a.pose(T_SCAT);
+          var d = 0.4 + 0.025 * i;
+          it.a.ch("x").add(T_SCAT, d, -560 - 40 * i, "power2.in");
+          it.a.ch("y").add(T_SCAT, d, Math.min(1080, cur.y + (i % 2 ? 50 : -40)), "power2.in");
+          it.a.ch("r").add(T_SCAT, d, cur.r + (i % 2 ? 22 : -22), "power2.in");
+          it.a.ch("s").add(T_SCAT, d, cur.s * 1.18, "power2.in");
+          it.a.ch("o").set(T_SCAT + d, 0);
+        });
+        live
+          .filter(function (it) { return gone.indexOf(it) < 0; })
           .sort(function (a, b) { return b.a.pose(T_SCAT).s - a.a.pose(T_SCAT).s; })
           .forEach(function (it) {
             var cur = it.a.pose(T_SCAT);
@@ -156,23 +173,25 @@
             S.shove(it, T_SCAT, fx, fy, dx > 0 ? 5 : -5, 0.12, 0.45);
           });
 
-        solid("c_exam", 2.022, [0.56, 0.64], { type: "pop" });
-        solid("r_13", 2.226, [0.56, 0.64], { type: "pop" });
-        solid("u_pdf", 2.43, [0.72, 0.8], { type: "slam" }); // downbeat: a bigger one
-        solid("h_chg", 2.634, [0.54, 0.6], { type: "pop" });
+        solid("c_exam", 2.022, [0.56, 0.64], { type: "pop" }, null, 1);
+        solid("r_13", 2.226, [0.56, 0.64], { type: "pop" }, null, 1);
+        solid("u_pdf", 2.43, [0.72, 0.8], { type: "slam" }, null, 1); // downbeat: a bigger one
+        solid("h_chg", 2.634, [0.54, 0.6], { type: "pop" }, null, 1);
 
         /* ---------- "many groups?": fast pileup of small banners ---------- */
         [[2.838, ["o_128", "l_rec"]], [3.042, ["b_u3", "c_del"]], [3.246, ["u_47", "r_13", "m_eat"]]].forEach(function (g) {
+          S.recycle(g[0], g[1].length);
           g[1].forEach(function (key) {
-            solid(key, g[0], [0.48, 0.56], { type: "pop" }, [2, 14]);
+            solid(key, g[0], [0.5, 0.58], { type: "pop" }, [2, 14]);
           });
         });
 
-        /* ---------- 3.30: the title glitches out, the ghosts solidify (the last frame is full) ---------- */
+        /* ---------- 3.40: the title has glitched out; the ghosts solidify on the last frame ----------
+           (after the compositor's listening window for pops, so this adds no stray sound) */
         S.items.forEach(function (it) {
-          if (!it.ghost) return;
-          it.a.ch("o").add(3.3, 0.1, 1, "power2.out");
-          it.a.ch("d").add(3.3, 0.1, 0.28, "power2.out", 0);
+          if (!it.ghost || it.a.ch("o").at(3.39) < 0.01) return;
+          it.a.ch("o").add(3.402, 0.03, 1, "power2.out");
+          it.a.ch("d").add(3.402, 0.03, 0.28, "power2.out", 0);
         });
 
         var tl = gsap.timeline({ paused: true });
