@@ -1,0 +1,171 @@
+/* wa-kit.css — v2: the iOS (dark mode) notification banner showing a WhatsApp message.
+   ONE design shared by notifs/cards, notifs/storm and notifs/storm_hook. Master copy lives in
+   slots/notifs/_shared/; each project carries its own copy in lib/ (run _shared/sync.sh after edits).
+
+   Geometry is authored at the banner's base size (--wa-w x --wa-h, default 940 x 156) and scaled
+   with transforms only. Look (slots/BRIEF.md, "WhatsApp look"):
+     radius 44 · rgba(30,30,32,~0.84) material faked with a soft inner gradient · 1 px white 10 % edge
+     round chat avatar 92 px + a WhatsApp app badge (38 px, radius 24 %) on its bottom-right
+     Inter: chat name 600/34 #fff · "Sender: message" 400/30 rgba(235,235,245,.85) · "now" 24 px
+     WhatsApp unread pill: #25D366 with a #111B21 number. */
+
+/* ---- wrapper: the sampler / GSAP own x, y, scale, rotation, opacity, filter here ---- */
+.wa-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--wa-w, 940px);
+  height: var(--wa-h, 156px);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity, filter;
+}
+/* inner wrapper: an independent transform channel (tremble, jolt, blow-apart) */
+.wa-fly {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+}
+
+/* ---- the banner: dark iOS material ---- */
+.wa-banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 28px 0 26px;
+  border-radius: 44px;
+  font-family: var(--font-ui);
+  color: #ffffff;
+  /* fake backdrop blur: a lit top edge, a soft sheen from the upper left, a deeper base */
+  background:
+    radial-gradient(130% 160% at 8% -30%, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0) 58%),
+    linear-gradient(180deg, rgba(56, 56, 61, 0.86) 0%, rgba(36, 36, 39, 0.84) 46%, rgba(26, 26, 29, 0.87) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.09),
+    0 30px 64px rgba(0, 0, 0, 0.42),
+    0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ---- avatar (the chat's photo) + the WhatsApp app badge ---- */
+.wa-av {
+  position: relative;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--wa-av, #5e5ce6);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.28), inset 0 -3px 6px rgba(0, 0, 0, 0.16);
+}
+.wa-av > svg { width: 56px; height: 56px; display: block; }
+.wa-av .wa-ini {
+  font: 600 38px/1 var(--font-ui);
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+.wa-av .wa-ini.s3 { font-size: 27px; letter-spacing: 0; }
+.wa-av.app { border-radius: 24%; }           /* summary banners: the app icon itself */
+.wa-av.app > svg { width: 92px; height: 92px; }
+
+.wa-badge {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 38px;
+  height: 38px;
+  border-radius: 24%;
+  background: linear-gradient(180deg, #4be07a 0%, #25d366 55%, #1fbf5a 100%);
+  box-shadow: 0 0 0 3px rgba(31, 31, 34, 0.96), 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+.wa-badge > svg { width: 38px; height: 38px; display: block; }
+
+/* ---- text ---- */
+.wa-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.wa-row { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.wa-title {
+  flex: 1;
+  min-width: 0;
+  font: 600 34px/40px var(--font-ui);
+  letter-spacing: -0.012em;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wa-time {
+  flex: none;
+  font: 400 24px/40px var(--font-ui);
+  color: rgba(235, 235, 245, 0.55);
+}
+.wa-body {
+  flex: 1;
+  min-width: 0;
+  font: 400 30px/40px var(--font-ui);
+  letter-spacing: -0.004em;
+  color: rgba(235, 235, 245, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wa-body.del { font-style: italic; color: rgba(235, 235, 245, 0.6); }
+.wa-body .g {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  margin-right: 6px;
+  vertical-align: -5px;
+}
+.wa-body .g svg { width: 30px; height: 30px; display: block; }
+
+/* ---- WhatsApp unread pill (green, dark number) ---- */
+.wa-pill {
+  flex: none;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 20px;
+  background: #25d366;
+  color: #111b21;
+  font: 700 24px/40px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-align: center;
+  transform-origin: 50% 50%;
+  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+}
+
+/* ---- effect layers (clipped to the banner shape) ---- */
+.wa-fx {
+  position: absolute;
+  inset: 0;
+  border-radius: 44px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wa-sheen {
+  position: absolute;
+  top: -30px;
+  left: 0;
+  width: 240px;
+  height: calc(100% + 60px);
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.06) 36%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.06) 64%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0;
+}
+.wa-dim { position: absolute; inset: 0; background: #060608; opacity: 0; }
+/* white edge-glow flash (808 hits) — outside the clip so the glow can bloom */
+.wa-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 44px;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 2.5px rgba(255, 255, 255, 0.95),
+    inset 0 0 26px rgba(255, 255, 255, 0.32),
+    0 0 0 1.5px rgba(255, 255, 255, 0.85),
+    0 0 26px 4px rgba(255, 255, 255, 0.5);
+  opacity: 0;
+}

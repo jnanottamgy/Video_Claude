@@ -3,33 +3,254 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>viral / hook_title</title>
     <script src="./vendor/gsap.min.js"></script>
     <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
+      /* FRONT layer. Output 0.000 -> 3.467 s (104 frames). Frame 1 is the reel's thumbnail.
+         "14 groups. / 0 notes." over the notification storm on the laptop shot:
+           f1      fully visible, settles 1.06 -> 1.0 over frames 1-5 (no fade-in)
+           0.389   red "EXAM IN 8 HRS" pill pops (first visible on frame 13)
+           0.797   DROP 1 on "f*ck": punch 1.12 -> 1.0, 2-frame RGB split, white edge flash, shake (frame 25)
+           1.614 / 2.430  beat pulse 1.02 -> 1.0 (frames 49 / 74)
+           3.25-3.40  glitches out in RGB-offset slices (frames 99-102); nothing from frame 103 on
+         Layout: text 164 px Sora 800 (cap 120) inside y 364-628, pill y 286-342, plate y 314-678
+         (x 90-990). His head starts ~y 600, eyes ~y 870: the plate only touches the top of his hair. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+
+      /* transform rig: every wrapper is a full-canvas box scaled about the plate centre (540, 496) */
+      .rig { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 496px; }
+      .grp { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      /* dark glass plate: legible over the cream wall AND over the storm's banners */
+      .plate {
+        position: absolute;
+        left: 90px;
+        top: 314px;
+        width: 900px;
+        height: 364px;
+        border-radius: 36px;
+        background:
+          radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 55%),
+          linear-gradient(180deg, rgba(17, 23, 31, 0.80) 0%, rgba(8, 12, 18, 0.74) 100%);
+        box-shadow:
+          inset 0 1.5px 0 rgba(255, 255, 255, 0.13),
+          inset 0 0 0 1.5px rgba(255, 255, 255, 0.07),
+          0 26px 64px rgba(0, 0, 0, 0.42),
+          0 6px 16px rgba(0, 0, 0, 0.28);
+      }
+      /* a faint WhatsApp-green bloom under "0 notes." */
+      .plate .bloom {
+        position: absolute;
+        left: 150px;
+        right: 150px;
+        top: 200px;
+        height: 150px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(37, 211, 102, 0.16), rgba(37, 211, 102, 0));
+      }
+      .plate .flash {
+        position: absolute;
+        inset: 0;
+        border-radius: 36px;
+        box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.95), inset 0 0 36px rgba(255, 255, 255, 0.35), 0 0 46px rgba(255, 255, 255, 0.55);
+        opacity: 0;
+      }
+
+      /* "EXAM IN 8 HRS": straddles the plate's top edge, cut out by a dark ring */
+      .pill-row { position: absolute; left: 0; top: 286px; width: 1080px; height: 56px; display: flex; justify-content: center; }
+      .pill {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 56px;
+        padding: 0 28px 0 20px;
+        border-radius: 28px;
+        background: linear-gradient(180deg, #ff5146 0%, #ff3b30 55%, #e8322a 100%);
+        box-shadow: 0 0 0 5px rgba(8, 12, 18, 0.92), inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 10px 26px rgba(255, 59, 48, 0.42);
+        color: #fff;
+        font: 800 29px/1 var(--font-ui);
+        letter-spacing: 0.13em;
+        white-space: nowrap;
+        transform-origin: 50% 50%;
+      }
+      .pill .clock { display: block; width: 32px; height: 32px; transform-origin: 50% 55%; }
+      .pill span { display: block; margin-right: -0.13em; }
+
+      /* the two lines: every copy shares one grid cell, so the copies are metric-identical */
+      .lines {
+        position: absolute;
+        left: 0;
+        top: 356px;
+        width: 1080px;
+        filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.32)) drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45));
+      }
+      .line {
+        display: grid;
+        justify-content: center;
+        height: 144px;
+        font: 800 164px/144px var(--font-brand);
+        letter-spacing: -0.035em;
+        white-space: nowrap;
+      }
+      .line > span { grid-area: 1 / 1; display: block; text-align: center; }
+      .l1 .base { color: #ffffff; }
+      .l2 .base { color: #25d366; }
+      .cp { opacity: 0; }
+      .cp.red { color: #ff2a55; }
+      .cp.cyan { color: #19e3ff; }
+      .cp.glow { color: #ffffff; filter: blur(9px); }
+      .cp.edge { color: transparent; -webkit-text-stroke: 4px #ffffff; }
+      .l2 .gglow { color: #25d366; filter: blur(20px); opacity: 0.45; }
+
+      /* glitch-out slices: full clones of the title, each clipped to one horizontal band */
+      .slice { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; }
+      .slice .cp, .slice .plate .flash { display: none; }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="3.466667" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="3.466667" data-track-index="0">
+        <div class="rig" id="hk-shake" data-layout-allow-overflow>
+          <div class="rig" id="hk-settle" data-layout-allow-overflow>
+            <div class="rig" id="hk-punch" data-layout-allow-overflow>
+              <div class="rig" id="hk-pulse" data-layout-allow-overflow>
+                <div class="grp" id="hk-main" data-layout-allow-overflow></div>
+                <div class="grp" id="hk-slices" data-layout-allow-overflow data-layout-ignore></div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
       </div>
     </div>
     <script>
+      // ---------- build (static DOM, deterministic) ----------
+      var CLOCK =
+        '<svg class="clock" viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<circle cx="16" cy="17.5" r="10"/><path d="M16 12.2v5.6l3.6 2.4"/><path d="M5.2 8.2l4.4-3.8M26.8 8.2l-4.4-3.8"/><path d="M9.5 27.2l-1.6 2M22.5 27.2l1.6 2"/></svg>';
+
+      var OV = 'aria-hidden="true" data-layout-allow-overlap data-layout-allow-occlusion';
+      function lineHTML(cls, text, fx) {
+        var c = fx
+          ? '<span class="cp red" ' + OV + ">" + text + "</span>" +
+            '<span class="cp cyan" ' + OV + ">" + text + "</span>" +
+            '<span class="cp glow" ' + OV + ">" + text + "</span>"
+          : "";
+        var g = cls === "l2" ? '<span class="gglow" ' + OV + ">" + text + "</span>" : "";
+        var e = fx ? '<span class="cp edge" ' + OV + ">" + text + "</span>" : "";
+        return '<div class="line ' + cls + '">' + c + g +
+          '<span class="base" data-layout-allow-overlap data-layout-allow-occlusion>' + text + "</span>" + e + "</div>";
+      }
+      function groupHTML(fx) {
+        return (
+          '<div class="plate"><div class="bloom"></div>' + (fx ? '<div class="flash"></div>' : "") + "</div>" +
+          '<div class="pill-row"><div class="pill">' + CLOCK + "<span data-layout-allow-overlap>EXAM IN 8 HRS</span></div></div>" +
+          '<div class="lines">' + lineHTML("l1", "14 groups.", fx) + lineHTML("l2", "0 notes.", fx) + "</div>"
+        );
+      }
+      var main = document.getElementById("hk-main");
+      main.innerHTML = groupHTML(true);
+
+      // glitch slices: N bands over the title's extent (pill top 286 .. plate shadow ~712), uneven heights
+      function hash(n) {
+        var x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+        return x - Math.floor(x);
+      }
+      var BAND_TOP = 272, BAND_BOT = 716, N = 9;
+      var cuts = [BAND_TOP];
+      for (var i = 1; i < N; i++) {
+        var even = BAND_TOP + ((BAND_BOT - BAND_TOP) * i) / N;
+        cuts.push(Math.round(even + (hash(i * 3.7) - 0.5) * 30));
+      }
+      cuts.push(BAND_BOT);
+      var sliceWrap = document.getElementById("hk-slices");
+      var slices = [];
+      for (var s = 0; s < N; s++) {
+        var sl = document.createElement("div");
+        sl.className = "slice";
+        sl.setAttribute("data-layout-allow-overflow", "");
+        sl.setAttribute("data-layout-allow-overlap", "");
+        sl.innerHTML = groupHTML(false);
+        sl.style.clipPath = "inset(" + cuts[s] + "px 0 " + (1920 - cuts[s + 1]) + "px 0)";
+        sliceWrap.appendChild(sl);
+        slices.push(sl);
+      }
+
+      // ---------- timeline ----------
+      var F = 1 / 30;
+      var EPS = 0.0005; // place sets/hits a hair before the frame they must show on
       var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
+      var pillRow = main.querySelector(".pill-row");
+      var pill = main.querySelector(".pill");
+      var clock = main.querySelector(".clock");
+      var reds = main.querySelectorAll(".cp.red");
+      var cyans = main.querySelectorAll(".cp.cyan");
+      var glows = main.querySelectorAll(".cp.glow");
+      var edges = main.querySelectorAll(".cp.edge");
+      var gglow = main.querySelector(".gglow");
+      var plateFlash = main.querySelector(".plate .flash");
+
+      // frame 1: fully visible, a tiny settle 1.06 -> 1.0 by frame 5
+      tl.fromTo("#hk-settle", { scale: 1.06 }, { scale: 1, duration: 4 * F, ease: "power2.out" }, 0);
+
+      // 0.25 "What": the footage jolts; the title answers with a small 3-frame tremor
+      var T_WHAT = 7 * F - EPS; // frame 8 (0.233), first frame of the camera hit
+      tl.set("#hk-shake", { x: 4, y: -3 }, T_WHAT);
+      tl.set("#hk-shake", { x: -3, y: 2 }, T_WHAT + F);
+      tl.set("#hk-shake", { x: 0, y: 0 }, T_WHAT + 2 * F);
+
+      // 0.389: the red pill pops (first visible on frame 13 = 0.400)
+      var T_PILL = 0.375;
+      tl.fromTo(pillRow, { opacity: 0 }, { opacity: 1, duration: 0.02, ease: "none" }, 12 * F - EPS);
+      tl.fromTo(pill, { scale: 0.42, y: 12, filter: "blur(5px)" },
+        { scale: 1, y: 0, filter: "blur(0px)", duration: 0.32, ease: "back.out(2)" }, T_PILL);
+
+      // 0.797 DROP 1: punch 1.12 -> 1.0 over 5 frames, RGB split for 2 frames, white edge flash, shake
+      var T_DROP = 24 * F - EPS; // frame 25 = 0.800
+      tl.fromTo("#hk-punch", { scale: 1.12 }, { scale: 1, duration: 5 * F, ease: "power2.out", immediateRender: false }, T_DROP);
+      tl.set(reds, { x: -13, y: 3, opacity: 0.92 }, T_DROP);
+      tl.set(cyans, { x: 13, y: -3, opacity: 0.92 }, T_DROP);
+      tl.set(reds, { x: 7, y: -2, opacity: 0.7 }, T_DROP + F);
+      tl.set(cyans, { x: -8, y: 2, opacity: 0.7 }, T_DROP + F);
+      tl.set([reds, cyans], { x: 0, y: 0, opacity: 0 }, T_DROP + 2 * F);
+      tl.fromTo(edges, { opacity: 1 }, { opacity: 0, duration: 4 * F, ease: "power1.in", immediateRender: false }, T_DROP);
+      tl.fromTo(glows, { opacity: 0.95 }, { opacity: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, T_DROP);
+      tl.fromTo(plateFlash, { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, T_DROP);
+      [[9, -6], [-7, 5], [4, -3], [-2, 1], [0, 0]].forEach(function (p, k) {
+        tl.set("#hk-shake", { x: p[0], y: p[1] }, T_DROP + k * F);
+      });
+
+      // beat pulses 1.0 -> 1.02 -> 1.0 on 1.614 (frame 49) and 2.430 (frame 74); the alarm rings with them
+      [48 * F - EPS, 73 * F - EPS].forEach(function (t) {
+        tl.fromTo("#hk-pulse", { scale: 1.022 }, { scale: 1, duration: 0.3, ease: "power2.out", immediateRender: false }, t);
+        tl.fromTo(gglow, { opacity: 0.85 }, { opacity: 0.45, duration: 0.35, ease: "power2.out", immediateRender: false }, t);
+        [14, -12, 9, -5, 0].forEach(function (r, j) {
+          tl.set(clock, { rotation: r }, t + j * F);
+        });
+      });
+
+      // 3.25-3.40: glitch out in RGB-offset slices over frames 99-102; nothing visible from frame 103
+      var G0 = 98 * F - EPS; // frame 99 = 3.267
+      var AMP = [30, 78, 150, 250], RGB = [6, 10, 15, 20], KEEP = [1.0, 0.72, 0.45, 0.24], ALPHA = [1, 1, 0.86, 0.66];
+      tl.set(main, { opacity: 0 }, G0);
+      for (var g = 0; g < 4; g++) {
+        var t = G0 + g * F;
+        for (var k = 0; k < N; k++) {
+          var h1 = hash(g * 31 + k * 7 + 1), h2 = hash(g * 17 + k * 13 + 5), h3 = hash(g * 11 + k * 3 + 9);
+          var dx = (h1 * 2 - 1) * AMP[g] * (h3 > 0.8 ? 1.6 : 1);
+          var on = h2 < KEEP[g] || (g === 3 && k === 4); // the last frame keeps a sliver near the middle
+          tl.set(slices[k], {
+            x: dx,
+            scaleX: 1 + (h3 > 0.55 ? h3 * 0.22 * (g + 1) / 2 : 0),
+            opacity: on ? ALPHA[g] : 0,
+            filter: "drop-shadow(" + -RGB[g] + "px 0 0 rgba(255,32,80,0.9)) drop-shadow(" + RGB[g] + "px 0 0 rgba(20,228,255,0.9))",
+          }, t);
+        }
+      }
+      tl.set(slices, { opacity: 0 }, G0 + 4 * F); // frame 103 = 3.400: gone
+
       window.__timelines["main"] = tl;
       tl.seek(0);
     </script>
