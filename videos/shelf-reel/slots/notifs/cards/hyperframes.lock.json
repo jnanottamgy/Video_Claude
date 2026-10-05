@@ -1,6 +1,8 @@
 {
   "assets/desk-backdrop.jpg": "b84738ef758732c7169b621d812884f22a8ec402fbc1a8a5b4dc4cad081b0c35",
   "assets/hyperframes-logo-white.svg": "f9f942c43b465616c3af2fb8b07daf1cc05a4776903bbb27beb2bb608060e6c7",
+  "compositions/components/badge-pop.html": "7b3f813eedab71b59e45598a48dd398c6931a00751845fe2c258fbcd62b743f0",
+  "compositions/components/native-notification-pop.html": "d4e8b73da0360ddd34d622d0a37ae61920e77bae4fab74d445bebd829580be33",
   "compositions/components/notification-stack.html": "dfe78474314169e66fb3cb6fa26d3e09755873248a1ff72dc4b472edacbb2771",
   "compositions/notification-cascade.html": "77fe55c2ba5f6ae7b2c96a4f234c1d57a18f8a60c3adca661e843ff7e100e6f5",
   "TEMPLATE.md": "a0cc092179d4dfbbdd1b821ac468d2db71c420e223cf400d9943410d8ee238df"

@@ -20,6 +20,16 @@
       "name": "notification-cascade",
       "type": "hyperframes:block",
       "target": "compositions/notification-cascade.html"
+    },
+    {
+      "name": "native-notification-pop",
+      "type": "hyperframes:component",
+      "target": "compositions/components/native-notification-pop.html"
+    },
+    {
+      "name": "badge-pop",
+      "type": "hyperframes:component",
+      "target": "compositions/components/badge-pop.html"
     }
   ]
 }

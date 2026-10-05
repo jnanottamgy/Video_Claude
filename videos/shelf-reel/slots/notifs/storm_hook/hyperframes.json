@@ -15,6 +15,11 @@
       "name": "notification-pileup",
       "type": "hyperframes:component",
       "target": "compositions/components/notification-pileup.html"
+    },
+    {
+      "name": "native-notification-pop",
+      "type": "hyperframes:component",
+      "target": "compositions/components/native-notification-pop.html"
     }
   ]
 }

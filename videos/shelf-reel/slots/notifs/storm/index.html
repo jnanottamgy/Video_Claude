@@ -20,18 +20,26 @@
   <body>
     <!--
       notifs/storm v2 — output window 44.600 -> 51.833 s (7.2333 s = 217 frames), layer FRONT.
-      "What the f*ck, why are my notes scattered in so many groups?" then head in hand — on the song:
+      "What the f*ck, why are my notes scattered in so many groups?" then head in hand — on the song.
+      Every time below is the FIRST frame a new banner shows (output s; each beat snapped to its frame):
         44.667       "What": 7 WhatsApp banners burst out of the centre
-        44.9 45.1 45.3*                    8ths (a big one on the downbeat after "f*ck")
-        45.5 45.7 45.9 46.133s             "why are my notes" (the notes file on the snare)
-        46.333       "scattered": the whole pile is flung to every corner (rot +-5..14, scale .55-1)
-        46.533 46.733 46.933*  47.133 "many groups?" wave from both sides, 47.333 47.533 47.767s
-        47.967 48.167 48.367               8ths (cut to head in hand at 48.033)
-        48.567 -> 51.333  the bass drops out: one banner per 16th (0.102 s), accelerating; doubles
-                          from 50.2; summary banners on 49.385 / 50.609 / 51.221; slow vertigo
-        50.600 51.233    808 pickups: 3-frame scale punch 1.05 + white edge glow on every banner
+        44.900 45.100 45.300*              8ths (a big one on the downbeat after "f*ck")
+        45.500 45.700 45.900 46.133s       "why are my notes" (the notes file lands on the snare)
+        46.333       "scattered": the pile is flung to every corner it may use (rot 5-14, scale .55-.88)
+                     and 2 more slam in
+        46.533 46.733 46.933*  47.133 "many groups?": a wave of 4 from both sides
+        47.333 47.533 47.767s 47.967 48.167 48.367   8ths (cut to head in hand at 48.033)
+        48.567 -> 51.333  the bass drops out: one banner per 16th (28 arrivals), bigger as it goes;
+                          doubles from 50.200; summaries on 49.400 / 50.600 / 51.233; slow vertigo
+        50.600 51.233    808 pickups: 3-frame scale punch 1.0 -> 1.05 -> 1.025 -> 1.0 and a white
+                         edge glow on every banner
         51.433 -> 51.767 everything is sucked into the centre and gone. Frames from 51.800 are empty.
-      Keep-clear: his face (x 665-990, y 765-1150) until the 48.033 cut; after it the storm may engulf him.
+      Keep-clear: his face (x 665-990, y 765-1150) until the 48.033 cut, including entry frames and
+      flight paths; after the cut the storm may engulf him. Safe zones and the caption band hold at
+      the peak world transform (vertigo x 808 punch).
+      Sound: the compositor hears an arrival as an alpha-coverage jump, so every banner lands where it
+      adds visible area. Once the pile is saturated, the oldest banner sinks away in the frames just
+      before an arrival (churn), so each beat above produces exactly one onset on its frame.
     -->
     <div id="stage" data-composition-id="main" data-start="0" data-duration="7.233333" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="7.233333" data-track-index="0">

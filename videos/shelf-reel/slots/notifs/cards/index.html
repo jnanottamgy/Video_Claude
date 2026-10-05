@@ -28,7 +28,9 @@
       Beats 37.14-44.08: the unread pills tick up and pulse (downbeats also ping a green ring).
       44.400 hard cut: the stack trembles, pills flash red/green.
       44.667 "What": the three banners blow apart off-screen (rotation + motion blur), gone by 45.20.
-      Frames are a pure function of time: lib/wa-kit.js tracks, sampled by one GSAP driver tween.
+      Motion: the drop and the push-down are closed-form iOS springs (the registry's
+      native-notification-pop law); the pill pop/ping follows badge-pop. Frames are a pure function
+      of time: lib/wa-kit.js tracks, sampled by one GSAP driver tween.
     -->
     <div id="stage" data-composition-id="main" data-start="0" data-duration="15.6" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="15.6" data-track-index="0">
