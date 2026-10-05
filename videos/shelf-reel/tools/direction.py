@@ -142,7 +142,7 @@ WHIP = [  # a smear across these cuts (dx > 0: content moves right)
 LEAK = [(O("P6a"), O("P6a") + 1.2, 0.30, True), (O("P8"), O("P8") + 1.5, 0.22, False), (V(88.13), V(89.0), 0.35, False)]
 FREEZE = [(O("P6c_f"), O("P6d"), edl.BY_ID["P6c_f"]["a"]), (O("P6d_f"), O("P7"), edl.BY_ID["P6d_f"]["a"])]
 VHS = [(O("H2"), O("P1a"))]
-FADE = [(edl.TOTAL / edl.FPS - 0.6, edl.TOTAL / edl.FPS)]
+FADE = []                                         # no fade-out: the last frame loops into the hook on the beat
 
 # ---------------- v2: on the music (see music.py) ----------------
 import music as MU  # noqa: E402

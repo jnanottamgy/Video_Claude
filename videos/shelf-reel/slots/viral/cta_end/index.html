@@ -3,33 +3,191 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>viral / cta_end</title>
     <script src="./vendor/gsap.min.js"></script>
     <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
+      /* FRONT layer. Output 105.000 -> 108.567 s (107 frames). The reel's ending, over the wall-logo
+         reveal (LAUNCHING SOON finishes typing ~106.1) and the freeze from 107.0. Local t = output - 105.
+           1.122 (106.122, bar)   the message bubble pops up from below (first visible on frame 35)
+           1.530 (106.530)        a teal marker sweeps under "check the other group"
+           1.938 (106.938, snare) the paper plane flies out of the send button and springs back + tap ripple
+           2.347 (107.347)        the S.H.E.L.F tag fades in under the bubble
+           2.755 (107.755, bar)   second plane fly-off + ripple
+         Holds, fully legible, to the last frame.
+         Layout: bubble x 160-920, y 1000-1168 (tail out to x 138); tag y 1190-1236 (its glow ends < 1260). Clear of the wall
+         logo / subtitle (ends ~y 940 after the camera push), LAUNCHING SOON (x 855+, y <= 930) and the
+         desk guy's face (x >= ~940 after the push). Nothing below 1260. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+
+      /* the bubble rig: rise (y), pop (scale about the bottom centre), blur (motion blur), shadow */
+      .cta { position: absolute; left: 160px; top: 1000px; width: 760px; height: 168px; }
+      .cta .rig { position: absolute; inset: 0; }
+      #cta-pop { transform-origin: 50% 100%; }
+      #cta-shadow { filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.25)) drop-shadow(0 3px 7px rgba(0, 0, 0, 0.16)); }
+
+      .bubble {
+        position: absolute;
+        inset: 0;
+        border-radius: 10px 40px 40px 40px;
+        background: linear-gradient(180deg, #ffffff 0%, #ffffff 55%, #f4f6f7 100%);
+        box-shadow: inset 0 -2px 0 rgba(17, 27, 33, 0.05);
+      }
+      /* WhatsApp incoming-message tail, top-left */
+      .tail { position: absolute; left: -22px; top: 0; width: 26px; height: 30px; }
+
+      .msg { position: absolute; left: 36px; top: 26px; width: 700px; }
+      .l1, .l2 { height: 56px; font: 700 44px/56px var(--font-ui); color: #111b21; white-space: nowrap; }
+      .l2 { position: relative; font-weight: 800; color: #008069; } /* WhatsApp light-mode teal: 4.9:1 on white */
+      .l2 .q { position: relative; display: inline-block; }
+      /* marker sweep behind the punchline */
+      .l2 .mark {
+        position: absolute;
+        left: -8px;
+        right: -8px;
+        top: 30px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(0, 168, 132, 0.16);
+        transform-origin: 0% 50%;
+      }
+      .l2 .txt { position: relative; }
+
+      /* WhatsApp-style send button with a paper plane (clipped, so the plane can fly out of it) */
+      .send-pos { position: absolute; right: 22px; bottom: 22px; width: 66px; height: 66px; }
+      .ripple {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 3px solid rgba(0, 168, 132, 0.85);
+        opacity: 0;
+      }
+      .send {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        overflow: hidden;
+        background: radial-gradient(circle at 35% 28%, #1fc99d 0%, #00a884 55%, #009273 100%);
+        box-shadow: 0 6px 14px rgba(0, 168, 132, 0.38), inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
+      }
+      .plane { position: absolute; left: 15px; top: 16px; width: 36px; height: 36px; }
+      .spd { position: absolute; left: 0; top: 0; width: 66px; height: 66px; opacity: 0; }
+
+      /* S.H.E.L.F's own world: a small navy-glass tag */
+      .tag-row { position: absolute; left: 0; top: 1190px; width: 1080px; height: 46px; display: flex; justify-content: center; }
+      .tag {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 46px;
+        padding: 0 20px 0 9px;
+        border-radius: 23px;
+        background: linear-gradient(160deg, rgba(40, 62, 104, 0.88), rgba(10, 18, 36, 0.86) 60%);
+        box-shadow: inset 0 0 0 1.5px rgba(150, 195, 255, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 14px rgba(90, 160, 255, 0.2), 0 5px 11px rgba(0, 0, 0, 0.3);
+        font: 600 26px/1 var(--font-ui);
+        color: #e3eaf4;
+        white-space: nowrap;
+      }
+      .tag img { display: block; width: 28px; height: 32px; object-fit: contain; }
+      .tag .brand { font: 700 25px/1 var(--font-brand); letter-spacing: 0.04em; color: #ffffff; }
+      .tag .dot { color: rgba(227, 234, 244, 0.55); }
+      .tag .wa { display: inline-flex; align-items: center; gap: 7px; }
+      .tag .wa svg { display: block; width: 26px; height: 26px; }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="3.566667" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="3.566667" data-track-index="0">
+        <div class="cta" id="cta">
+          <div class="rig" id="cta-rise">
+            <div class="rig" id="cta-pop">
+              <div class="rig" id="cta-blur">
+                <div class="rig" id="cta-shadow">
+                  <svg class="tail" viewBox="0 0 26 30" aria-hidden="true">
+                    <path d="M26 0 H6.2 C1.9 0 -0.2 5.1 2.9 8.1 L26 30 Z" fill="#ffffff" />
+                  </svg>
+                  <div class="bubble">
+                    <div class="msg">
+                      <div class="l1">send this to the friend who says</div>
+                      <div class="l2"><span class="q"><span class="mark" id="mark"></span><span class="txt">&ldquo;check the other group&rdquo;</span></span></div>
+                    </div>
+                    <div class="send-pos" id="send-pos">
+                      <div class="ripple" id="ripple"></div>
+                      <div class="send" id="send">
+                        <svg class="spd" id="spd" viewBox="0 0 66 66" aria-hidden="true">
+                          <path d="M7 45 L17 35 M12 54 L22 44" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" />
+                        </svg>
+                        <svg class="plane" id="plane" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M2.4 11.1 L21.4 2.6 L14.4 21.4 L11.3 12.7 Z" fill="#ffffff" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" />
+                          <path d="M21.4 2.6 L11.3 12.7" stroke="#00a884" stroke-width="1.5" stroke-linecap="round" fill="none" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
+        <div class="tag-row" id="tag-row">
+          <div class="tag" id="tag">
+            <img src="./design/shelf-mark.png" alt="" />
+            <span class="brand">S.H.E.L.F</span><span class="dot">&middot;</span>
+            <span>launching soon on</span>
+            <span class="wa">
+              <svg viewBox="0 0 26 26" aria-hidden="true">
+                <rect width="26" height="26" rx="6.2" fill="#25d366" />
+                <path d="M13 5.4a7.6 7.6 0 0 0-6.6 11.4L5.4 20.6l3.9-1a7.6 7.6 0 1 0 3.7-14.2z" fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round" />
+                <path d="M10.3 9.6c.3-.3.7-.3.9 0l.8 1.4c.1.3 0 .6-.2.8l-.4.4c.4.9 1.2 1.7 2.1 2.1l.4-.4c.2-.2.5-.3.8-.2l1.4.8c.3.2.3.6 0 .9l-.6.6c-.5.5-1.3.6-2 .3-1.7-.8-3-2.1-3.8-3.8-.3-.7-.2-1.5.3-2z" fill="#fff" />
+              </svg>
+              <span>WhatsApp</span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
     <script>
+      var F = 1 / 30;
+      var EPS = 0.0005; // hits sit a hair before the frame they must show on
       var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
+
+      // 1.122 (106.122, bar downbeat): the bubble pops up from below; first visible on frame 35 (1.133)
+      var T_POP = 1.09;
+      tl.fromTo("#cta", { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none" }, 33.5 * F);
+      // short rise (80 px) + scale from the bottom edge: even the first, lowest frame stays above y 1260
+      tl.fromTo("#cta-rise", { y: 80 }, { y: 0, duration: 0.36, ease: "back.out(1.15)" }, T_POP);
+      tl.fromTo("#cta-pop", { scale: 0.62 }, { scale: 1, duration: 0.36, ease: "back.out(1.7)" }, T_POP);
+      tl.fromTo("#cta-blur", { filter: "blur(10px)" }, { filter: "blur(0px)", duration: 0.16, ease: "power2.out" }, T_POP);
+
+      // 1.530 (106.530): a teal marker sweeps under the punchline
+      tl.fromTo("#mark", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "expo.out" }, 45 * F + 0.4 * F);
+
+      // 1.938 (106.938) and 2.755 (107.755): the paper plane's fly-off wiggle. A 2-frame wind-up, then ON the
+      // beat frame (59 = 1.933, 84 = 2.767) it has shot up-right against the button's edge with speed lines
+      // behind it and the button pressed in; it springs back with a wiggle while a tap ripple rings out.
+      var BEATS = [58 * F, 83 * F]; // frame times nearest the two beats
+      BEATS.forEach(function (tb, i) {
+        var ir = i === 0 ? {} : { immediateRender: false };
+        tl.fromTo("#plane", { x: 0, y: 0, rotation: 0 },
+          Object.assign({ x: -3, y: 3, rotation: 6, duration: 2 * F, ease: "power2.out" }, ir), tb - 3 * F - EPS);
+        tl.fromTo("#plane", { x: -3, y: 3, rotation: 6 },
+          { x: 15, y: -14, rotation: -16, duration: 2 * F, ease: "expo.out", immediateRender: false }, tb - F - EPS);
+        tl.fromTo("#plane", { x: 15, y: -14, rotation: -16 },
+          { x: 0, y: 0, rotation: 0, duration: 0.42, ease: "back.out(2.8)", immediateRender: false }, tb + F - EPS);
+        tl.fromTo("#spd", { opacity: 0.95, x: 4, y: -4 },
+          { opacity: 0, x: -6, y: 6, duration: 0.2, ease: "power2.out", immediateRender: false }, tb - EPS);
+        tl.fromTo("#send", { scale: 1 }, Object.assign({ scale: 1.14, duration: F, ease: "power2.out" }, ir), tb - F - EPS);
+        tl.fromTo("#send", { scale: 1.14 }, { scale: 1, duration: 0.32, ease: "back.out(2.5)", immediateRender: false }, tb - EPS);
+        tl.fromTo("#ripple", { scale: 1, opacity: 0.85 },
+          { scale: 1.85, opacity: 0, duration: 0.42, ease: "power2.out", immediateRender: false }, tb - F - EPS);
+      });
+
+      // 2.347 (107.347): the S.H.E.L.F tag fades in under the bubble (from frame 71)
+      tl.fromTo("#tag", { opacity: 0, y: 10, filter: "blur(6px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.36, ease: "power2.out" }, 70 * F - EPS);
+
       window.__timelines["main"] = tl;
       tl.seek(0);
     </script>

@@ -34,7 +34,7 @@
         border-radius: 36px;
         background:
           radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 55%),
-          linear-gradient(180deg, rgba(17, 23, 31, 0.80) 0%, rgba(8, 12, 18, 0.74) 100%);
+          linear-gradient(180deg, rgba(20, 31, 38, 0.90) 0%, rgba(11, 20, 26, 0.86) 100%);
         box-shadow:
           inset 0 1.5px 0 rgba(255, 255, 255, 0.13),
           inset 0 0 0 1.5px rgba(255, 255, 255, 0.07),
@@ -74,8 +74,8 @@
         font: 800 29px/1 var(--font-ui);
         letter-spacing: 0.13em;
         white-space: nowrap;
-        transform-origin: 50% 50%;
       }
+      .pill-pop { display: block; transform-origin: 50% 50%; }
       .pill .clock { display: block; width: 32px; height: 32px; transform-origin: 50% 55%; }
       .pill span { display: block; margin-right: -0.13em; }
 
@@ -108,6 +108,7 @@
       /* glitch-out slices: full clones of the title, each clipped to one horizontal band */
       .slice { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; }
       .slice .cp, .slice .plate .flash { display: none; }
+      .scan { position: absolute; height: 4px; border-radius: 2px; opacity: 0; }
     </style>
   </head>
   <body>
@@ -146,7 +147,7 @@
       function groupHTML(fx) {
         return (
           '<div class="plate"><div class="bloom"></div>' + (fx ? '<div class="flash"></div>' : "") + "</div>" +
-          '<div class="pill-row"><div class="pill">' + CLOCK + "<span data-layout-allow-overlap>EXAM IN 8 HRS</span></div></div>" +
+          '<div class="pill-row"><div class="pill-pop"><div class="pill">' + CLOCK + "<span data-layout-allow-overlap>EXAM IN 8 HRS</span></div></div></div>" +
           '<div class="lines">' + lineHTML("l1", "14 groups.", fx) + lineHTML("l2", "0 notes.", fx) + "</div>"
         );
       }
@@ -183,6 +184,7 @@
       var EPS = 0.0005; // place sets/hits a hair before the frame they must show on
       var tl = gsap.timeline({ paused: true });
       var pillRow = main.querySelector(".pill-row");
+      var pillPop = main.querySelector(".pill-pop");
       var pill = main.querySelector(".pill");
       var clock = main.querySelector(".clock");
       var reds = main.querySelectorAll(".cp.red");
@@ -196,16 +198,16 @@
       tl.fromTo("#hk-settle", { scale: 1.06 }, { scale: 1, duration: 4 * F, ease: "power2.out" }, 0);
 
       // 0.25 "What": the footage jolts; the title answers with a small 3-frame tremor
-      var T_WHAT = 7 * F - EPS; // frame 8 (0.233), first frame of the camera hit
+      var T_WHAT = 8 * F - EPS; // frame 9 (0.267), the first frame of the compositor's camera hit at 0.25
       tl.set("#hk-shake", { x: 4, y: -3 }, T_WHAT);
       tl.set("#hk-shake", { x: -3, y: 2 }, T_WHAT + F);
       tl.set("#hk-shake", { x: 0, y: 0 }, T_WHAT + 2 * F);
 
       // 0.389: the red pill pops (first visible on frame 13 = 0.400)
-      var T_PILL = 0.375;
-      tl.fromTo(pillRow, { opacity: 0 }, { opacity: 1, duration: 0.02, ease: "none" }, 12 * F - EPS);
-      tl.fromTo(pill, { scale: 0.42, y: 12, filter: "blur(5px)" },
-        { scale: 1, y: 0, filter: "blur(0px)", duration: 0.32, ease: "back.out(2)" }, T_PILL);
+      var T_PILL = 0.37;
+      tl.fromTo(pillRow, { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none" }, 11.5 * F);
+      tl.fromTo(pillPop, { scale: 0.5, y: 12 }, { scale: 1, y: 0, duration: 0.32, ease: "back.out(2)" }, T_PILL);
+      tl.fromTo(pill, { filter: "blur(4px)" }, { filter: "blur(0px)", duration: 0.12, ease: "power2.out" }, T_PILL);
 
       // 0.797 DROP 1: punch 1.12 -> 1.0 over 5 frames, RGB split for 2 frames, white edge flash, shake
       var T_DROP = 24 * F - EPS; // frame 25 = 0.800
@@ -231,25 +233,46 @@
         });
       });
 
-      // 3.25-3.40: glitch out in RGB-offset slices over frames 99-102; nothing visible from frame 103
+      // 3.25-3.40: glitch out in RGB-offset slices over frames 99-102; nothing visible from frame 103.
+      // Each band has a death frame, so the title thins out monotonically down to two squashed slivers.
       var G0 = 98 * F - EPS; // frame 99 = 3.267
-      var AMP = [30, 78, 150, 250], RGB = [6, 10, 15, 20], KEEP = [1.0, 0.72, 0.45, 0.24], ALPHA = [1, 1, 0.86, 0.66];
+      var AMP = [26, 66, 124, 210], RGB = [6, 10, 14, 19], ALPHA = [1, 1, 0.9, 0.72];
+      var DEATH = [];
+      for (var k = 0; k < N; k++) DEATH.push(1 + Math.floor(hash(k * 5 + 2) * 2.99)); // 1..3
+      DEATH[3] = 4;
+      DEATH[6] = 4; // two slivers survive into the last glitch frame
+      for (var k = 0; k < N; k++) slices[k].style.transformOrigin = "540px " + (cuts[k] + cuts[k + 1]) / 2 + "px";
       tl.set(main, { opacity: 0 }, G0);
       for (var g = 0; g < 4; g++) {
         var t = G0 + g * F;
         for (var k = 0; k < N; k++) {
-          var h1 = hash(g * 31 + k * 7 + 1), h2 = hash(g * 17 + k * 13 + 5), h3 = hash(g * 11 + k * 3 + 9);
-          var dx = (h1 * 2 - 1) * AMP[g] * (h3 > 0.8 ? 1.6 : 1);
-          var on = h2 < KEEP[g] || (g === 3 && k === 4); // the last frame keeps a sliver near the middle
+          var h1 = hash(g * 31 + k * 7 + 1), h3 = hash(g * 11 + k * 3 + 9);
+          var dx = (h1 * 2 - 1) * AMP[g] * (0.35 + 1.25 * hash(k * 13 + g + 4));
           tl.set(slices[k], {
             x: dx,
-            scaleX: 1 + (h3 > 0.55 ? h3 * 0.22 * (g + 1) / 2 : 0),
-            opacity: on ? ALPHA[g] : 0,
-            filter: "drop-shadow(" + -RGB[g] + "px 0 0 rgba(255,32,80,0.9)) drop-shadow(" + RGB[g] + "px 0 0 rgba(20,228,255,0.9))",
+            scaleX: 1 + (h3 > 0.5 ? (h3 - 0.5) * 0.36 * (g + 1) : 0),
+            scaleY: g === 3 ? 0.4 : 1,
+            opacity: g < DEATH[k] ? ALPHA[g] : 0,
+            filter: "drop-shadow(" + -RGB[g] + "px 0 0 rgba(255,32,80,0.95)) drop-shadow(" + RGB[g] + "px 0 0 rgba(20,228,255,0.95))",
           }, t);
         }
       }
       tl.set(slices, { opacity: 0 }, G0 + 4 * F); // frame 103 = 3.400: gone
+
+      // scanline flickers across the tear (frames 100-101)
+      var scanWrap = document.getElementById("hk-slices");
+      var SCAN = [[196, 352, 820, "#ffffff"], [470, 455, 640, "#25d366"], [120, 590, 900, "#ffffff"], [300, 640, 460, "#19e3ff"]];
+      SCAN.forEach(function (d, j) {
+        var e = document.createElement("div");
+        e.className = "scan";
+        e.style.left = d[0] + "px";
+        e.style.top = d[1] + "px";
+        e.style.width = d[2] + "px";
+        e.style.background = d[3];
+        scanWrap.appendChild(e);
+        tl.set(e, { opacity: 0.85, x: (hash(j * 9 + 1) - 0.5) * 120 }, G0 + (1 + (j % 2)) * F);
+        tl.set(e, { opacity: 0 }, G0 + (2 + (j % 2)) * F);
+      });
 
       window.__timelines["main"] = tl;
       tl.seek(0);
