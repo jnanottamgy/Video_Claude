@@ -1,4 +1,4 @@
-"""The ~48 s cut, built from the full v2 render.
+"""The ~51 s cut, built from the full v2 render.
 
 Instagram reach is best for 30-60 s reels, and its ranker compares watch time with reels of the
 same length, so the main post is a tighter cut of the same edit: the hook, the 11:51 alarm, the
@@ -38,13 +38,12 @@ RANGES = [
     (10.900, 12.333, "story"),    # he reads it
     (12.333, 15.400, "story"),    # "F*ck. I have an exam in 8 hours" + the countdown slam
     (21.133, 22.133, "story"),    # the WhatsApp call connects: "What's up bro?"
-    (22.533, 23.333, "story"),    # "Bro, Ishaan,"
-    (25.700, 27.067, "story"),    # "do you have the notes?"
-    (27.300, 31.433, "story"),    # "Bro, the CR sent all the notes on the unofficial group"
-    (35.067, 38.667, "story"),    # "the syllabus copy the teacher sent on the official class group, bro"
-    (39.533, 42.733, "story"),    # "also in the boys group, Zaid sent all the solved PYQs"
-    (44.400, 51.833, "story"),    # the breakdown: hats build, the bass drops out...
-    (51.833, 55.267, "story"),    # ...drop 1: "clearly he hasn't heard about SHELF."
+    (22.467, 23.300, "story"),    # "Bro, Ishaan,"
+    (25.667, 27.067, "story"),    # "do you have the notes?"
+    (27.267, 31.433, "story"),    # "Bro, the CR sent all the notes on the unofficial group"
+    (34.300, 38.667, "story"),    # "Bro, the syllabus copy the teacher sent on the official class group, bro"
+    (39.200, 55.267, "story"),    # "Bro, also in the boys group, Zaid sent all the solved PYQs, look at that as well",
+                                  # the breakdown (hats build, the bass drops out), drop 1: "clearly he hasn't heard about SHELF."
     (83.900, 92.767, "long"),     # "pretty simple. So we built S.H.E.L.F" — silence, drop 2, the chat
     (104.200, 108.567, "long"),   # the wall, LAUNCHING SOON, "send this to the friend who says..."
 ]
@@ -67,8 +66,8 @@ def layout():
 def music_map(lay):
     """[(short t0, short t1, song t0 or None)] for the short cut."""
     story = [(r, o, n) for r, o, n in lay if r[2] == "story"]
-    k = next(i for i, (r, o, n) in enumerate(story) if abs(r[0] - 44.4) < 0.02)
-    s0 = MU.song_time(44.4) - sum(n for r, o, n in story[:k])     # reach the breakdown on the full cut's alignment
+    r, o, n = next((r, o, n) for r, o, n in story if r[0] <= 44.4 < r[1])
+    s0 = MU.song_time(44.4) - (o + 44.4 - r[0] - story[0][1])     # reach the breakdown on the full cut's alignment
     out = [(0.0, MU.MAP[0][2], MU.MAP[0][3]), (MU.MAP[1][1], MU.MAP[1][2], None)]
     t0 = story[0][1]
     out.append((t0, story[-1][1] + story[-1][2], s0))
@@ -79,10 +78,13 @@ def music_map(lay):
 
 
 def recut(x, lay, fade=0.03):
+    """x (full-cut timeline) re-cut to the short; 30 ms fades only where the timeline really jumps."""
     y = np.zeros((int(round(sum(n for _, _, n in lay) * SR)) + SR, 2))
-    for (a, b, _), o, n in lay:
+    for i, ((a, b, _), o, n) in enumerate(lay):
         seg = x[int(round(a * SR)):int(round(a * SR)) + int(round(n * SR))]
-        MX.place(y, MX.fade(seg, fade, fade), o)
+        cut_in = i == 0 or abs(lay[i - 1][0][1] - a) > 1e-3
+        cut_out = i == len(lay) - 1 or abs(lay[i + 1][0][0] - b) > 1e-3
+        MX.place(y, MX.fade(seg, fade if cut_in else 0, fade if cut_out else 0), o)
     return y
 
 

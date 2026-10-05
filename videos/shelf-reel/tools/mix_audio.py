@@ -285,7 +285,10 @@ def speech_env(d):
     for i in range(k):
         prev = env[i - 1] if i else 0.0
         env[i] = prev + (a if on[i] > prev else r) * (on[i] - prev)
-    return np.repeat(env, hop)[:len(d)] if len(env) else np.zeros(len(d))
+    e = np.repeat(env, hop)
+    if len(e) < len(d):                                       # the tail past the last whole hop
+        e = np.concatenate([e, np.full(len(d) - len(e), e[-1] if len(e) else 0.0)])
+    return e[:len(d)]
 
 
 def level_dialogue(d, target=-23.0, lo=-4.0, hi=7.0):
