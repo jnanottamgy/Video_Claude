@@ -25,7 +25,7 @@
         frame 1   the storm is already raging: 4 WhatsApp banners caught mid-entry around the laptop
                   (one streaking in from the left) + 2 ghosts behind the hook title
         0.200 0.400 0.600   a banner slams/pops in on each 8th, on top of the pile
-        0.800  DROP: the laptop blows out — 4 land around it, 3 fly up behind the title (ghosts),
+        0.800  DROP: the laptop blows out — 4 land around it, 2 pop up behind the title (ghosts),
                3 are blasted past the camera out of frame; the pile is shoved outward, the layer punches
         1.000 1.200 1.400 1.600 1.833   "why are my notes" (the notes file lands on the 1.614 snare)
         1.967  "scattered": the pile is flung outward again; its 4 oldest fly out of frame (left)
@@ -33,7 +33,7 @@
         3.433  (last frame) the title is gone: the ghosts behind it solidify; the last frame is FULL
       Keep-clear: his face (x 665-990, y 765-1150, widened for the camera punches) at all times,
       including entry frames and flight paths; the hook title band (x 140-940, y 300-648) holds only
-      ghost banners (55 % opacity) until 3.40. Nothing enters the caption band (y 1290-1460).
+      ghost banners (50 % opacity, never overlapping each other) until 3.40. Nothing enters the caption band (y 1290-1460).
       Sound: every 8th above produces exactly one alpha onset on its frame (the pile churns: the oldest
       banner sinks away just before an arrival when there is no fresh room).
     -->
@@ -59,7 +59,7 @@
         S.ghostZones.push({ x0: 140, y0: 300, x1: 940, y1: 648, t0: -1, t1: 3.3 }); // the hook title
         var SOLID = { x0: 0, y0: 650, x1: 1080, y1: 1300 };
         var BAND = { x0: 0, y0: 280, x1: 1080, y1: 640 };
-        var GHOST = 0.55; // the title band allows <= 60 %
+        var GHOST = 0.5; // the title band allows <= 60 % (ghosts never overlap each other)
 
         function pickSolid(t, key, s, r, k, es, ent) {
           return S.pick(t, { s: s, r: r || [0, 9], h: S.hOf(key), region: SOLID, k: k || 3, es: es || 1, entry: ent });
@@ -98,7 +98,7 @@
         var g1 = S.place("i_bro", -0.3, { x: 262, y: 440, s: 0.6, r: -9 }, { type: "burst", from: LAP }, { ghost: GHOST });
         var g2 = S.place("l_rec", -0.24, { x: 800, y: 540, s: 0.58, r: 11 }, { type: "burst", from: LAP }, { ghost: GHOST });
         // ghosts keep drifting so nothing is ever frozen
-        [[g1, 26, 3], [g2, -22, -3]].forEach(function (o) {
+        [[g1, 14, 2], [g2, -12, -2]].forEach(function (o) {
           if (!o[0]) return;
           var a = o[0].a;
           a.ch("x").add(0.3, 3.0, a.ch("x").at(0.3) + o[1], "sine.inOut");
@@ -115,6 +115,7 @@
         var tD = WA.hit(T_DROP);
         // the pile is shoved outward, the whole layer punches with the camera
         S.items.slice().forEach(function (it) {
+          if (it.ghost) return; // ghosts stay apart from each other: never shoved
           var p = it.a.pose(T_DROP);
           var dx = p.x - LAP[0];
           var dy = p.y - LAP[1];
@@ -131,10 +132,13 @@
         // 3 are flung up behind the title (ghosts)
         var far = S.items.map(function (it) { var p = it.a.pose(T_DROP + 0.6); return [p.x, p.y]; });
         ["m_eat", "u_47", "p_fwd"].forEach(function (key) {
-          var p = S.pick(T_DROP, { s: [0.54, 0.64], r: [6, 14], h: S.hOf(key), region: BAND, ghost: true, far: far, k: 2 });
+          var p = S.pick(T_DROP, { s: [0.52, 0.6], r: [5, 12], h: S.hOf(key), region: BAND, ghost: true, far: far, k: 2, apartFromGhosts: true, from: { x: LAP[0], y: LAP[1], s: 0.2, r: 0 } });
           if (p) {
             far.push([p.x, p.y]);
-            S.add(key, T_DROP, p, { type: "burst", from: LAP, dur: 0.6 }, { ghost: GHOST });
+            var gh = S.add(key, T_DROP, p, { type: "pop" }, { ghost: GHOST }); // pops in place behind the title
+            var dx = p.x < 540 ? 10 : -10; // a gentle drift (inside the spacing pad between ghosts)
+            gh.a.ch("x").add(1.45, 1.9, p.x + dx, "sine.inOut");
+            gh.a.ch("r").add(1.45, 1.9, p.r + (dx > 0 ? 2 : -2), "sine.inOut");
           }
         });
         // 3 are blasted straight past the camera, out of frame (left)
@@ -152,7 +156,7 @@
         /* ---------- 1.967 "scattered": flung outward again ---------- */
         var T_SCAT = WA.hit(1.963);
         var seeds = [LAP];
-        var live = S.items.filter(function (it) { return it.a.ch("o").at(T_SCAT) > 0.01 && !it.recycled; });
+        var live = S.items.filter(function (it) { return it.a.ch("o").at(T_SCAT) > 0.01 && !it.recycled && !it.ghost; });
         // the four oldest, most buried banners are flung right out of frame (left, away from his face)
         var gone = live
           .filter(function (it) { return !it.ghost && !it.recycled; })

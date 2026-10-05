@@ -431,6 +431,8 @@ def stem_B(A):
         place(B, fade(x[o:], 0, 0.3), t, 0, gain, pan)
 
     # ---- hook: the song's pickup bar, drop 1 lands on "f*ck" ----
+    place(B, wa_pop(0.34), 0.0)                                        # frame 1 pings (so does the last: the loop)
+    whoosh(1.967, 0.26, 0.4, 2)                                        # "scattered": the pile is flung
     impact(0.25, 0.40, "impact-bass-1", 0.30)
     whoosh(0.22, 0.22)
     impact(0.80, 0.50, "impact-bass-2", 0.40)

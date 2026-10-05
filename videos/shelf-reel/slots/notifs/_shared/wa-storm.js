@@ -252,6 +252,24 @@
         var Z = this.zones[z];
         if (Z.t1 > t && Z.t0 < t + 0.6 && this.overlaps(q[0], q[1], q[2], q[3], h, Z)) return false;
       }
+      if (!o.ghost) {
+        for (var g = 0; g < this.ghostZones.length; g++) {
+          var GZ = this.ghostZones[g];
+          if (GZ.t1 > t && GZ.t0 < t + 0.6 && this.overlaps(q[0], q[1], q[2], q[3], h, GZ)) return false;
+        }
+      }
+    }
+    // ghosts never overlap another ghost (stacked ghosts would read darker than the cap)
+    if (o.ghost && o.apartFromGhosts) {
+      var me = WA.ext(this.W, h, s, r);
+      for (var k2 = 0; k2 < this.items.length; k2++) {
+        var it = this.items[k2];
+        if (!it.ghost || it.a.ch("o").at(t + 0.6) < 0.01) continue;
+        var gp = it.a.pose(t + 0.6);
+        var ge = WA.ext(this.W, it.h, gp.s, gp.r);
+        var pad = 48; // their drift + shadow
+        if (Math.abs(gp.x - x) < ge.hx + me.hx + pad && Math.abs(gp.y - y) < ge.hy + me.hy + pad) return false;
+      }
     }
     return true;
   };
@@ -595,6 +613,10 @@
           for (var z = 0; z < this.zones.length && ok; z++) {
             var Z = this.zones[z];
             if (Z.t1 > t && Z.t0 <= t && inRect(q, Z)) ok = false;
+          }
+          for (var g = 0; g < this.ghostZones.length && ok && !it.ghost; g++) {
+            var GZ = this.ghostZones[g];
+            if (GZ.t1 > t && GZ.t0 <= t && inRect(q, GZ)) ok = false;
           }
         }
       }
