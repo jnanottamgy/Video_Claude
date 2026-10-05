@@ -56,13 +56,31 @@
         var BAND = { x0: 0, y0: 280, x1: 1080, y1: 640 };
         var GHOST = 0.55; // the title band allows <= 60 %
 
-        function pickSolid(t, key, s, r, k, es) {
-          return S.pick(t, { s: s, r: r || [0, 9], h: S.hOf(key), region: SOLID, k: k || 3, es: es || 1 });
+        function pickSolid(t, key, s, r, k, es, ent) {
+          return S.pick(t, { s: s, r: r || [0, 9], h: S.hOf(key), region: SOLID, k: k || 3, es: es || 1, entry: ent });
         }
         function solid(key, t, s, entry, r, churn) {
           if (churn) S.recycle(t, churn);
-          var p = pickSolid(t, key, s, r, 3, WA.ENTRY_SCALE[(entry || { type: "slam" }).type]);
-          if (!p) return null;
+          var tp = (entry || { type: "slam" }).type;
+          var p = pickSolid(t, key, s, r, 3, WA.ENTRY_SCALE[tp], tp);
+          // still jammed: the oldest sink away until this arrival has fresh room (and is heard)
+          for (var c = 0; c < 2 && t > 0.9 && p && p.nc !== undefined && p.nc < 100; c++) {
+            S.recycle(t, 1);
+            p = pickSolid(t, key, s, r, 3, WA.ENTRY_SCALE[tp], tp);
+          }
+          // no legal spot for a big entry frame: land it smaller rather than drop the beat
+          for (var f = 0; f < 3 && !p; f++) {
+            s = [s[0] * 0.9, s[1] * 0.9];
+            if (tp === "slam") {
+              tp = "pop";
+              entry = { type: "pop" };
+            }
+            p = pickSolid(t, key, s, r, 3, WA.ENTRY_SCALE[tp], tp);
+          }
+          if (!p) {
+            if (window.console) console.warn("storm_hook: no spot for", key, t);
+            return null;
+          }
           return S.add(key, t, p, entry || { type: "slam" });
         }
 
@@ -158,6 +176,7 @@
               ghost: it.ghost,
               far: seeds,
               k: 2,
+              from: cur,
             });
             if (!p) return;
             seeds.push([p.x, p.y]);

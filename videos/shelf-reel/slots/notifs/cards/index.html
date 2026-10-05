@@ -71,7 +71,7 @@
           spec.h = H;
           var k = WA.card(spec);
           stack.appendChild(k.el);
-          var a = new WA.Actor(k, { x: CX, y: slotCY(0) - 140, s: 1.05, o: 0 });
+          var a = new WA.Actor(k, { x: CX, y: slotCY(0) - 80, s: 0.97, o: 0 });
           a.pill = { s: new WA.Track(0), red: new WA.Track(0), ps: new WA.Track(1), po: new WA.Track(0) };
           a.counts = []; // [t, delta]
           return a;
@@ -91,7 +91,7 @@
 
         function ping(a, t, peak) {
           a.pill.ps.add(t, 0.001, 1, "none", 1);
-          a.pill.ps.add(t, 0.55, peak || 1.9, "power2.out", 1);
+          a.pill.ps.add(t, 0.55, peak || 1.5, "power2.out", 1);
           a.pill.po.add(t, 0.001, 0.95, "none", 0);
           a.pill.po.add(t + 0.05, 0.5, 0, "power1.in", 0.95);
         }
@@ -104,8 +104,8 @@
         function arrive(a, T) {
           var y0 = slotCY(0);
           var v0 = T - 0.05; // the spring starts just above, so the first visible frame is already falling
-          a.ch("y").add(v0, 0.7, y0, IOS_DROP, y0 - 140);
-          a.ch("s").add(v0, 0.6, 1, IOS_SCALE, 1.05);
+          a.ch("y").add(v0, 0.7, y0, IOS_DROP, y0 - 80); // first visible frame ~55 px above its slot (top edge >= 270)
+          a.ch("s").add(v0, 0.6, 1, IOS_SCALE, 0.97);
           a.ch("o").set(T - 0.004, 1);
           a.ch("b").add(T - 0.004, 0.26, 0, "power2.out", 11);
           // glass sheen sweeps across as it settles
@@ -115,7 +115,7 @@
           // the unread pill pops in, then pings
           a.pill.s.set(T - 0.004, 0);
           a.pill.s.add(T + 0.1, 0.45, 1, "back.out(3)", 0);
-          ping(a, T + 0.16, 2.0);
+          ping(a, T + 0.16, 1.55);
         }
         /* ---------- an older banner pushed down one slot ---------- */
         function push(a, from, T) {
@@ -159,7 +159,7 @@
           if (b[1] === "d") {
             // the newest banner pings, unless it is still landing (then the next one does)
             var top = t - (t < T_C ? T_B : T_C) < 0.35 ? visible[1] : visible[0];
-            ping(top, t, 1.8);
+            ping(top, t, 1.5);
             pulse(top, t, 1.22);
             if (top.base !== null) tick(top, t, 1);
             if (a !== top) {
@@ -176,13 +176,13 @@
         var rnd = WA.rng(4440);
         var nTrem = Math.round((T_BLOW - T_CUT) * 30); // 8 frames
         ALL.forEach(function (a, ci) {
-          a.ch("js").add(T_CUT - 0.004, 0.001, 1.03, "none", 1);
-          a.ch("js").add(T_CUT, 0.14, 1, "expo.out", 1.03);
+          a.ch("js").add(T_CUT - 0.004, 0.001, 1.012, "none", 1);
+          a.ch("js").add(T_CUT, 0.14, 1, "expo.out", 1.012);
           a.ch("js").add(T_CUT + 0.14, T_BLOW - T_CUT - 0.14, 0.965, "power2.in", 1); // sucks in, then blows
           for (var k = 0; k < nTrem; k++) {
             var t = T_CUT + k / 30 - 0.004;
             var u = (k + 1) / nTrem;
-            var amp = 2.5 + 7 * u;
+            var amp = 2 + 4 * u; // stays inside the 64 px side margins
             var last = k === nTrem - 1;
             a.ch("jx").add(t, 1 / 30, last ? 0 : amp * (rnd() * 2 - 1), "sine.inOut");
             a.ch("jy").add(t, 1 / 30, last ? 0 : amp * 0.7 * (rnd() * 2 - 1), "sine.inOut");

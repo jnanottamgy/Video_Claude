@@ -101,8 +101,8 @@
       .bub.in .tl { left: -10px; }
       .bub.out .tl { right: -10px; }
       .tx { font: 400 19px/24px var(--font-ui); letter-spacing: -0.005em; }
-      .tm { font: 400 11.5px/14px var(--font-ui); color: #8696a0; white-space: nowrap; }
-      .bub.out .tm { color: rgba(233, 237, 239, 0.62); }
+      .tm { font: 400 11.5px/14px var(--font-ui); color: #93a2aa; white-space: nowrap; }
+      .bub.out .tm { color: rgba(233, 237, 239, 0.8); }
       .tm.br { position: absolute; right: 9px; bottom: 5px; display: flex; align-items: center; gap: 3px; }
       .ticks { width: 18px; height: 11px; display: block; }
 
@@ -113,7 +113,7 @@
       .typing i { width: 8.5px; height: 8.5px; border-radius: 50%; background: #8696a0; display: block; }
 
       /* source chip ("from Unofficial Group") */
-      .src { display: flex; align-items: center; gap: 5px; height: 18px; font: 500 12.5px/18px var(--font-ui); color: #8696a0; white-space: nowrap; margin: 0 0 5px; }
+      .src { display: flex; align-items: center; gap: 5px; height: 18px; font: 500 12.5px/18px var(--font-ui); color: #93a2aa; white-space: nowrap; margin: 0 0 5px; }
       .src svg { width: 15px; height: 15px; display: block; flex: none; }
       .src b { font-weight: 600; }
 
@@ -124,7 +124,7 @@
       .fn { font: 600 15.5px/19px var(--font-ui); color: #e9edef; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .fm { font: 400 12px/16px var(--font-ui); color: #8696a0; white-space: nowrap; margin-top: 2px; }
       .docfoot { display: flex; justify-content: space-between; align-items: flex-end; height: 18px; margin-top: 4px; }
-      .docfoot .sz { font: 400 11.5px/14px var(--font-ui); color: #8696a0; }
+      .docfoot .sz { font: 400 11.5px/14px var(--font-ui); color: #93a2aa; }
 
       /* album: four blurry paper photos, "+8" on the last */
       .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 226px; border-radius: 9px; overflow: hidden; }
@@ -181,7 +181,7 @@
         gap: 8px; padding: 0 9px 0 10px; background: linear-gradient(180deg, #1c262d 0%, #18222a 100%);
         box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.04);
       }
-      #inp .pill { flex: 1; height: 38px; border-radius: 19px; background: #2a3942; display: flex; align-items: center; gap: 7px; padding: 0 10px; color: #8696a0; font: 400 15.5px/38px var(--font-ui); }
+      #inp .pill { flex: 1; height: 38px; border-radius: 19px; background: #2a3942; display: flex; align-items: center; gap: 7px; padding: 0 10px; color: #9aa8b0; font: 400 15.5px/38px var(--font-ui); }
       #inp svg { display: block; flex: none; }
       #mic { width: 40px; height: 40px; border-radius: 50%; background: #00a884; display: grid; place-items: center; flex: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
 
@@ -222,25 +222,25 @@
                 </div>
                 <!-- 3. Unit 3 notes -->
                 <div class="m in" id="m-d1" data-layout-allow-occlusion>
-                  <div class="bub in tail" style="width: 262px">
+                  <div class="bub in tail" style="width: 262px; height: 116px">
                     <svg class="tl" viewBox="0 0 11 17"><path d="M11 0H2.4C.5 0-.5 2.3.8 3.7L11 16.2z" fill="#202c33" /></svg>
                     <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#53bdeb" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#53bdeb" /><circle cx="10.2" cy="7.2" r="1.6" fill="#53bdeb" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#53bdeb" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#53bdeb" fill-opacity=".75" /></svg>from <b style="color: #53bdeb">Unofficial Group</b></div>
-                    <div class="docbox"><svg viewBox="0 0 33 40"><path d="M4 1h17.5L31 10.5V36a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V4a3 3 0 0 1 3-3z" fill="#e5534b" /><path d="M21.5 1v7.2a2.3 2.3 0 0 0 2.3 2.3H31z" fill="#f4a29d" /><text x="16" y="30.5" text-anchor="middle" font-family="Inter" font-weight="800" font-size="9.4" fill="#fff">PDF</text></svg><div class="dn"><div class="fn">Unit3_Notes_CR.pdf</div><div class="fm">14 pages · PDF</div></div></div>
+                    <div class="docbox"><svg viewBox="0 0 33 40"><path d="M4 1h17.5L31 10.5V36a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V4a3 3 0 0 1 3-3z" fill="#e5534b" /><path d="M21.5 1v7.2a2.3 2.3 0 0 0 2.3 2.3H31z" fill="#f4a29d" /><path d="M7.4 32.2v-7.6h3.1a2.3 2.3 0 0 1 0 4.6H7.4M14.6 24.6v7.6h1.9c2.3 0 3.6-1.6 3.6-3.8s-1.3-3.8-3.6-3.8zM22.6 32.2v-7.6h4.1M22.6 28.3h3.5" fill="none" stroke="#fff" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" /></svg><div class="dn"><div class="fn">Unit3_Notes_CR.pdf</div><div class="fm">14 pages · PDF</div></div></div>
                     <div class="docfoot"><span class="sz">2.1 MB</span><span class="tm">11:52 PM</span></div>
                   </div>
                 </div>
                 <!-- 4. syllabus -->
                 <div class="m in" id="m-d2" data-layout-allow-occlusion>
-                  <div class="bub in" style="width: 262px">
-                    <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#f06292" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#f06292" /><circle cx="10.2" cy="7.2" r="1.6" fill="#f06292" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#f06292" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#f06292" fill-opacity=".75" /></svg>from <b style="color: #f06292">Official Class Group</b></div>
-                    <div class="docbox"><svg viewBox="0 0 33 40"><path d="M4 1h17.5L31 10.5V36a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V4a3 3 0 0 1 3-3z" fill="#e5534b" /><path d="M21.5 1v7.2a2.3 2.3 0 0 0 2.3 2.3H31z" fill="#f4a29d" /><text x="16" y="30.5" text-anchor="middle" font-family="Inter" font-weight="800" font-size="9.4" fill="#fff">PDF</text></svg><div class="dn"><div class="fn">Syllabus_copy.pdf</div><div class="fm">3 pages · PDF</div></div></div>
+                  <div class="bub in" style="width: 262px; height: 116px">
+                    <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#f278a1" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#f278a1" /><circle cx="10.2" cy="7.2" r="1.6" fill="#f278a1" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#f278a1" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#f278a1" fill-opacity=".75" /></svg>from <b style="color: #f278a1">Official Class Group</b></div>
+                    <div class="docbox"><svg viewBox="0 0 33 40"><path d="M4 1h17.5L31 10.5V36a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V4a3 3 0 0 1 3-3z" fill="#e5534b" /><path d="M21.5 1v7.2a2.3 2.3 0 0 0 2.3 2.3H31z" fill="#f4a29d" /><path d="M7.4 32.2v-7.6h3.1a2.3 2.3 0 0 1 0 4.6H7.4M14.6 24.6v7.6h1.9c2.3 0 3.6-1.6 3.6-3.8s-1.3-3.8-3.6-3.8zM22.6 32.2v-7.6h4.1M22.6 28.3h3.5" fill="none" stroke="#fff" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" /></svg><div class="dn"><div class="fn">Syllabus_copy.pdf</div><div class="fm">3 pages · PDF</div></div></div>
                     <div class="docfoot"><span class="sz">412 kB</span><span class="tm">11:52 PM</span></div>
                   </div>
                 </div>
                 <!-- 5. PYQ album -->
                 <div class="m in" id="m-al" data-layout-allow-occlusion>
-                  <div class="bub in" style="width: 246px">
-                    <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#fa6533" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#fa6533" /><circle cx="10.2" cy="7.2" r="1.6" fill="#fa6533" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#fa6533" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#fa6533" fill-opacity=".75" /></svg>from <b style="color: #fa6533">Boys Group</b></div>
+                  <div class="bub in" style="width: 246px; height: 273px">
+                    <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#fb794e" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#fb794e" /><circle cx="10.2" cy="7.2" r="1.6" fill="#fb794e" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#fb794e" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#fb794e" fill-opacity=".75" /></svg>from <b style="color: #fb794e">Boys Group</b></div>
                     <div class="grid">
                       <div class="ph"><div class="pg" style="--r: -8deg"></div></div>
                       <div class="ph v2"><div class="pg" style="--r: 4deg"></div></div>
@@ -252,8 +252,8 @@
                 </div>
                 <!-- 6. the reminder -->
                 <div class="m in" id="m-rm" data-layout-allow-occlusion>
-                  <div class="bub in" style="width: 262px">
-                    <div class="rem"><svg viewBox="0 0 20 20"><path d="M10 2.4c-3 0-5.1 2.3-5.1 5.2v3.4c0 .8-.3 1.5-.8 2.1l-1 1.2c-.4.5 0 1.2.6 1.2h12.6c.6 0 1-.7.6-1.2l-1-1.2c-.5-.6-.8-1.3-.8-2.1V7.6C15.1 4.7 13 2.4 10 2.4z" fill="#ffb74d" /><path d="M8 16.6a2.1 2.1 0 0 0 4 0z" fill="#ffb74d" /></svg><div class="tx">Exam at 9:00 AM. I'll remind you at 7:30.</div></div>
+                  <div class="bub in" style="width: 262px; height: 75px">
+                    <div class="rem"><svg viewBox="0 0 20 20"><path d="M10 2.4c-3 0-5.1 2.3-5.1 5.2v3.4c0 .8-.3 1.5-.8 2.1l-1 1.2c-.4.5 0 1.2.6 1.2h12.6c.6 0 1-.7.6-1.2l-1-1.2c-.5-.6-.8-1.3-.8-2.1V7.6C15.1 4.7 13 2.4 10 2.4z" fill="#ffb74d" /><path d="M8 16.6a2.1 2.1 0 0 0 4 0z" fill="#ffb74d" /></svg><div class="tx"><div data-layout-allow-overlap>Exam at 9:00 AM.</div><div data-layout-allow-overlap>I'll remind you at 7:30.</div></div></div>
                     <div class="tm" style="text-align: right; margin-top: 1px">11:52 PM</div>
                   </div>
                 </div>
@@ -339,7 +339,7 @@
         var inp = document.getElementById("inp");
         Object.keys(M).forEach(function (k) { M[k].node = document.getElementById(M[k].el); });
         // heights of the incoming bubbles (measured once at setup: fonts are local and the layout is static)
-        function hOf(k) { return M[k].node.firstElementChild.offsetHeight; }
+        function hOf(k) { return parseFloat(M[k].node.firstElementChild.style.height); }
         M.d1.h = hOf("d1"); M.d2.h = hOf("d2"); M.al.h = hOf("al"); M.rm.h = hOf("rm");
         M.d2.top = M.d1.top + M.d1.h + GAP_RUN;
         M.al.top = M.d2.top + M.d2.h + GAP_RUN;

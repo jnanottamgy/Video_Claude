@@ -163,7 +163,9 @@
   };
 
   /* ---------- coverage grid (what the compositor's pop detector sees) ---------- */
-  P.grid = function (t) {
+  // what the compositor's detector sees as covered at t: every banner plus the reach of its drop
+  // shadow (in a dense pile neighbouring shadows stack above 50 % alpha and fill the gaps)
+  P.grid = function (t, skip) {
     var S = this.safe;
     var c = this.cell;
     var nx = Math.ceil((S.x1 - S.x0) / c);
@@ -171,22 +173,25 @@
     var G = { g: new Uint8Array(nx * ny), nx: nx, ny: ny };
     for (var i = 0; i < this.items.length; i++) {
       var it = this.items[i];
-      if (it.ghost || it.born > t + 1e-6) continue;
+      if (it === skip || it.ghost || it.born > t + 1e-6) continue;
       if (it.a.ch("o").at(t) < 0.6) continue;
       var p = it.a.pose(t);
-      this.raster(G, p.x, p.y, p.s, p.r, it.h, true);
+      this.raster(G, p.x, p.y, p.s, p.r, it.h, true, this.shadowReach);
     }
     return G;
   };
-  P.raster = function (G, x, y, s, r, h, mark) {
+  P.shadowReach = 14;
+  P.raster = function (G, x, y, s, r, h, mark, pad) {
     var S = this.safe;
     var cl = this.cell;
+    pad = pad || 0;
     var e = WA.ext(this.W, h, s, r);
+    e = { hx: e.hx + pad, hy: e.hy + pad };
     var a = (-r * PI) / 180;
     var c = Math.cos(a);
     var sn = Math.sin(a);
-    var hw = (this.W / 2) * s;
-    var hh = (h / 2) * s;
+    var hw = (this.W / 2) * s + pad;
+    var hh = (h / 2) * s + pad;
     var i0 = Math.max(0, Math.floor((x - e.hx - S.x0) / cl));
     var i1 = Math.min(G.nx - 1, Math.floor((x + e.hx - S.x0) / cl));
     var j0 = Math.max(0, Math.floor((y - e.hy - S.y0) / cl));
@@ -214,6 +219,43 @@
     return n / G.g.length;
   };
 
+  // keep-clear zones must also hold for the oversized hit frame and along a move's path
+  P.clearPath = function (o, x, y, s, r, h, t) {
+    var poses = [];
+    if (o.entry) {
+      var hp = this.hitPose({ x: x, y: y, s: s, r: r }, o.entry, h);
+      poses.push([hp.x, hp.y, hp.s, r + 8]);
+      poses.push([hp.x, hp.y, hp.s, r - 8]);
+    }
+    if (o.entry === "fly" && o.side) {
+      // the visible part of a fly-in: from its first frame (~60 % along) to landing
+      var side = o.side;
+      var ef = WA.ext(this.W, h, s * 1.1, r + 30);
+      if (side > 0 && y + ef.hy > this.safe.railY - 30) side = -1;
+      var dist = o.dist || 820;
+      for (var f = 0; f < 3; f++) {
+        var u = 0.6 + 0.15 * f;
+        for (var dy = -120; dy <= 120; dy += 240) {
+          poses.push([x + side * dist * (1 - u), y + dy * (1 - u), s * (1 + 0.1 * (1 - u)), r + side * 24 * (1 - u)]);
+        }
+      }
+    }
+    if (o.from) {
+      for (var k = 1; k <= 4; k++) {
+        var u = k / 5;
+        poses.push([o.from.x + (x - o.from.x) * u, o.from.y + (y - o.from.y) * u, o.from.s + (s - o.from.s) * u, o.from.r + (r - o.from.r) * u]);
+      }
+    }
+    for (var i = 0; i < poses.length; i++) {
+      var q = poses[i];
+      for (var z = 0; z < this.zones.length; z++) {
+        var Z = this.zones[z];
+        if (Z.t1 > t && Z.t0 < t + 0.6 && this.overlaps(q[0], q[1], q[2], q[3], h, Z)) return false;
+      }
+    }
+    return true;
+  };
+
   /* ---------- placement ----------
      o = { s: [lo, hi], r: [lo, hi] (abs deg), h, n (candidates), k (choose among the best k),
            until (keep-clear window end), ghost (bool), region {x0,y0,x1,y1} (centre limits),
@@ -239,14 +281,16 @@
         var x = this.R(xa, xb);
         var y = this.R(ya, yb);
         if (!this.fits(x, y, s, r, h, t, o.until === undefined ? t + 1 : o.until, !o.ghost)) continue;
+        if (!this.clearPath(o, x, y, s, r, h, t)) continue;
         var score;
         if (o.far) {
           var d = 1e9;
           for (var q = 0; q < o.far.length; q++) d = Math.min(d, Math.hypot((x - o.far[q][0]) / 1.3, y - o.far[q][1]));
           score = d;
         } else {
-          // what the detector sees on the hit frame: the entry overscale (o.es), shrunk by its blur
-          score = this.raster(G, x, y, s * (o.es || 1) * 0.93, r, h, false);
+          // what the detector sees on the hit frame (entry overscale, lift, inward shift)
+          var hp = o.entry ? this.hitPose({ x: x, y: y, s: s, r: r }, o.entry, h) : { x: x, y: y, s: s * (o.es || 1) };
+          score = this.raster(G, hp.x, hp.y, hp.s * 0.97, r, h, false);
         }
         var nc = o.far ? undefined : score;
         if (o.bias) score *= o.bias(x, y, s, r);
@@ -331,7 +375,7 @@
       a.ch("d").add(it.born + 0.45, 2.6, opt.dim === undefined ? 0.42 : opt.dim, "sine.inOut", 0);
       a.ch("b").add(it.born + 0.9, 2.4, 1.2, "sine.inOut", 0);
       var age = this.ageScale === undefined ? 0.9 : this.ageScale;
-      if (age < 1) a.ch("s").add(it.born + 0.5, 2.5, pose.s * age, "sine.inOut");
+      if (age < 1) a.ch("ag").add(it.born + 0.5, 2.5, age, "sine.inOut", 1);
     }
     return it;
   };
@@ -350,42 +394,52 @@
         var d = e.dur || 0.6;
         a.ch("x").add(t0, d, p.x, "expo.out", e.from[0]);
         a.ch("y").add(t0, d, p.y, "expo.out", e.from[1]);
-        a.ch("s").add(t0, d * 0.85, p.s, "back.out(1.45)", p.s * 0.3);
+        a.ch("s").add(t0, 0.22, p.s, "power3.out", p.s * 0.3);
         a.ch("r").add(t0, d, p.r, "expo.out", p.r * 0.25 + sg * RR(4, 12));
         a.ch("b").add(t0, 0.3, 0, "power2.out", 9);
         break;
       }
       case "slam": {
-        var s0 = Math.min(p.s * 1.42, 1.32);
+        var s0 = Math.min(p.s * 1.42, this.maxHitScale());
         var r0 = p.r + sg * RR(6, 11);
-        var g0 = this.inward(p, s0, r0, it.h);
-        a.ch("x").add(t0, 0.3, p.x, "power4.out", p.x + g0[0]);
-        a.ch("y").add(t0, 0.3, p.y, "power4.out", p.y - 24 + g0[1]);
-        a.ch("s").add(t0, 0.3, p.s, "power4.out", s0);
-        a.ch("r").add(t0, 0.3, p.r, "power4.out", r0);
-        a.ch("b").add(t0, 0.22, 0, "power2.out", 9);
+        // expo.out over 0.16 s: ~94 % of the overscale is gone within two frames, so the settle
+        // never masks the next arrival (16ths are only three frames apart)
+        var lift = { x: p.x, y: p.y - 24 };
+        var g0 = this.inward(lift, s0, r0, it.h);
+        a.ch("x").add(t0, 0.2, p.x, "expo.out", p.x + g0[0]);
+        a.ch("y").add(t0, 0.2, p.y, "expo.out", lift.y + g0[1]);
+        a.ch("s").add(t0, 0.16, p.s, "expo.out", s0);
+        a.ch("r").add(t0, 0.3, p.r, "expo.out", r0);
+        a.ch("b").add(t0, 0.2, 0, "power2.out", 9);
         break;
       }
       case "pop": {
-        var s1 = Math.min(p.s * 1.26, 1.22);
+        var s1 = Math.min(p.s * 1.26, this.maxHitScale());
         var r1 = p.r + sg * RR(3, 7);
         var g1 = this.inward(p, s1, r1, it.h);
         if (g1[0] || g1[1]) {
-          a.ch("x").add(t0, 0.24, p.x, "power3.out", p.x + g1[0]);
-          a.ch("y").add(t0, 0.24, p.y, "power3.out", p.y + g1[1]);
+          a.ch("x").add(t0, 0.22, p.x, "expo.out", p.x + g1[0]);
+          a.ch("y").add(t0, 0.22, p.y, "expo.out", p.y + g1[1]);
         }
-        a.ch("s").add(t0, 0.24, p.s, "back.out(1.8)", s1);
-        a.ch("r").add(t0, 0.24, p.r, "power3.out", r1);
+        a.ch("s").add(t0, 0.15, p.s, "expo.out", s1);
+        a.ch("r").add(t0, 0.26, p.r, "expo.out", r1);
         a.ch("b").add(t0, 0.17, 0, "power2.out", 6);
         break;
       }
       case "fly": {
-        // from off-frame on one side; it starts a frame early so its first visible frame is in-frame
-        var t1 = t0 - 1 / WA.FPS;
+        // from off-frame on one side; it starts two frames early so its first visible frame is
+        // already mostly in-frame (and registers as an arrival on its beat)
+        var t1 = t0 - 2 / WA.FPS;
         var dist = e.dist || 820;
-        a.ch("x").add(t1, 0.5, p.x, "expo.out", p.x + e.side * dist);
-        a.ch("y").add(t1, 0.5, p.y, "expo.out", p.y + (e.dy || RR(-120, 120)));
-        a.ch("r").add(t1, 0.5, p.r, "expo.out", p.r + e.side * RR(18, 30));
+        var ef = WA.ext(this.W, it.h, p.s * 1.1, p.r + 30);
+        var fy = p.y + (e.dy || RR(-120, 120));
+        fy = Math.max(this.safe.y0 + ef.hy, Math.min(this.safe.y1 - ef.hy, fy));
+        var side = e.side;
+        if (side > 0 && p.y + ef.hy > this.safe.railY - 30) side = -1; // the rail: come in from the left
+        if (side > 0) fy = Math.min(fy, this.safe.railY - ef.hy); // enter above the rail
+        a.ch("x").add(t1, 0.5, p.x, "expo.out", p.x + side * dist);
+        a.ch("y").add(t1, 0.5, p.y, "expo.out", fy);
+        a.ch("r").add(t1, 0.5, p.r, "expo.out", p.r + side * RR(18, 30));
         a.ch("s").add(t1, 0.5, p.s, "expo.out", p.s * 1.1);
         a.ch("b").add(t0, 0.28, 0, "power2.out", 14);
         break;
@@ -425,29 +479,79 @@
   P.recycle = function (t, n) {
     var tt = WA.hit(t);
     for (var c = 0; c < (n || 1); c++) {
-      var old = null;
+      var elig = [];
       for (var i = 0; i < this.items.length; i++) {
         var it = this.items[i];
         if (it.ghost || it.recycled || it.keep || it.born > tt - 0.4) continue;
         if (it.a.ch("o").at(tt - 0.3) < 0.99) continue;
-        if (!old || it.born < old.born) old = it;
+        elig.push(it);
       }
-      if (!old) return;
+      if (!elig.length) return;
+      elig.sort(function (p, q) {
+        return p.born - q.born;
+      });
+      // of the six oldest, the one that frees the most visible area when it goes
+      var old = null;
+      var best = -1;
+      for (var e = 0; e < Math.min(6, elig.length); e++) {
+        var G = this.grid(tt + 0.3, elig[e]);
+        var pp = elig[e].a.pose(tt + 0.3);
+        var exp = this.raster(G, pp.x, pp.y, pp.s, pp.r, elig[e].h, false);
+        if (exp > best) {
+          best = exp;
+          old = elig[e];
+        }
+      }
       old.recycled = true;
       var a = old.a;
-      var t0 = tt - 0.3;
-      var d = 0.26;
-      var cur = a.pose(t0);
-      a.ch("s").add(t0, d, cur.s * 0.62, "power2.in");
-      a.ch("d").add(t0, d, 0.75, "power1.out");
-      a.ch("o").add(t0 + 0.1, d - 0.1, 0, "power1.in");
+      // it darkens into the pile first (no change in visible area), then sinks away in the two
+      // frames right before the arrival, so the area it frees never masks a neighbouring beat
+      // all of its change in visible area falls strictly between the previous arrival frame and
+      // this one (frames k-2 -> k-1), never on an arrival frame
+      var tv = WA.snap(t) - 2 / WA.FPS + 0.002;
+      var dv = 1 / WA.FPS - 0.006;
+      a.ch("d").add(tt - 0.3, 0.24, 0.8, "power1.out");
+      a.ch("s").add(tv, dv, a.ch("s").at(tv) * 0.85, "power2.in");
+      a.ch("o").add(tv, dv, 0, "power1.in");
     }
+  };
+
+  // the largest scale whose hit frame still fits the safe width under the peak world transform
+  P.maxHitScale = function () {
+    var w = ((this.safe.x1 - this.safe.x0) / this.peak.s - 24) / this.W;
+    return Math.max(1, Math.min(1.32, w));
+  };
+  // where and how big a banner is on its first (hit) frame, per entry type: the planner scores
+  // this footprint, so it matches what the compositor's detector actually sees
+  P.hitPose = function (p, type, h) {
+    if (type === "slam") {
+      var s0 = Math.min(p.s * 1.42, this.maxHitScale());
+      var lift = { x: p.x, y: p.y - 24 };
+      var g0 = this.inward(lift, s0, p.r, h);
+      return { x: p.x + g0[0], y: lift.y + g0[1], s: s0 };
+    }
+    if (type === "pop") {
+      var s1 = Math.min(p.s * 1.26, this.maxHitScale());
+      var g1 = this.inward(p, s1, p.r, h);
+      return { x: p.x + g1[0], y: p.y + g1[1], s: s1 };
+    }
+    return { x: p.x, y: p.y, s: p.s * (WA.ENTRY_SCALE[type] || 1) };
   };
 
   // offset that keeps an oversized entry frame (scale s0, rotation r0) inside the safe rect: the
   // banner grows inward from the edge instead of spilling over it
   P.inward = function (p, s0, r0, h) {
-    var S = this.safe;
+    var S0 = this.safe;
+    var k = this.peak.s;
+    var m = (this.W / 2) * s0 * Math.sin((Math.abs(this.peak.r) * PI) / 180); // rotation margin
+    var S = {
+      x0: this.CX - (this.CX - S0.x0) / k + 8 + Math.abs(this.peak.dx || 0),
+      x1: this.CX + (S0.x1 - this.CX) / k - 8 - Math.abs(this.peak.dx || 0),
+      y0: this.CY - (this.CY - S0.y0) / k + m,
+      y1: this.CY + (S0.y1 - this.CY) / k - m,
+      railX: this.CX + (S0.railX - this.CX) / k - 8,
+      railY: this.CY + (S0.railY - this.CY) / k - m,
+    };
     var e = WA.ext(this.W, h, s0, r0);
     var dx = 0;
     var dy = 0;
@@ -455,6 +559,8 @@
     else if (p.x + e.hx > S.x1) dx = S.x1 - (p.x + e.hx);
     if (p.y - e.hy < S.y0) dy = S.y0 - (p.y - e.hy);
     else if (p.y + e.hy > S.y1) dy = S.y1 - (p.y + e.hy);
+    // the like/comment rail: nothing right of railX below railY
+    if (p.y + dy + e.hy > S.railY && p.x + dx + e.hx > S.railX) dx = Math.min(dx, S.railX - (p.x + e.hx));
     return [dx, dy];
   };
 
@@ -505,11 +611,12 @@
     a.ch("jy").add(t + out, back, 0, "power3.inOut");
     a.ch("jr").add(t + out, back, 0, "power3.inOut");
   };
-  // a whole-layer scale punch: peak on the hit frame, back to 1 over `frames` frames
+  // a whole-layer scale punch: peak on the hit frame, back to 1 over `frames` frames (default 2, so
+  // the punch reads 1.0 -> peak -> mid -> 1.0 and never masks an arrival three frames later)
   P.jolt = function (t, peak, frames) {
     var t0 = WA.hit(t);
     this.wt.j.add(t0, 0.001, peak, "none", 1);
-    this.wt.j.add(t0 + 0.004, (frames || 3) / WA.FPS, 1, "power2.out", peak);
+    this.wt.j.add(t0 + 0.004, (frames || 2) / WA.FPS - 0.002, 1, "power2.out", peak);
   };
   // white edge-glow flash on every banner that is up at t
   P.flash = function (t) {
@@ -531,10 +638,10 @@
       var du = tGone - 0.03 - tc;
       var cur = a.pose(tc);
       a.mbMax = 20;
-      a.ch("x").add(tc, du, cx, "power3.in");
-      a.ch("y").add(tc, du, cy, "power3.in");
-      a.ch("s").add(tc, du, 0.04, "power2.in");
-      a.ch("r").add(tc, du, cur.r + (r() < 0.5 ? -1 : 1) * (70 + 90 * r()), "power2.in");
+      a.ch("x").add(tc, du, cx, "power2.in");
+      a.ch("y").add(tc, du, cy, "power2.in");
+      a.ch("s").add(tc, du, 0.04, "power1.in");
+      a.ch("r").add(tc, du, cur.r + (r() < 0.5 ? -1 : 1) * (40 + 30 * r()), "power3.in");
       a.ch("o").add(tGone - 0.12, 0.1, 0, "power1.in");
     }
   };

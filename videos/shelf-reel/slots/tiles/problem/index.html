@@ -15,7 +15,7 @@
       #world { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
       #fx { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
       #fx path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-      #bubbles { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      #bubbles, .blayer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
 
       /* ---------- a WhatsApp dark-mode message bubble (incoming, first of its run: tail top-left) ----------
          Authored at scale 1 with fixed sizes (the layout planner uses the same numbers); the script places
@@ -115,9 +115,11 @@
             </defs>
             <g id="ringsBack" mask="url(#headMask)"></g>
             <g id="ringsFront"></g>
+            <g id="strandGlow" opacity="0.45"></g>
             <g id="strands"></g>
+            <g id="sprays" opacity="0.46"></g>
           </svg>
-          <div id="bubbles"></div>
+          <div id="bubbles"><div id="bubBack" class="blayer"></div><div id="bubFront" class="blayer"></div></div>
         </div>
       </div>
     </div>
@@ -223,38 +225,38 @@
            copy  = "everywhere": a ghost streak from the current hero, then it pops at its own spot on the 16ths/8ths
            final = PERSONAL INFO, stays over his head and settles smaller */
         var CAST = [
-          ["doc", 0.78, "hero", 8, 1.6, "uno", "Unit3_Notes_FINAL_v2.pdf", "14 pages · PDF", "2.1 MB", "11:48 PM"],
+          ["doc", 0.64, "hero", 8, 1.39, "uno", "Unit3_Notes_FINAL_v2.pdf", "14 pages · PDF", "2.1 MB", "11:48 PM"],
           ["doc", 0.6, "copy", 25, 0, "cse", "Unit3_Notes_FINAL_v3.pdf", "16 pages · PDF", "2.4 MB", "10:02 PM"],
           ["doc", 0.5, "copy", 28, 0, "boys", "unit3 notes (1).pdf", "9 pages · PDF", "1.2 MB", "9:14 PM"],
           ["doc", 0.56, "copy", 31, 0, "ocg", "Notes_Unit3_scan.pdf", "22 pages · PDF", "6.8 MB", "4:37 PM"],
-          ["doc", 0.47, "copy", 34, 0, "proj", "Unit3_FINAL_final.pdf", "14 pages · PDF", "2.0 MB", "1:20 PM"],
+          ["doc", 0.5, "copy", 34, 0, "proj", "Unit3_FINAL_final.pdf", "14 pages · PDF", "2.0 MB", "1:20 PM"],
           ["doc", 0.62, "copy", 37, 0, "ish", "U3 handwritten.pdf", "11 pages · PDF", "3.3 MB", "11:31 PM"],
-          ["doc", 0.5, "copy", 40, 0, "uno", "Unit-3 notes.pdf", "14 pages · PDF", "2.1 MB", "8:55 PM"],
-          ["fwd", 0.7, "hero", 51, 3.34, "cse", "exam hall changed to Block C", "Forwarded many times", "10:12 PM"],
+          ["doc", 0.52, "copy", 40, 0, "uno", "Unit-3 notes.pdf", "14 pages · PDF", "2.1 MB", "8:55 PM"],
+          ["fwd", 0.6, "hero", 51, 3.126, "cse", "exam hall changed to Block C", "Forwarded many times", "10:12 PM"],
           ["fwd", 0.55, "copy", 71, 0, "boys", "exam hall changed to Block C", "Forwarded many times", "10:16 PM"],
-          ["fwd", 0.47, "copy", 74, 0, "uno", "is it Block C or D??", "Forwarded", "10:20 PM"],
+          ["fwd", 0.5, "copy", 74, 0, "uno", "is it Block C or D??", "Forwarded", "10:20 PM"],
           ["fwd", 0.58, "copy", 77, 0, "ocg", "Block C, 2nd floor. confirm?", "Forwarded many times", "10:24 PM"],
-          ["fwd", 0.5, "copy", 80, 0, "cse", "exam timing changed to 9 AM", "Forwarded many times", "9:47 PM"],
-          ["fwd", 0.46, "copy", 83, 0, "proj", "hall tickets at the office", "Forwarded", "6:05 PM"],
-          ["fwd", 0.52, "copy", 86, 0, "ish", "Block C!!", "Forwarded", "11:40 PM"],
-          ["pin", 0.74, "hero", 103, 3.91, "ocg", "Assignment due 11:59 PM", "9:30 PM"],
+          ["fwd", 0.52, "copy", 80, 0, "cse", "exam timing changed to 9 AM", "Forwarded many times", "9:47 PM"],
+          ["fwd", 0.5, "copy", 83, 0, "proj", "hall tickets at the office", "Forwarded", "6:05 PM"],
+          ["fwd", 0.53, "copy", 86, 0, "ish", "Block C!!", "Forwarded", "11:40 PM"],
+          ["pin", 0.62, "hero", 103, 3.8, "ocg", "Assignment due 11:59 PM", "9:30 PM"],
           ["pin", 0.5, "copy", 107, 0, "cse", "Lab record due Friday", "7:12 PM"],
           ["pin", 0.54, "copy", 113, 0, "proj", "Project report by 9 AM", "8:41 PM"],
-          ["voice", 0.7, "hero", 120, 4.78, "mom", "0:47", "8:05 PM", "M"],
+          ["voice", 0.6, "hero", 120, 4.56, "mom", "0:47", "8:05 PM", "M"],
           ["text", 0.6, "copy", 125, 0, "ish", "lab record tomorrow!!", "11:22 PM"],
           ["voice", 0.5, "copy", 132, 0, "ish", "1:12", "11:25 PM", "I"],
-          ["doc", 0.72, "hero", 146, 5.5, "boys", "Syllabus_copy.pdf", "3 pages · PDF", "412 kB", "6:48 PM"],
+          ["doc", 0.62, "hero", 146, 5.29, "boys", "Syllabus_copy.pdf", "3 pages · PDF", "412 kB", "6:48 PM"],
           ["photo", 0.5, "copy", 150, 0, "boys", "IMG_2034.jpg", "paper", "6:51 PM"],
-          ["photo", 0.47, "copy", 156, 0, "boys", "PYQ_2022 (blurry).jpg", "pyq", "6:52 PM"],
-          ["doc", 0.8, "final", 168, 6.05, "proj", "Hall_ticket.pdf", "1 page · PDF", "284 kB", "3:15 PM"],
+          ["photo", 0.5, "copy", 156, 0, "boys", "PYQ_2022 (blurry).jpg", "pyq", "6:52 PM"],
+          ["doc", 0.72, "final", 168, 6.05, "proj", "Hall_ticket.pdf", "1 page · PDF", "284 kB", "3:15 PM"],
           ["doc", 0.55, "copy", 174, 0, "mom", "Fee_receipt.pdf", "2 pages · PDF", "190 kB", "12:04 PM"],
           ["photo", 0.48, "copy", 181, 0, "mom", "ID_card.jpg", "id", "12:06 PM"]
         ];
         // clutter spots around Jnanottam at the mirror (shot A) and scatter spots around him in the nook (shot C):
         // [x, y, rotation]. Seeded annealing offline against the measured heads (hair to chin), the IG safe zone,
         // the like rail and the caption band 1290-1460, with these exact bubble sizes.
-        var PLAN_A = [[586,412,0.2],[212,759,-0.9],[539,524,-3.1],[204,338,-4.1],[849,896,-0.2],[863,335,1.4],[788,1225,1.3],[840,726,2.3],[364,319,-0.7],[823,789,-5.0],[210,661,-3.0],[888,428,3.2],[610,314,-0.9],[883,1062,0.7],[832,524,1.9],[887,822,2.8],[878,980,-3.7],[227,565,-0.4],[489,537,1.7],[198,855,4.8],[241,448,-2.4],[162,1110,4.4],[224,971,3.8],[525,640,0.3],[860,627,0.9],[232,1196,4.8]];
-        var PLAN_C = [[252,483,0.6],[864,944,-4.7],[192,1203,4.5],[532,413,-1.9],[844,603,0.7],[219,351,-4.7],[190,713,-2.8],[842,690,-0.6],[876,783,-3.4],[647,1175,0.7],[599,327,3.1],[192,1110,-3.3],[899,1040,2.0],[408,1230,-3.2],[248,606,-2.0],[805,1093,-1.5],[332,322,-2.4],[579,607,-0.4],[829,849,-1.1],[645,1231,3.3],[837,350,-3.6],[175,991,1.7],[845,1200,2.8],[822,491,1.9],[512,511,1.1],[176,841,-3.3]];
+        var PLAN_A = [[850,507,0.2],[220,334,-0.9],[873,874,-3.1],[583,338,-4.1],[889,556,-0.2],[861,416,1.4],[202,516,1.3],[847,326,2.3],[876,321,-0.7],[200,1185,-5.0],[220,422,-3.0],[205,850,3.2],[861,1019,-0.9],[619,432,0.7],[297,514,1.9],[244,779,2.8],[573,516,-3.7],[841,784,-0.4],[895,955,1.7],[869,622,4.8],[505,338,-2.4],[205,1049,4.4],[832,1134,3.8],[525,636,0.3],[438,442,0.9],[918,705,4.8]];
+        var PLAN_C = [[230,502,0.6],[592,596,-4.7],[198,706,4.5],[856,1001,-1.9],[554,323,0.7],[229,384,-4.7],[883,461,-2.8],[862,823,-0.6],[868,614,-3.4],[367,1177,0.7],[297,327,3.1],[880,907,-3.3],[813,1209,2.0],[335,613,-3.2],[525,500,-2.0],[654,438,-1.5],[210,599,-2.4],[508,409,-0.4],[815,1134,-1.1],[583,1208,3.3],[852,719,-3.6],[174,1006,1.7],[174,846,2.8],[836,346,1.9],[806,523,1.1],[166,1156,-3.3]];
         var HERO = { x: 525, y: 650, s: 0.92 };
 
         function bubbleHTML(c, i) {
@@ -284,9 +286,9 @@
         // Saturn-style rings seen from above, centred at mouth level: the near arc crosses his chest, the far arc
         // passes behind his head (occluded), the small halo rides his hairline.
         var RINGS = [
-          { dx: -52, dy: 46, R: 302, Ry: 262, roll: -6, dir: 1, spd: 1.0, s: 0.48, n: 10 },
-          { dx: -46, dy: 54, R: 276, Ry: 272, roll: 5, dir: -1, spd: 0.9, s: 0.45, n: 9 },
-          { dx: 8, dy: -214, R: 246, Ry: 66, roll: -4, dir: 1, spd: 1.25, s: 0.4, n: 7 }
+          { dx: -52, dy: 46, R: 302, Ry: 262, roll: -6, dir: 1, spd: 1.0, s: 0.42, n: 10 },
+          { dx: -46, dy: 54, R: 276, Ry: 272, roll: 5, dir: 1, spd: 0.78, s: 0.4, n: 9 },
+          { dx: 8, dy: -214, R: 246, Ry: 66, roll: -4, dir: 1, spd: 1.25, s: 0.37, n: 7 }
         ];
         RINGS.forEach(function (R) { var b = (R.roll * Math.PI) / 180; R.sb = Math.sin(b); R.cb = Math.cos(b); });
         function radiusK(t) { return 1 - 0.14 * P3IO(prog(t, T.all, 0.5)); } // "all of it": tightest
@@ -327,8 +329,8 @@
           w += 0.65 * sstep(6.9, 7.5, t);
           w += 0.9 * sstep(7.5, 8.81, t);
           w += 1.5 * sstep(8.81, 9.35, t);
-          w += 2.6 * sstep(9.35, 9.8, t);
-          w += kick(t, T.somehow, 2.6, 0.38) + kick(t, T.remember, 3.0, 0.38) + kick(t, T.all, 3.4, 0.35);
+          w += 2.25 * sstep(9.35, 9.8, t);
+          w += kick(t, T.somehow, 2.6, 0.38) + kick(t, T.remember, 3.0, 0.38) + kick(t, T.all, 3.1, 0.35);
           w += kick(t, T.of, 1.6, 0.25) + kick(t, T.it, 1.8, 0.3);
           return w;
         }
@@ -341,7 +343,7 @@
         }
 
         /* ---------------- build the bubbles ---------------- */
-        var layer = document.getElementById("bubbles");
+        var layer = document.getElementById("bubFront"), backLayer = document.getElementById("bubBack");
         var bubbles = [];
         var ringCount = [0, 0, 0];
         var ringOf = [];
@@ -377,10 +379,10 @@
             ax: pa[0], ay: pa[1], ar: pa[2],
             vx: 0, vy: 0, vr: rr(-0.4, 0.4), bobA: rr(1.5, 3), bobW: rr(1.5, 2.6), bobP: rr(0, 6.283),
             bend: rr(-0.22, 0.22), spin0: rr(-20, 20),
-            ring: ringOf[i], phi: 0, rj: rr(-0.05, 0.05),
+            ring: ringOf[i], phi: 0, rj: 0 * rr(-0.05, 0.05),
             sw0: T.cutB - 0.004, swd: rr(0.8, 1.0),            // every bubble lets go on the cut frame
             cx: pc[0], cy: pc[1], cr: pc[2], cvx: 0, cvy: 0, cvr: rr(-0.7, 0.7),
-            sc0: T.cutC - 0.004 + rr(0, 0.02)
+            sc0: T.cutC - 0.004 + 0 * rr(0, 0.02)          // all burst out on the cut frame
           };
           if (o.role !== "copy") lastHero = o; else o.hero = lastHero;
           var da = rr(0, 6.283), dv = rr(2, 4);
@@ -389,12 +391,14 @@
           o.cvx = Math.cos(dc) * dvc; o.cvy = Math.sin(dc) * dvc;
           keepIn(o, "vx", "vy", pa[0], pa[1], c[1], headA(o.spawn));
           keepIn(o, "cvx", "cvy", pc[0], pc[1], c[1], headC(11.5));
-          o.phi = (ringCount[o.ring]++ / RINGS[o.ring].n) * 6.2832 + rr(-0.1, 0.1) + o.ring * 0.4;
-          o.rpen = Math.max(0, o.hw * RINGS[o.ring].s - 95) * 0.6; // wide bubbles ride slightly inside their ring
+          o.phi = (ringCount[o.ring]++ / RINGS[o.ring].n) * 6.2832 + 0 * rr(-0.1, 0.1) + o.ring * 0.4;
+          var sz0 = SIZE[c[0]];
+          o.eq = Math.sqrt((440 * 140) / (sz0[0] * sz0[1]));      // every bubble the same footprint in orbit
+          o.rpen = Math.max(0, o.hw * o.eq * RINGS[o.ring].s - 95) * 0.6; // wide bubbles ride slightly inside their ring
           bubbles.push(o);
         });
         // each hero "spits out" its copies: a small kick per copy as its ghost leaves
-        bubbles.forEach(function (o) { if (o.hero) (o.hero.kicks = o.hero.kicks || []).push(o.spawn - 0.1); });
+        bubbles.forEach(function (o) { if (o.hero) (o.hero.kicks = o.hero.kicks || []).push(o.spawn - 0.133); });
 
         /* ---------------- the bar-downbeat pulse (1 -> 1.025 -> 1) ----------------
            The rise is spread over 5 frames so the mixer's alpha-onset detector does not hear it as a new bubble. */
@@ -402,8 +406,8 @@
           var p = 0;
           for (var b = 0; b < BARS.length; b++) {
             var d = t - BARS[b];
-            if (d < -0.08 || d > 0.9) continue;
-            p += sstep(-0.075, 0.1, d) * (d > 0.1 ? Math.exp(-(d - 0.1) / 0.15) : 1);
+            if (d < -0.14 || d > 0.95) continue;
+            p += sstep(-0.13, 0.11, d) * (d > 0.11 ? Math.exp(-(d - 0.11) / 0.16) : 1);
           }
           return 1 + 0.025 * p;
         }
@@ -431,24 +435,20 @@
             var GH = 0.1; // ghost flight: the 3 frames before its pop
             if (t < st - GH) return null;
             if (!o.cp) o.cp = flightBend(HERO.x, HERO.y, o.ax, o.ay, o.bend, headA(st));
-            if (t < st) {
-              var u = (t - (st - GH)) / GH, p = u * u, qq = 1 - p;
-              var gx = qq * qq * HERO.x + 2 * qq * p * o.cp[0] + p * p * o.ax;
-              var gy = qq * qq * HERO.y + 2 * qq * p * o.cp[1] + p * p * o.ay;
-              return { x: gx, y: gy, s: o.cs * lerp(0.5, 0.86, p), r: lerp(o.spin0, o.ar, p), a: 0.3, b: 10, z: 99 };
-            }
-            var d = drift(o, t, st), pu = prog(t, st, 0.32);
+            if (t < st) return null; // in flight it is only the comet (drawSprays): the bubble pops on its frame
+            var d = drift(o, t, st), dd = t - st, sp = Math.exp(-dd / 0.09);
+            var pop = 1 - 0.04 * Math.cos(dd * 22.4) * sp + 0.1 * Math.sin(dd * 22.4) * sp; // 0.96 -> ~1.05 -> 1
             return {
-              x: o.ax + d[0], y: o.ay + d[1], s: o.cs * (0.9 + 0.1 * BO2(pu)), r: o.ar + d[2],
-              a: 1, b: t - st < 0.03 ? 2.2 : 0, z: 100 + o.i
+              x: o.ax + d[0], y: o.ay + d[1], s: o.cs * pop, r: o.ar + d[2],
+              a: 1, b: dd < 0.03 ? 2.2 : 0, z: 100 + o.i
             };
           }
           // hero / final: pop over his head on the word
           if (t < st) return null;
-          var pp = prog(t, st, 0.42);
-          var s = HERO.s * (0.55 + 0.45 * BO(pp)), b = 6 * (1 - sstep(0, 0.15, t - st));
+          var pp = prog(t, st, 0.24);
+          var s = HERO.s * (0.8 + 0.2 * BO(pp)), b = 5 * (1 - sstep(0, 0.12, t - st));
           var x = HERO.x + 2.5 * Math.sin(2.1 * t + o.i), y = HERO.y + 40 * (1 - P3O(pp)) + 2.5 * Math.cos(1.7 * t + o.i), r = 0;
-          if (o.kicks) o.kicks.forEach(function (tk, n) { s *= 1 + (n === 0 ? 0.07 : 0.03) * Math.sin(Math.PI * P2O(prog(t, tk, 0.22))); });
+          if (o.kicks) o.kicks.forEach(function (tk, n) { if (tk - st > 0.22) s *= 1 + (n === 0 ? 0.06 : 0.03) * Math.sin(Math.PI * P2O(prog(t, tk, 0.22))); });
           var z = 900;
           if (o.role === "hero" && t >= o.heroEnd) {
             var lu = prog(t, o.heroEnd, 0.62), lp = EO(lu);
@@ -484,17 +484,12 @@
           var p = FOC / (FOC + depth);
           var x = c[0] + rx * p, y = c[1] + ry * p;
           var back = clamp(depth / (rad * Gm.ca + 1), 0, 1);
-          var a = lerp(1, 0.55, back);
-          if (depth > 0) { // passing behind his head: hide where the head would cover it
-            var hx = g[0] + HEADB.dx, hy = g[1] + HEADB.dy;
-            var dd = Math.sqrt(Math.pow((x - hx) / HEADB.rx, 2) + Math.pow((y - hy) / HEADB.ry, 2));
-            a *= lerp(1, sstep(0.8, 1.12, dd), clamp(depth / 40, 0, 1));
-          }
+          var a = lerp(1, 0.6, back); // never below .5: the head itself is a mask on the back layer (#bubBack)
           var speed = Math.abs(omega(t) * R.spd) * rad * p;
           return {
-            x: x, y: y, s: R.s * p, r: R.roll * 0.5 - 4 * Math.cos(ph) * R.dir,
-            yaw: 62 * Math.cos(ph), // carousel: bubbles turn edge-on at the sides of the ring
-            a: a, b: Math.max(clamp((speed - 560) / 420, 0, 3), 1.1 * back), z: Math.round(3000 - depth)
+            x: x, y: y, s: R.s * p * o.eq, r: R.roll * 0.5 - 4 * Math.cos(ph) * R.dir,
+            yaw: 48 * Math.cos(ph), // carousel: bubbles turn towards edge-on at the sides of the ring
+            a: a, b: Math.max(clamp((speed - 560) / 420, 0, 3), 1.1 * back), z: Math.round(3000 - depth), back: depth > 0
           };
         }
         function psiOf(o, S, c, t) { var ph = phase(o, t); return -ph + wrapPi(Math.atan2(S.y - c[1], S.x - c[0]) + ph); }
@@ -514,7 +509,7 @@
           var rad = lerp(o.faR, rB, p);
           var S = {
             x: c[0] + rad * Math.cos(ang), y: c[1] + rad * Math.sin(ang), s: lerp(A.s, B.s, P3O(u)), r: lerp(A.r, B.r, p),
-            yaw: B.yaw * p, a: lerp(1, B.a, P3O(u)), b: Math.max(B.b, 10 * Math.pow(1 - u, 2.2)), z: B.z
+            yaw: B.yaw * p, a: lerp(1, B.a, P3O(u)), b: Math.max(B.b, 10 * Math.pow(1 - u, 2.2)), z: B.z, back: B.back && u > 0.55
           };
           return pushOut(S, faceB(t), 1 - sstep(0.6, 1, u), o);
         }
@@ -529,19 +524,19 @@
           var j = jit(t);
           if (j > 0) {
             var f = Math.round(t * 30);
-            x += (hash01(f * 131 + o.i * 7919) - 0.5) * 6 * j;
-            y += (hash01(f * 173 + o.i * 104729) - 0.5) * 6 * j;
-            r += (hash01(f * 211 + o.i * 31) - 0.5) * 2 * j;
+            x += (hash01(f * 131 + o.i * 7919) - 0.5) * 4.2 * j;
+            y += (hash01(f * 173 + o.i * 104729) - 0.5) * 4.2 * j;
+            r += (hash01(f * 211 + o.i * 31) - 0.5) * 1.3 * j;
           }
           return { x: x, y: y, s: o.cs, r: r, a: 1, b: 0, z: 100 + ((o.i * 7) % 26) };
         }
         function stateScatter(o, t) {
           if (!o.fb) o.fb = stateB(o, o.sc0);
           var B = o.fb, C = stateC(o, t);
-          var u = prog(t, o.sc0, 0.58), p = EO(u);
+          var u = prog(t, o.sc0, 0.12), p = EO(u);
           var S = {
-            x: lerp(B.x, C.x, p), y: lerp(B.y, C.y, p), s: lerp(B.s, C.s, P3O(u)), r: lerp(B.r, C.r, p),
-            yaw: B.yaw * (1 - p), a: lerp(B.a, 1, P3O(u)), b: Math.max(B.b * (1 - u), 9 * (1 - sstep(0, 0.5, u))), z: C.z
+            x: lerp(B.x, C.x, p), y: lerp(B.y, C.y, p), s: lerp(B.s, C.s, EO(u)), r: lerp(B.r, C.r, p),
+            yaw: B.yaw * (1 - p), a: lerp(B.a, 1, EO(u)), b: Math.max(B.b * (1 - sstep(0, 0.3, u)), 6 * (1 - sstep(0, 0.3, u))), z: C.z
           };
           return pushOut(S, headC(t), 1, o);
         }
@@ -549,13 +544,13 @@
         function stateOf(o, t) {
           if (t < o.sw0) return stateA(o, t);
           if (t < o.sc0) return o.sw0 + o.swd > t ? stateSwirl(o, t) : stateB(o, t);
-          if (t < o.sc0 + 0.58) return stateScatter(o, t);
+          if (t < o.sc0 + 0.12) return stateScatter(o, t);
           return stateC(o, t);
         }
 
         /* ---------------- glowing strands (shot C): WhatsApp green turning red ---------------- */
         var SVGNS = "http://www.w3.org/2000/svg";
-        var gStr = document.getElementById("strands");
+        var gStr = document.getElementById("strands"), gGlow = document.getElementById("strandGlow");
         var strands = [];
         (function buildStrands() {
           var waves = [[T.but, 12, 0.035], [T.sound, 14, 0.028], [T.comp, 20, 0.02]];
@@ -592,7 +587,7 @@
                 pth.setAttribute("pathLength", "1");
                 pth.setAttribute("stroke-dasharray", "1 1");
                 pth.style.visibility = "hidden";
-                gStr.appendChild(pth);
+                (pth === s.core ? gStr : gGlow).appendChild(pth); // glows share one capped group: crossings never stack past 50 %
               });
               strands.push(s);
               n++;
@@ -625,6 +620,8 @@
               c1x += (hash01(f * 97 + s.seed * 389) - 0.5) * 14 * j; c1y += (hash01(f * 89 + s.seed * 617) - 0.5) * 14 * j;
               c2x += (hash01(f * 83 + s.seed * 991) - 0.5) * 14 * j; c2y += (hash01(f * 79 + s.seed * 271) - 0.5) * 14 * j;
             }
+            // a cubic stays inside its control hull: keep the hull out of the caption band and the frame edges
+            c1y = clamp(c1y, 268, 1270); c2y = clamp(c2y, 268, 1270); c1x = clamp(c1x, 44, 1036); c2x = clamp(c2x, 44, 1036);
             var d = "M" + A.x.toFixed(1) + " " + A.y.toFixed(1) + "C" + c1x.toFixed(1) + " " + c1y.toFixed(1) + " " + c2x.toFixed(1) + " " + c2y.toFixed(1) + " " + B.x.toFixed(1) + " " + B.y.toFixed(1);
             var off = (1 - P2O(u)).toFixed(4);
             [s.bloom, s.glow, s.core].forEach(function (pth) {
@@ -633,9 +630,9 @@
               pth.style.visibility = "visible";
             });
             s.on = true;
-            s.bloom.style.stroke = glowC; s.bloom.style.strokeWidth = (16 * s.w).toFixed(2); s.bloom.style.opacity = (0.07 + 0.08 * pulseR * red).toFixed(3);
-            s.glow.style.stroke = glowC; s.glow.style.strokeWidth = ((6 + 2.5 * pulseR * red) * s.w).toFixed(2); s.glow.style.opacity = (0.3 + 0.18 * pulseR * red).toFixed(3);
-            s.core.style.stroke = coreC; s.core.style.strokeWidth = ((2.1 + 0.9 * pulseR * red) * s.w).toFixed(2); s.core.style.opacity = "0.92";
+            s.bloom.style.stroke = glowC; s.bloom.style.strokeWidth = ((16 + 7 * pulseR * red) * s.w).toFixed(2); s.bloom.style.opacity = (0.18 + 0.2 * pulseR * red).toFixed(3);
+            s.glow.style.stroke = glowC; s.glow.style.strokeWidth = ((6.5 + 3.5 * pulseR * red) * s.w).toFixed(2); s.glow.style.opacity = (0.62 + 0.3 * pulseR * red).toFixed(3);
+            s.core.style.stroke = coreC; s.core.style.strokeWidth = (2.4 * s.w).toFixed(2); s.core.style.opacity = "0.92";
           });
         }
         function mixc0(c1, c2, u) { return [lerp(c1[0], c2[0], u), lerp(c1[1], c2[1], u), lerp(c1[2], c2[2], u)]; }
@@ -688,6 +685,46 @@
           });
         }
 
+        /* ---------------- spray comets: each copy leaves its hero as a green streak and pops where it lands ---------------- */
+        var gSpr = document.getElementById("sprays");
+        bubbles.forEach(function (o) {
+          if (o.role !== "copy") return;
+          o.sGlow = document.createElementNS(SVGNS, "path"); o.sCore = document.createElementNS(SVGNS, "path"); o.sHead = document.createElementNS(SVGNS, "circle");
+          o.sGlow.setAttribute("stroke", "#0b4a33"); o.sGlow.setAttribute("stroke-width", "15");
+          o.sCore.setAttribute("stroke", "#25d366"); o.sCore.setAttribute("stroke-width", "6");
+          o.sHead.setAttribute("r", "9"); o.sHead.setAttribute("fill", "#f2fff6"); o.sHead.setAttribute("stroke", "#25d366"); o.sHead.setAttribute("stroke-width", "4");
+          [o.sGlow, o.sCore, o.sHead].forEach(function (n) { n.style.visibility = "hidden"; gSpr.appendChild(n); });
+        });
+        // the comet leaves from the hero's edge (where the line to its spot exits the hero bubble)
+        function sprayPath(o) {
+          var hz = o.hero, hw = hz.hw * HERO.s, hh = hz.hh * HERO.s;
+          var dx = o.ax - HERO.x, dy = o.ay - HERO.y;
+          var k = Math.min(Math.abs(dx) > 1e-6 ? hw / Math.abs(dx) : 1e9, Math.abs(dy) > 1e-6 ? hh / Math.abs(dy) : 1e9);
+          o.e0 = [HERO.x + dx * k * 0.92, HERO.y + dy * k * 0.92];
+          o.cp2 = flightBend(o.e0[0], o.e0[1], o.ax, o.ay, o.bend, headA(o.spawn));
+        }
+        function qpt(o, u) { var q = 1 - u; return [q * q * o.e0[0] + 2 * q * u * o.cp2[0] + u * u * o.ax, q * q * o.e0[1] + 2 * q * u * o.cp2[1] + u * u * o.ay]; }
+        function drawSprays(t) {
+          bubbles.forEach(function (o) {
+            if (!o.sCore) return;
+            var t0 = o.spawn - 0.133, t1 = o.spawn + 0.08;
+            var on = t >= t0 && t < t1;
+            if (!on) { if (o.sOn) { o.sGlow.style.visibility = o.sCore.style.visibility = o.sHead.style.visibility = "hidden"; o.sOn = false; } return; }
+            if (!o.e0) sprayPath(o);
+            var u = clamp((t - t0) / 0.133, 0, 1), head = 0.06 + 0.94 * Math.pow(u, 1.6); // accelerates into the pop
+            var tail = Math.max(0, head - 0.5) + prog(t, o.spawn, 0.08);               // the tail catches up after the pop
+            tail = Math.min(tail, head);
+            var d = "", N = 14;
+            for (var k = 0; k <= N; k++) { var pt = qpt(o, lerp(tail, head, k / N)); d += (k ? "L" : "M") + pt[0].toFixed(1) + " " + pt[1].toFixed(1); }
+            o.sGlow.setAttribute("d", d); o.sCore.setAttribute("d", d);
+            var hp = qpt(o, head), fade = 1 - prog(t, o.spawn, 0.08);
+            o.sHead.setAttribute("cx", hp[0].toFixed(1)); o.sHead.setAttribute("cy", hp[1].toFixed(1));
+            o.sHead.setAttribute("r", (8 * fade).toFixed(2));
+            o.sGlow.style.visibility = o.sCore.style.visibility = o.sHead.style.visibility = "visible";
+            o.sOn = true;
+          });
+        }
+
         /* ---------------- per-frame render ---------------- */
         var world = document.getElementById("world");
         function vanish(t) { // hard reset (the music resets too): 83.333 full, 83.367 snaps shut, 83.400 nothing
@@ -702,13 +739,32 @@
           world.style.transformOrigin = "540px 820px";
           world.style.transform = v > 0 && v < 1 ? "scale(" + lerp(0.86, 1, v).toFixed(3) + ")" : "none";
           var pk = pulse(t);
+          var orbit = t >= T.cutB - 0.005 && t < T.cutC - 0.006;
+          if (orbit) {
+            var gh = track(TB, t), hx = gh[0] + HEADB.dx, hy = gh[1] + HEADB.dy;
+            var mk = "radial-gradient(ellipse " + HEADB.rx + "px " + HEADB.ry + "px at " + hx.toFixed(1) + "px " + hy.toFixed(1) + "px, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 80%, #000 100%)";
+            backLayer.style.webkitMaskImage = mk; backLayer.style.maskImage = mk;
+          }
           bubbles.forEach(function (o) {
             var s = stateOf(o, t);
             o.cur = s;
             var el = o.el;
             if (!s || s.a <= 0.003 || s.s <= 0.002) { el.style.visibility = "hidden"; return; }
+            var home = orbit && s.back ? backLayer : layer;
+            if (el.parentNode !== home) home.appendChild(el);
             el.style.visibility = "visible";
             var yaw = s.yaw || 0, sc = s.s * pk;
+            var cr = Math.cos((s.r * Math.PI) / 180), sr = Math.abs(Math.sin((s.r * Math.PI) / 180));
+            var cy = Math.abs(Math.cos((yaw * Math.PI) / 180));
+            var ext = (o.hh * cr + o.hw * cy * sr) * sc + 2, extX = (o.hw * cy * cr + o.hh * sr) * sc + 2;
+            var shadow = 46 * sc;                                    // the drop shadow reaches this far below the bubble
+            if (s.y + ext + shadow > 1288) s.y = 1288 - ext - shadow; // never into the caption band, shadow included
+            if (s.y - ext < 262) s.y = 262 + ext;
+            var bl = 2 * (s.b || 0);
+            if (s.x - extX - 15 * sc - bl < 52) s.x = 52 + extX + 15 * sc + bl; // frame edges (the tail sticks out on the left)
+            if (s.x + extX + bl > 1022) s.x = 1022 - extX - bl;
+            var rail = sstep(1084, 1112, s.y + ext + shadow * 0.6 + bl); // the like / comment rail (blur included)
+            if (rail > 0 && s.x + extX + bl > 938) s.x -= (s.x + extX + bl - 938) * rail;
             el.style.transform = "translate(" + (s.x - o.hw).toFixed(2) + "px," + (s.y - o.hh).toFixed(2) + "px) rotate(" + s.r.toFixed(2) + "deg)" +
               (Math.abs(yaw) > 0.05 ? " perspective(900px) rotateY(" + yaw.toFixed(2) + "deg)" : "") + " scale(" + sc.toFixed(4) + ")";
             el.style.opacity = s.a.toFixed(3);
@@ -717,6 +773,7 @@
           });
           drawTrails(t);
           drawStrands(t);
+          drawSprays(t);
         }
 
         /* ---------------- one paused timeline; a single clock drives the deterministic render ---------------- */

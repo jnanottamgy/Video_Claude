@@ -21,7 +21,7 @@
     <!--
       notifs/storm v2 — output window 44.600 -> 51.833 s (7.2333 s = 217 frames), layer FRONT.
       "What the f*ck, why are my notes scattered in so many groups?" then head in hand — on the song:
-        44.667       "What": 7 WhatsApp banners burst out of the centre (staggered over 3 frames)
+        44.667       "What": 7 WhatsApp banners burst out of the centre
         44.9 45.1 45.3*                    8ths (a big one on the downbeat after "f*ck")
         45.5 45.7 45.9 46.133s             "why are my notes" (the notes file on the snare)
         46.333       "scattered": the whole pile is flung to every corner (rot +-5..14, scale .55-1)
@@ -52,17 +52,42 @@
           W: 780,
           cx: 540,
           cy: 780,
-          peak: { s: 1.06, r: 3.6, dx: -8, dy: 0 }, // vertigo + the breath before the collapse
+          // banner edges; the 808 glow halo and the shadow then stay out of y < 270 and the caption band
+          safe: { x0: 66, x1: 1014, y0: 294, y1: 1232, railX: 926, railY: 1100 },
+          peak: { s: 1.085, r: 3.6, dx: -8, dy: 0 }, // vertigo x 808 jolt, the breath before the collapse
         });
         S.zones.push({ x0: 665, y0: 765, x1: 990, y1: 1150, t0: -1, t1: L(48.033) }); // his face, laptop shot
+        S.ageScale = 0.95; // older banners recede only slightly (the churn makes room in the dense part)
 
+        // a new banner where it adds the most visible area; once the pile is saturated, the oldest
+        // banner sinks away first (churn), so every arrival still lands fresh (and is heard)
         function pile(t, key, s, type, r, extra) {
           key = key || S.next();
           var tp = typeof type === "string" ? type : type.type;
-          var o = { s: s, r: r || [2, 13], h: S.hOf(key), k: 3, es: WA.ENTRY_SCALE[tp] || 1 };
+          var o = { s: s, r: r || [2, 13], h: S.hOf(key), k: 3, es: WA.ENTRY_SCALE[tp] || 1, entry: tp };
+          if (tp === "fly") {
+            o.side = type.side;
+            o.dist = type.dist;
+          }
           if (extra) for (var f in extra) o[f] = extra[f];
           var p = S.pick(L(t), o);
-          if (!p) return null;
+          for (var c = 0; c < 3 && !(extra && extra.noChurn) && p && p.nc !== undefined && p.nc < 100 && L(t) > 0.9; c++) {
+            S.recycle(L(t), 1);
+            p = S.pick(L(t), o);
+          }
+          for (var f = 0; f < 3 && !p; f++) {
+            // no legal spot for a big entry frame: land it smaller rather than drop the beat
+            o.s = [o.s[0] * 0.9, o.s[1] * 0.9];
+            if (o.entry === "slam") {
+              o.entry = "pop";
+              type = "pop";
+            }
+            p = S.pick(L(t), o);
+          }
+          if (!p) {
+            if (window.console) console.warn("storm: no spot for", key, t);
+            return null;
+          }
           return S.add(key, L(t), p, typeof type === "string" ? { type: type } : type);
         }
 
@@ -71,11 +96,12 @@
         var seeds = [CTR];
         ["u_47", "o_syl", "b_pyq", "i_bro", "c_exam", "l_rec", "z_pls"].forEach(function (key, i) {
           var p = S.pick(T_WHAT, {
-            s: i < 3 ? [0.8, 0.9] : [0.62, 0.76],
+            s: i < 3 ? [0.72, 0.82] : [0.56, 0.68],
             r: [2, 9],
             h: S.hOf(key),
             far: seeds,
             k: 2,
+            from: { x: CTR[0], y: CTR[1], s: 0.3, r: 0 },
             bias: function (x, y) {
               var d = Math.hypot(x - CTR[0], y - CTR[1]);
               return d > 160 && d < 440 ? 1 : 0.35;
@@ -83,23 +109,23 @@
           });
           if (!p) return;
           seeds.push([p.x, p.y]);
-          S.add(key, T_WHAT + Math.floor(i / 3) / 30, p, { type: "burst", from: CTR, dur: 0.6 });
+          S.add(key, T_WHAT, p, { type: "burst", from: CTR, dur: 0.45 });
         });
 
         /* ---------- 8ths ---------- */
-        pile(44.895, "b_u3", [0.62, 0.74], "slam");
-        pile(45.099, "h_chg", [0.6, 0.72], "pop");
-        pile(45.303, "o_128", [0.92, 1.0], "slam"); // the downbeat after "f*ck": a big one
-        pile(45.507, "i_mic", [0.6, 0.72], "pop");
-        pile(45.711, "m_eat", [0.58, 0.68], "pop");
-        pile(45.915, "r_13", [0.62, 0.74], "slam");
-        pile(46.119, "u_pdf", [0.84, 0.9], "slam"); // "notes", on the snare
+        pile(44.895, "b_u3", [0.56, 0.68], "slam");
+        pile(45.099, "h_chg", [0.55, 0.66], "pop");
+        pile(45.303, "o_128", [0.84, 0.92], "slam"); // the downbeat after "f*ck": a big one
+        pile(45.507, "i_mic", [0.55, 0.66], "pop");
+        pile(45.711, "m_eat", [0.55, 0.64], "pop");
+        pile(45.915, "r_13", [0.56, 0.68], "slam");
+        pile(46.119, "u_pdf", [0.76, 0.84], "slam"); // "notes", on the snare
 
         /* ---------- 46.324 "scattered": flung to every corner ---------- */
         var T_SC = WA.hit(L(46.324));
         var sc = [[540, 760]];
         S.items
-          .map(function (it) { return { it: it, s2: S.R(0.55, 1.0), cur: it.a.pose(T_SC) }; })
+          .map(function (it) { return { it: it, s2: S.R(0.55, 0.88), cur: it.a.pose(T_SC) }; })
           .sort(function (a, b) { return b.s2 - a.s2; })
           .forEach(function (o) {
             var p = S.pick(T_SC, {
@@ -108,6 +134,7 @@
               h: o.it.h,
               far: sc,
               k: 2,
+              from: o.cur,
               until: L(48.033),
               bias: function (x, y) {
                 var out = (x - o.cur.x) * (o.cur.x - 540) + (y - o.cur.y) * (o.cur.y - 760);
@@ -116,18 +143,18 @@
             });
             if (!p) return;
             sc.push([p.x, p.y]);
-            S.moveTo(o.it, T_SC, p, 0.6, "expo.out");
+            S.moveTo(o.it, T_SC - 1 / 30, p, 0.15, "expo.out"); // a snap fling, ~80 % done on the beat frame
           });
-        ["b_blur", "c_del", "p_fwd"].forEach(function (key) {
-          var p = S.pick(L(46.324), { s: [0.58, 0.72], r: [5, 14], h: S.hOf(key), far: sc, k: 2 });
+        ["b_blur", "p_fwd"].forEach(function (key) {
+          var p = S.pick(L(46.324), { s: [0.58, 0.72], r: [5, 14], h: S.hOf(key), k: 2, es: 1.42, entry: "slam" });
           if (!p) return;
           sc.push([p.x, p.y]);
-          S.add(key, L(46.324), p, { type: "burst", from: [540, 760], dur: 0.55 });
+          S.add(key, L(46.324), p, { type: "slam" });
         });
 
-        pile(46.528, null, [0.58, 0.7], "pop");
-        pile(46.732, null, [0.58, 0.7], "pop");
-        pile(46.936, null, [0.8, 0.9], "slam"); // downbeat
+        pile(46.528, null, [0.55, 0.66], "pop");
+        pile(46.732, null, [0.55, 0.66], "pop");
+        pile(46.936, null, [0.72, 0.82], "slam"); // downbeat
 
         /* ---------- 47.140 "many groups?": a wave from both sides ---------- */
         ["c_exam", "l_rec", "h_chg", "r_13"].forEach(function (key, i) {
@@ -150,7 +177,7 @@
         var SIX = [];
         for (var i = 0; i < E8.length - 1; i++) SIX.push(E8[i], (E8[i] + E8[i + 1]) / 2);
         var SUMMARY = { 49.385: "s_9", 50.609: "s_14", 51.221: "s_999" };
-        var KINDS = ["pop", "slam", "pop", "drop", "pop", "slam", "fly"];
+        var KINDS = ["pop", "slam", "pop", "fly", "pop", "slam"];
         SIX.forEach(function (t, n) {
           var u = n / (SIX.length - 1); // 0 -> 1: bigger, denser, harder
           var sum = SUMMARY[t.toFixed(3)];
@@ -160,11 +187,11 @@
               region: { x0: 300, y0: 520, x1: 780, y1: 1000 },
             });
           } else {
-            var kind = KINDS[n % KINDS.length];
+            var kind = t < 49.5 ? KINDS[n % KINDS.length] : n % 2 ? "pop" : "slam";
             var type = kind === "fly" ? { type: "fly", side: n % 2 ? 1 : -1, dist: 820 } : { type: kind };
-            pile(t, null, [0.58 + 0.16 * u, 0.76 + 0.2 * u], type);
+            pile(t, null, [0.6 + 0.2 * u, 0.78 + 0.26 * u], type);
           }
-          if (t >= 50.2) pile(t, null, [0.5, 0.62], "pop"); // densify: doubles in the last bar
+          if (t >= 50.2) pile(t, null, [0.52, 0.64], "pop", null, { noChurn: true }); // densify: doubles in the last bar
         });
 
         /* ---------- vertigo, 808 jolts, collapse ---------- */
@@ -174,7 +201,7 @@
         S.wt.s.add(T_BASS, T_SUCK - T_BASS, 1.04, "sine.in");
         S.wt.x.add(T_BASS, T_SUCK - T_BASS, -8, "sine.in");
         [50.609, 51.221].forEach(function (t) {
-          S.jolt(L(t), 1.05, 3);
+          S.jolt(L(t), 1.05, 2); // 1.0 -> 1.05 -> 1.025 -> 1.0: a 3-frame punch
           S.flash(L(t));
         });
         // a breath out, then everything spirals into the centre and is gone before 51.80

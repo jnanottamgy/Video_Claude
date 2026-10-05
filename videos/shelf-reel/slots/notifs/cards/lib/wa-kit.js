@@ -372,7 +372,8 @@
   /* ---------- actor: one banner driven by tracks ----------
      channels (centre x/y in px, scale, rotation deg, opacity, extra blur px, dim, glow,
      and an inner "fly" pose jx/jy/jr/js for trembles and blow-aparts) */
-  var CH = { x: 0, y: 0, s: 1, r: 0, o: 0, b: 0, d: 0, g: 0, jx: 0, jy: 0, jr: 0, js: 1, sh: -1 };
+  // ag = a multiplicative "age" scale (older banners recede), always relative to s
+  var CH = { x: 0, y: 0, s: 1, ag: 1, r: 0, o: 0, b: 0, d: 0, g: 0, jx: 0, jy: 0, jr: 0, js: 1, sh: -1 };
   function Actor(card, init) {
     this.k = card;
     this.tr = {};
@@ -386,7 +387,7 @@
   };
   Actor.prototype.pose = function (t) {
     var tr = this.tr;
-    return { x: tr.x.at(t), y: tr.y.at(t), s: tr.s.at(t), r: tr.r.at(t) };
+    return { x: tr.x.at(t), y: tr.y.at(t), s: tr.s.at(t) * tr.ag.at(t), r: tr.r.at(t) };
   };
   // speed of the banner's outline in px per frame (translation + scale + rotation)
   Actor.prototype.speed = function (t) {
@@ -423,7 +424,7 @@
     var h = this.k.h;
     var x = tr.x.at(t);
     var y = tr.y.at(t);
-    var s = tr.s.at(t);
+    var s = tr.s.at(t) * tr.ag.at(t);
     var r = tr.r.at(t);
     var tf = "translate(" + (x - w / 2).toFixed(2) + "px," + (y - h / 2).toFixed(2) + "px) rotate(" + r.toFixed(3) + "deg) scale(" + s.toFixed(4) + ")";
     if (tf !== L.tf) {
