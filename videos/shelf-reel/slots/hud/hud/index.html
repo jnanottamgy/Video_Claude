@@ -99,7 +99,7 @@
       #e2e { position: absolute; left: 662px; top: 374px; height: 28px; display: flex; align-items: center; gap: 7px;
         font: 500 20px/28px var(--font-ui); color: var(--wa-meta); white-space: nowrap; }
       #e2e svg { flex: none; width: 15px; height: 15px; fill: var(--wa-meta); margin-top: -1px; }
-      #callStatus { position: absolute; left: 296px; top: 464px; width: 260px; height: 34px; }
+      #callStatus { position: absolute; left: 296px; top: 464px; width: 260px; height: 34px; overflow: hidden; }
       .st { position: absolute; left: 0; top: 0; height: 34px; font: 400 27px/34px var(--font-ui); color: var(--wa-meta); white-space: nowrap; }
       .st .cdot { display: inline-block; width: 8px; text-align: center; }
       #stRinging { opacity: 0; }
@@ -119,7 +119,7 @@
       #badge svg { position: absolute; inset: 0; width: 28px; height: 28px; overflow: visible; }
       #callName { position: absolute; left: 296px; top: 418px; height: 46px; font: 600 40px/46px var(--font-ui); color: var(--wa-text);
         white-space: nowrap; transform-origin: 0% 50%; letter-spacing: -0.005em; }
-      #callTimerBox { position: absolute; left: 296px; top: 459px; height: 44px; }
+      #callTimerBox { position: absolute; left: 296px; top: 459px; height: 44px; overflow: hidden; }
       #callTimerIn { height: 44px; opacity: 0; }
       .tclock { display: flex; align-items: center; font-family: var(--font-ui); font-weight: 500; font-size: 28px; color: var(--wa-green);
         font-feature-settings: "tnum" 1, "case" 1; }
@@ -211,8 +211,8 @@
               <span>End-to-end encrypted</span>
             </div>
             <div id="callStatus">
-              <div id="stCalling" class="st">Calling<span class="cdot">.</span><span class="cdot">.</span><span class="cdot">.</span></div>
-              <div id="stRinging" class="st">Ringing<span class="cdot">.</span><span class="cdot">.</span><span class="cdot">.</span></div>
+              <div id="stCalling" class="st" data-layout-allow-overflow>Calling<span class="cdot">.</span><span class="cdot">.</span><span class="cdot">.</span></div>
+              <div id="stRinging" class="st" data-layout-allow-overflow>Ringing<span class="cdot">.</span><span class="cdot">.</span><span class="cdot">.</span></div>
             </div>
             <div id="ctrlBar">
               <div id="btnSpk" class="cbtn" style="left: 91px">
@@ -247,7 +247,7 @@
             </svg>
           </div>
           <div id="callName">Ishaan</div>
-          <div id="callTimerBox"><div id="callTimerIn"><span id="callTimer" class="tclock"></span></div></div>
+          <div id="callTimerBox"><div id="callTimerIn" data-layout-allow-overflow><span id="callTimer" class="tclock"></span></div></div>
           <div id="endIcon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" /></svg>
           </div>
@@ -301,26 +301,30 @@
         var DUR = 37.533333; // 1126 frames: output 14.300 -> 51.833
         var W0 = 14.3;
         function O(out) { return out - W0; } // output seconds -> composition seconds
+        function snapC(tc) { return Math.round(tc * FPS) / FPS; }   // nearest frame (composition s)
+        // a cue's tweens start 20 ms before its nearest frame, so that frame already shows the hit
+        function hitC(out) { return snapC(O(out)) - 0.02; }
 
         /* ---- countdown cues (composition s) ---- */
         var T_IN = 0.24;        // "in"     14.54  -> EXAM IN label
-        var T_SLAM = 0.5;       // "8"      14.80  -> 08:00:00 slam
+        var T_SLAM = 0.48;      // "8"      14.80  -> 08:00:00 slam (hits on the 14.800 frame)
         var T_START = 0.77;     // "hours"  15.07  -> countdown starts (07:59:59 at 16.07)
         var T_LAND = 1.8;       // 16.10 clock lands in the corner pill
         /* ---- WhatsApp call cues ---- */
-        var T_CARD = O(15.9);       // call card slides down
-        var T_RINGING = O(16.1);    // "Calling..." -> "Ringing..." (other phone rings)
-        var T_CONNECT = O(21.28);   // "What's up bro?" -> timer 0:00
-        var T_MORPH = O(21.5);      // card -> green pill, done by 22.0
-        var T_END = O(44.4);        // call ended (cut to laptop), gone by 44.90
+        var T_CARD = hitC(15.9);       // call card slides down
+        var T_RINGING = hitC(16.1);    // "Calling..." -> "Ringing..." (other phone rings)
+        var T_CONNECT = hitC(21.28);   // "What's up bro?" -> timer 0:00
+        var T_MORPH = O(21.5);         // card -> green pill, done by 22.0
+        var T_END = hitC(44.4);        // call ended (cut to laptop), gone by 44.90
         // avatar pulse rings during the two ring tones (audible 16.02-17.04 and 18.55-20.04)
-        var RIPPLES = [16.1, 16.44, 16.78, 18.56, 18.92, 19.28, 19.64].map(O);
+        var RIPPLES = [16.1, 16.44, 16.78, 18.56, 18.92, 19.28, 19.64].map(hitC);
         /* ---- breakdown: the clock races on the song (147 BPM; beat 0.40815 s) ---- */
-        var T_RACE = O(44.65);      // pill goes full red
+        var T_RACE = snapC(O(44.65)) - 0.001;   // pill goes full red (flash peaks on this frame)
         var T_GLITCH = O(51.45);    // glitch-out, nothing visible after 51.80
         var T8 = [], T16 = [];
-        for (var m8 = 0; m8 < 19; m8++) T8.push(O(44.6909 + m8 * 0.204075));    // 8ths 44.691 .. 48.364
-        for (var n16 = 0; n16 < 29; n16++) T16.push(O(48.5683 + n16 * 0.1020375)); // 16ths 48.568 .. 51.425
+        // music hits snap to the nearest frame (-1 ms so that frame is safely past the hit)
+        for (var m8 = 0; m8 < 19; m8++) T8.push(snapC(O(44.6909 + m8 * 0.204075)) - 0.001);    // 8ths 44.691 .. 48.364
+        for (var n16 = 0; n16 < 29; n16++) T16.push(snapC(O(48.5683 + n16 * 0.1020375)) - 0.001); // 16ths 48.568 .. 51.425
         var HOUR_IDX = [8, 20, 26];                 // 49.385, 50.609, 51.221: 07 -> 06 -> 05 -> 04
         var BEAT_IDX = [8, 12, 16, 20, 24, 28];     // 49.385 49.793 50.201 50.609 51.017 51.425
         var T_HOURS = HOUR_IDX.map(function (n) { return T16[n]; });
@@ -459,9 +463,9 @@
         examCols.forEach(function (c) {
           buildColEvents(c, EV, V0, -1, function (ev, col) {
             if (ev.kind === "tick") return { delay: ev.first ? CASCADE[col.B] : 0, dur: 0.22, ease: easeTick };
-            if (ev.kind === "e8") return { delay: -0.012, dur: 0.13, ease: easeE8 };
-            if (ev.kind === "hour" && col.B >= 3600) return { delay: -0.012, dur: 0.16, ease: easeHour };
-            return { delay: -0.012, dur: 0.13, ease: easeE16 };
+            if (ev.kind === "e8") return { delay: -0.019, dur: 0.13, ease: easeE8 };
+            if (ev.kind === "hour" && col.B >= 3600) return { delay: -0.019, dur: 0.16, ease: easeHour };
+            return { delay: -0.019, dur: 0.13, ease: easeE16 };
           });
         });
         var hourCols = examCols.filter(function (c) { return c.B >= 3600; });
@@ -564,8 +568,8 @@
           var s = 1, glow = 0, flash = 0;
           var dl = t - T_LAND;
           if (dl > 0 && dl < 0.6) s = 1 + 0.06 * Math.exp(-dl * 9) * Math.sin(dl * 21);
-          var dfl = t - (T_RACE - 0.02);
-          if (dfl >= 0) flash = dfl < 0.03 ? 0.85 * dfl / 0.03 : 0.85 * Math.exp(-(dfl - 0.03) * 9);
+          var dfl = t - T_RACE;
+          if (dfl >= 0) flash = 0.85 * Math.exp(-dfl * 9);
           if (racing) {
             s = 1 + 0.07 * smooth(tau / 0.4);
             glow = 0.3 * smooth(tau / 0.25);
@@ -584,6 +588,7 @@
             if (t >= T_GLITCH) glow *= Math.max(0, 1 - (t - T_GLITCH) / 0.15);
           }
           if (t >= T_GLITCH) flash = 0;
+          s = Math.min(s, (PILL_CY - 270) / (PILL_H / 2) - 0.002);   // pulses never push the pill above the y=270 safe line
           el.examPulse.style.transform = "scale(" + s.toFixed(4) + ")";
           el.examGlow.style.opacity = clamp(glow, 0, 1).toFixed(3);
           el.examFlash.style.opacity = flash.toFixed(3);
@@ -682,15 +687,17 @@
           { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2.4)", stagger: 0.04 }, T_CARD + 0.14);
 
         /* 4. "Calling..." -> "Ringing..." when the other phone rings (16.10) */
-        tl.to("#stCalling", { y: -12, opacity: 0, duration: 0.12, ease: "power2.in" }, T_RINGING);
-        tl.fromTo("#stRinging", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.32, ease: "expo.out", immediateRender: false }, T_RINGING + 0.06);
+        tl.fromTo("#stCalling", { y: 0 }, { y: -34, duration: 0.3, ease: "expo.out", immediateRender: false }, T_RINGING);
+        tl.fromTo("#stRinging", { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none", immediateRender: false }, T_RINGING);
+        tl.fromTo("#stRinging", { y: 34 }, { y: 0, duration: 0.3, ease: "expo.out", immediateRender: false }, T_RINGING);
         RIPPLES.forEach(function (t0, i) {
           tl.fromTo("#rip" + i, { scale: 1, opacity: 0.9 }, { scale: 2.15, opacity: 0, duration: 1.0, ease: "power2.out", immediateRender: false }, t0);
         });
 
         /* 5. connected (21.28): status -> green timer, green ring */
-        tl.to("#stRinging", { y: -12, opacity: 0, duration: 0.12, ease: "power2.in" }, T_CONNECT);
-        tl.fromTo("#callTimerIn", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "expo.out", immediateRender: false }, T_CONNECT + 0.08);
+        tl.fromTo("#stRinging", { y: 0 }, { y: -34, duration: 0.3, ease: "expo.out", immediateRender: false }, T_CONNECT);
+        tl.fromTo("#callTimerIn", { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none", immediateRender: false }, T_CONNECT);
+        tl.fromTo("#callTimerIn", { y: 34 }, { y: 0, duration: 0.3, ease: "expo.out", immediateRender: false }, T_CONNECT);
         tl.fromTo("#ripG", { scale: 1, opacity: 1 }, { scale: 2.3, opacity: 0, duration: 0.6, ease: "power2.out", immediateRender: false }, T_CONNECT);
         tl.fromTo("#avatarRing", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.3, ease: "expo.out", immediateRender: false }, T_CONNECT);
 
@@ -725,9 +732,9 @@
         tl.to("#callLayer", { opacity: 0, duration: 0.08, ease: "none" }, T_END + 0.42);
 
         /* 8. breakdown (44.65): pill goes full red, clock races on the music */
-        tl.to("#examPill", { backgroundColor: "#ff3b30", duration: 0.05, ease: "none" }, T_RACE);
-        tl.to("#pillLabel", { color: "rgba(255,255,255,0.94)", duration: 0.05, ease: "none" }, T_RACE);
-        tl.to("#pillDot", { backgroundColor: "#ffffff", duration: 0.05, ease: "none" }, T_RACE);
+        tl.to("#examPill", { backgroundColor: "#ff3b30", duration: 0.03, ease: "none" }, T_RACE - 0.02);
+        tl.to("#pillLabel", { color: "rgba(255,255,255,0.94)", duration: 0.03, ease: "none" }, T_RACE - 0.02);
+        tl.to("#pillDot", { backgroundColor: "#ffffff", duration: 0.03, ease: "none" }, T_RACE - 0.02);
 
         /* 9. glitch-out (51.45 -> 51.76): RGB ghosts + tear, collapse to a line, gone */
         tl.set("#examPill", { opacity: 0 }, T_GLITCH);
