@@ -22,6 +22,7 @@ import edl  # noqa: E402
 
 O = lambda sid: edl.BY_ID[sid]["o"] / edl.FPS          # segment start (output s)
 src = edl.out_time                                       # (src_t, seg) -> output s
+V = edl.from_v1                                          # a time measured on v1 -> this cut
 
 SHOTS = [
     # t0, t1, push s0 -> s1, zoom centre (full-res px)
@@ -85,14 +86,14 @@ PUNCH = [
     (54.88, 0.06, (520, 800), 0.05, 0.3, 0.4),     # "SHELF."
     (57.65, 0.08, (440, 880), 0.10, 0.6, 0.4),     # "y'all": leans at the viewer
     (60.83, 0.06, (480, 880), 0.06, 0.4, 0.5),     # "Jnanottam"
-    (66.30, 0.06, (560, 840), 0.06, 0.4, 0.5),     # "Kartik"
-    (70.91, 0.05, (520, 1000), 0.05, 0.15, 0.3),   # "everywhere"
-    (72.42, 0.05, (520, 1000), 0.05, 0.15, 0.3),   # "everywhere"
-    (79.45, 0.06, (640, 880), 0.05, 0.5, 0.4),     # "all of it"
-    (82.18, 0.08, (520, 920), 0.05, 0.5, 0.4),     # "complicated?"
-    (88.13, 0.12, (480, 840), 0.05, 0.45, 0.5),    # "S.H.E.L.F" — the payoff
-    (92.19, 0.04, (520, 880), 0.08, 0.3, 0.4),     # "place"
-    (95.25, 0.22, (520, 760), 0.55, 0.3, 0.0),     # "do?" — slow lean into his face, into the card
+    (V(66.30), 0.06, (560, 840), 0.06, 0.4, 0.5),     # "Kartik"
+    (V(70.91), 0.05, (520, 1000), 0.05, 0.15, 0.3),   # "everywhere"
+    (V(72.42), 0.05, (520, 1000), 0.05, 0.15, 0.3),   # "everywhere"
+    (V(79.45), 0.06, (640, 880), 0.05, 0.5, 0.4),     # "all of it"
+    (V(82.18), 0.08, (520, 920), 0.05, 0.5, 0.4),     # "complicated?"
+    (V(88.13), 0.12, (480, 840), 0.05, 0.45, 0.5),    # "S.H.E.L.F" — the payoff
+    (V(92.19), 0.04, (520, 880), 0.08, 0.3, 0.4),     # "place"
+    (V(95.25), 0.22, (520, 760), 0.55, 0.3, 0.0),     # "do?" — slow lean into his face, into the card
 ]
 SHAKE = [
     (0.25, 12, 0.30, 17), (0.80, 18, 0.45, 15), (1.96, 7, 0.25, 19),
@@ -101,8 +102,8 @@ SHAKE = [
     (25.01, 9, 0.30, 16),
     (44.65, 14, 0.35, 16), (45.20, 24, 0.60, 13), (46.36, 9, 0.30, 18), (47.20, 8, 0.30, 18),
     (49.2, 3, 2.5, 7), (50.4, 5, 1.4, 9), (51.1, 8, 0.7, 12),          # anxiety builds under the storm
-    (54.88, 7, 0.25, 17), (79.45, 9, 0.35, 16), (82.18, 12, 0.40, 15),
-    (88.13, 16, 0.45, 14),
+    (54.88, 7, 0.25, 17), (V(79.45), 9, 0.35, 16), (V(82.18), 12, 0.40, 15),
+    (V(88.13), 16, 0.45, 14),
 ]
 
 # ---------------- looks ----------------
@@ -117,28 +118,62 @@ FLASH = [
     (O("P6c_f"), (1, 1, 1), 0.80, 0.18),           # freeze: shutter flash
     (O("P6d_f"), (1, 1, 1), 0.80, 0.18),
     (O("P8"), (1, 1, 1), 0.35, 0.20),              # hard reset to calm
-    (88.13, (0.55, 0.75, 1.0), 0.45, 0.35),        # S.H.E.L.F: blue light burst
+    (V(88.13), (0.55, 0.75, 1.0), 0.45, 0.35),        # S.H.E.L.F: blue light burst
 ]
-CHROMA = [(0.80, 9, 0.25), (13.21, 10, 0.3), (44.65, 6, 0.2), (45.20, 14, 0.4), (46.36, 6, 0.25), (82.18, 8, 0.3), (88.13, 6, 0.25)]
+CHROMA = [(0.80, 9, 0.25), (13.21, 10, 0.3), (44.65, 6, 0.2), (45.20, 14, 0.4), (46.36, 6, 0.25), (V(82.18), 8, 0.3), (V(88.13), 6, 0.25)]
 GLITCH = [
     (3.36, O("H2"), 0.6),                          # hook freezes into the rewind
     (45.20, 45.36, 0.9), (46.36, 46.46, 0.6),
     (51.45, O("P6a"), 1.0),                        # chaos tears apart before the white flash
-    (82.18, 82.34, 0.7),                           # "complicated?"
-    (95.70, O("P9b"), 1.0),                        # "...do?" -> STAY TUNED
+    (V(82.18), V(82.34), 0.7),                           # "complicated?"
+    (V(95.70), O("P9b"), 1.0),                        # "...do?" -> STAY TUNED
 ]
 RED = [(13.21, 15.0, 0.10), (44.65, 48.0, 0.07), (48.0, O("P6a"), 0.12)]      # alarm tint, pulsing
 GLINT = [  # the sunglasses catch the light on each founder's entrance; the wall logo at the end
     (O("P6a") + 0.42, 482, 822, 120, 0.55),
     (O("P6d") + 0.30, 506, 860, 110, 0.55),
-    (107.05, 388, 540, 120, 0.65),                 # the logo on the wall catches the light: final beat
+    (V(107.05), 388, 540, 120, 0.65),                 # the logo on the wall catches the light: final beat
 ]
 WHIP = [  # a smear across these cuts (dx > 0: content moves right)
     (src(22.133, "P3"), 1), (src(35.333, "P4"), -1), (src(42.433, "P4"), 1), (src(47.467, "P4"), -1),
     (src(86.367, "P7"), 1), (src(89.967, "P7"), -1), (src(96.033, "P8"), 1), (src(98.433, "P8"), -1),
     (O("P6b"), 1), (O("P6c"), -1), (O("P6d"), 1),
 ]
-LEAK = [(O("P6a"), O("P6a") + 1.2, 0.30, True), (O("P8"), O("P8") + 1.5, 0.22, False), (88.13, 89.0, 0.35, False)]
-FREEZE = [(O("P6c_f"), O("P6d"), 2233), (O("P6d_f"), O("P7"), 2366)]
+LEAK = [(O("P6a"), O("P6a") + 1.2, 0.30, True), (O("P8"), O("P8") + 1.5, 0.22, False), (V(88.13), V(89.0), 0.35, False)]
+FREEZE = [(O("P6c_f"), O("P6d"), edl.BY_ID["P6c_f"]["a"]), (O("P6d_f"), O("P7"), edl.BY_ID["P6d_f"]["a"])]
 VHS = [(O("H2"), O("P1a"))]
 FADE = [(edl.TOTAL / edl.FPS - 0.6, edl.TOTAL / edl.FPS)]
+
+# ---------------- v2: on the music (see music.py) ----------------
+import music as MU  # noqa: E402
+
+GAP_AT = MU.GAP1 - MU.MAP[2][3] + MU.MAP[2][1]           # the bass drops out (story section)
+SILENCE_AT = MU.SILENCE2 - MU.MAP[3][3] + MU.MAP[3][1]   # the song's dead silence before drop 2
+DROPS = [0.797, O("P6a"), MU.SHELF_WORD]                  # drop 1 (hook), drop 1 (founders), drop 2
+
+ZBLUR = [(t, 1.0) for t in DROPS] + [(50.609, 0.35), (51.221, 0.45)]   # radial blur bursts, decay ~0.2 s
+SHOCK = [(O("P6a"), (540, 860)), (MU.SHELF_WORD, (480, 840))]         # a refraction ring from the subject
+TUNNEL = [(GAP_AT, O("P6a"), 1.0), (SILENCE_AT, MU.SHELF_WORD, 0.8)]   # colour drains, vignette closes in
+FLASH += [(50.609, (1, 1, 1), 0.20, 0.08), (51.221, (1, 1, 1), 0.26, 0.08)]   # the 808 pickups
+CHROMA += [(50.609, 5, 0.12), (51.221, 7, 0.14), (O("P6a"), 8, 0.25)]
+
+
+def _bumps():
+    """A small punch-in on every bar downbeat (and a smaller one on the snare) wherever the song is
+    in a drop and nothing else is hitting the camera."""
+    zones = [(O("P6a") + 0.1, O("P6c_f")), (O("P6d"), O("P6d_f")), (O("P7"), O("P8") - 0.05),
+             (MU.SHELF_WORD + 0.3, O("P9a_h")), (src(108.433, "P9b") + 0.1, O("END"))]
+    taken = [p[0] for p in PUNCH]
+    out = []
+    for a, b in zones:
+        for t, k in MU.grid(a, b):
+            ph = k % 4
+            amt = 0.022 if abs(ph) < 1e-9 else 0.011 if abs(ph - 2) < 1e-9 else 0
+            if not amt or any(abs(t - u) < 0.3 for u in taken):
+                continue
+            shot = next(s for s in SHOTS if s[0] <= t < s[1])
+            out.append((t, amt, shot[3], 0.035, 0.0, 0.30))
+    return out
+
+
+PUNCH += _bumps()

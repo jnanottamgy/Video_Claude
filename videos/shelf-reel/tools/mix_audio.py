@@ -1,15 +1,18 @@
-"""Sound for the S.H.E.L.F reel recut.
+"""Sound for the S.H.E.L.F reel, v2: the dialogue, the song, and sound design on the song's grid.
 
-Two stems, then a master:
-  A  the source mix (dialogue + their music) re-cut to the EDL with 30 ms fades at every join;
-     replaced by sound design in the compressed intro, tape-stopped into the freeze frames,
-     rewound for the cold-open rewind.
+Three stems, then a master:
+  D  dialogue: renders/dialogue.wav (the team's mix minus the song, see dialogue.py) re-cut to the
+     EDL with 30 ms fades at every join; the cold-open rewind is tape chatter of the original mix.
+  M  the song, laid out by music.py (hook / story / drop 2), with a speech-band carve: under
+     dialogue its 250 Hz-5 kHz band ducks ~9 dB while the kick and 808 stay, so the drops keep
+     their weight and every line stays clear.
   B  sound design: every camera hit / whip / glitch / flash in direction.py gets its sound on the
-     same frame; notification pings and tile pops are placed where the overlay renders actually
-     show a new card (alpha onsets), so the sound follows the picture exactly.
+     same frame; message pops are placed where the overlay renders actually show a new card or
+     bubble (alpha onsets). Nothing tonal that could fight the song's key; the silence before
+     drop 2 stays silent.
 Master: 30 Hz high-pass, peak limiter, two-pass loudnorm to -14 LUFS / -1 dBTP (Instagram).
 
-  python3 tools/mix_audio.py   ->  renders/mix.wav
+  python3 tools/mix_audio.py   ->  renders/mix.wav (+ renders/mix_nomusic.wav: D + B only)
 """
 import json
 import os
@@ -23,6 +26,7 @@ from scipy.signal import butter, resample_poly, sosfilt, sosfiltfilt
 sys.path.insert(0, os.path.dirname(__file__))
 import direction as D  # noqa: E402
 import edl  # noqa: E402
+import music as MU  # noqa: E402
 
 SR = 48000
 FPS = edl.FPS
@@ -255,6 +259,89 @@ def rewind_audio(orig, dur):
     return x
 
 
+def wa_pop(gain=0.3, up=True):
+    """A chat-app message pop: two short rounded tones (rising for incoming, falling for sent)."""
+    out = np.zeros((int(0.16 * SR), 2))
+    for k, f in enumerate((990, 1480) if up else (1320, 880)):
+        n = int(0.055 * SR)
+        t = np.arange(n) / SR
+        x = np.sin(2 * np.pi * f * t * (1 + 0.06 * t / 0.055)) * np.minimum(1, t / 0.002) * np.exp(-t / 0.016)
+        i = int(k * 0.052 * SR)
+        out[i:i + n] += stereo(x)
+    return out * gain
+
+
+def speech_env(d):
+    """0..1 dialogue presence (any level, quiet words included): 300-3400 Hz RMS in 10 ms hops,
+    fast attack, 350 ms release."""
+    band = filt(d.mean(axis=1), "bandpass", [300, 3400], 2)
+    hop = SR // 100
+    k = len(band) // hop
+    rms = np.sqrt((band[:k * hop].reshape(k, hop) ** 2).mean(1) + 1e-12)
+    db = 20 * np.log10(rms)
+    ref = np.percentile(db[db > -70], 90)                     # loud speech
+    on = np.clip((db - (ref - 36)) / 10, 0, 1)                # -36 dB under loud speech -> 0, -26 -> 1
+    env, a, r = np.zeros(k), 1 - np.exp(-1 / 2.0), 1 - np.exp(-1 / 35.0)
+    for i in range(k):
+        prev = env[i - 1] if i else 0.0
+        env[i] = prev + (a if on[i] > prev else r) * (on[i] - prev)
+    return np.repeat(env, hop)[:len(d)] if len(env) else np.zeros(len(d))
+
+
+def level_dialogue(d, target=-23.0, lo=-4.0, hi=7.0):
+    """Ride the dialogue fader: pull quiet words up and loud ones down toward `target` (speech-band
+    dB), 60% of the way, only where somebody is speaking."""
+    band = filt(d.mean(axis=1), "bandpass", [300, 3400], 2)
+    hop = SR // 100
+    k = len(band) // hop
+    db = 20 * np.log10(np.sqrt((band[:k * hop].reshape(k, hop) ** 2).mean(1) + 1e-12))
+    ref = np.percentile(db[db > -70], 90)
+    talk = db > ref - 30
+    want = np.where(talk, np.clip((target - db) * 0.6, lo, hi), 0.0)
+    g, a, r = np.zeros(k), 1 - np.exp(-1 / 3.0), 1 - np.exp(-1 / 20.0)
+    for i in range(k):
+        prev = g[i - 1] if i else 0.0
+        g[i] = prev + (a if want[i] < prev else r) * (want[i] - prev)    # quick to duck, slower to lift
+    gain = 10 ** (np.repeat(g, hop) / 20)
+    out = d.copy()
+    out[:len(gain)] *= gain[:, None]
+    return out
+
+
+def censor_spans():
+    """Output-time spans of the f-word (from words.json). Strong language keeps a reel out of
+    teen recommendations, so it is muted under a WhatsApp ping; the captions already star it."""
+    out = []
+    for c in json.load(open("renders/words.json")):
+        for w in c["words"]:
+            if "*" in w["w"] and w["w"].lower().strip(".,!?").endswith("ck"):
+                out.append((w["t0"] - 0.012, w["t1"] + 0.02))
+    return out
+
+
+def mute(x, spans, ramp=0.008):
+    x = x.copy()
+    g = np.ones(len(x))
+    r = int(ramp * SR)
+    for a, b in spans:
+        i, j = int(a * SR), int(b * SR)
+        g[i:j] = 0
+        g[max(0, i - r):i] = np.minimum(g[max(0, i - r):i], np.linspace(1, 0, i - max(0, i - r)))
+        g[j:j + r] = np.minimum(g[j:j + r], np.linspace(0, 1, len(g[j:j + r])))
+    return x * g[:, None]
+
+
+def carve(m, env, mid_db=-11.0, edge_db=-4.5):
+    """Duck the music's speech band under the dialogue, keep its lows and highs mostly intact."""
+    low = filt(m, "lowpass", 250, 4)
+    high = filt(m, "highpass", 5000, 4)
+    mid = m - low - high
+    e = env[:len(m), None]
+    g_mid = 10 ** (mid_db * e / 20)
+    g_edge = 10 ** (edge_db * e / 20)
+    return (low + high) * g_edge + mid * g_mid
+
+
 # ---------------- overlay-driven cues ----------------
 def alpha_onsets(png_dir, t0, thresh=0.004, min_gap=0.05):
     """Times (output s) where an overlay's coverage jumps: a new card / tile arriving."""
@@ -280,30 +367,49 @@ def alpha_onsets(png_dir, t0, thresh=0.004, min_gap=0.05):
 PICTURE_OFFSET = 0.0
 
 
-def stem_A(orig):
-    """The source mix laid out on the output timeline, in sync with the picture."""
+def stem_D(dlg, orig):
+    """The dialogue laid out on the output timeline, in sync with the picture."""
     A = np.zeros((int(TOTAL * SR) + SR, 2))
     for s in edl.LAYOUT:
         o = s["o"] / FPS
         n = s["n"] / FPS
         if s["audio"] == "orig":
             a, b = s.get("src_audio", (s["a"], s.get("b", s["a"])))
-            x = seg(orig, a / FPS + PICTURE_OFFSET, b / FPS + PICTURE_OFFSET)
-            if s["id"] in ("P6c_f", "P6d_f"):
-                x = tape_stop(x, 0.30)                     # the music winds down into the name card
-            x = fade(x, s.get("fade_in", 0.03), 0.03)
-            place(A, x, o)
+            x = seg(dlg, a / FPS + PICTURE_OFFSET, b / FPS + PICTURE_OFFSET)
+            place(A, fade(x, s.get("fade_in", 0.03), 0.03), o)
         elif s["audio"] == "rewind":
             place(A, fade(rewind_audio(orig, n), 0.02, 0.02), o, gain=0.9)
         elif s["audio"] == "tail":
             a, b = s["src_audio"]
-            place(A, fade(seg(orig, a / FPS + PICTURE_OFFSET, b / FPS + PICTURE_OFFSET), 0.03, 1.4), o)
+            place(A, fade(seg(dlg, a / FPS + PICTURE_OFFSET, b / FPS + PICTURE_OFFSET), 0.03, 1.4), o)
     return A
+
+
+MUSIC_GAIN = {"hook": 0.24, "story": 0.20, "drop2": 0.22}     # the song file is mastered loud; their edit sat it at 0.133
+
+
+def stem_M(song):
+    """The song laid out by music.py. Each section starts on its own fade; the story section
+    tape-stops into the turn, where the breakdown takes over."""
+    M = np.zeros((int(TOTAL * SR) + SR, 2))
+    for name, a, b, s0 in MU.MAP:
+        if s0 is None:
+            continue
+        x = seg(song, s0, s0 + (b - a))
+        if name == "story":
+            x = fade(tape_stop(x, 0.24), 0.25, 0.0)            # in after the rewind; winds down into the turn
+        elif name == "hook":
+            x = fade(x, 0.005, 0.015)
+        else:
+            x = fade(x, 0.010, 0.04)                             # the reel loops into the hook on the beat
+        place(M, x, a, 0, MUSIC_GAIN[name])
+    return M
 
 
 def stem_B(A):
     B = np.zeros_like(A)
     O = lambda sid: edl.BY_ID[sid]["o"] / FPS
+    V = edl.from_v1
 
     def impact(t, gain, name="impact-bass-2", tau=0.45):
         x = sfx(name)
@@ -324,144 +430,132 @@ def stem_B(A):
         o = onset(x)
         place(B, fade(x[o:], 0, 0.3), t, 0, gain, pan)
 
-    # ---- hook ----
-    impact(0.25, 0.45, "impact-bass-1", 0.30)
-    whoosh(0.22, 0.25)
-    impact(0.80, 0.55, "impact-bass-2", 0.40)
-    glitch(0.80, "glitch-1", 0.30, 0.30)
-    place(B, sub_drop(1.0, 80, 30, 0.5), 0.80)
+    # ---- hook: the song's pickup bar, drop 1 lands on "f*ck" ----
+    impact(0.25, 0.40, "impact-bass-1", 0.30)
+    whoosh(0.22, 0.22)
+    impact(0.80, 0.50, "impact-bass-2", 0.40)
+    glitch(0.80, "glitch-1", 0.30, 0.28)
     glitch(3.36, "glitch-3", 0.11, 0.35)
-    # ---- rewind lands on the alarm ----
-    place(B, thump(70, 0.25, 0.6), O("P1a"), 0, 0.8)
-    impact(O("P1a"), 0.55, "impact-bass-2", 0.6)
-    for t, b in alarm(O("P1a") + 0.10, O("P1b")):
-        place(B, b, t)
-    for t, b in alarm(O("P1b"), O("P1b") + 0.95):                     # muffled: he's asleep
-        place(B, filt(b, "lowpass", 900, 2) * 0.6, t)
-    place(B, buzz(0.42, 0.35), O("P1a") + 0.18)
-    place(B, buzz(0.42, 0.30), O("P1a") + 0.80)
-    whoosh(O("P1a") + 0.30, 0.30, 0, -3)                               # crash zoom
-    whoosh(O("P1b") + 0.95, 0.25, 0, 2)                                # eyes open
-    # a bed under the wordless intro, so it never drops to digital silence: room tone + a low tension drone
-    n_bed = int((O("P1e") + 0.6 - O("P1a")) * SR)
-    room = filt(stereo(rng.standard_normal(n_bed)), "bandpass", [70, 2200], 2)
-    place(B, fade(room / np.abs(room).max(), 0.4, 0.6), O("P1a"), 0, 0.022)
-    place(B, fade(drone(n_bed / SR, 55, 78, 0.20), 1.2, 0.6), O("P1a"))
+    # ---- rewind lands on the alarm (the real alarm is in the dialogue) ----
+    place(B, thump(70, 0.25, 0.6), O("P1a"), 0, 0.7)
+    impact(O("P1a"), 0.50, "impact-bass-2", 0.6)
+    place(B, buzz(0.42, 0.30), O("P1a") + 0.18)
+    place(B, buzz(0.42, 0.26), O("P1a") + 0.80)
+    whoosh(O("P1a") + 0.30, 0.28, 0, -3)                               # crash zoom
+    whoosh(O("P1b") + 0.95, 0.22, 0, 2)                                # eyes open
     for k in range(int((O("P1e") - O("P1b")) / 0.5)):                  # the clock is running
-        place(B, tick(1900 if k % 2 == 0 else 1500), O("P1b") + k * 0.5, 0, 0.18 + 0.02 * k)
-    whoosh(O("P1c") + 0.05, 0.40, -0.3, -2)
-    whoosh(O("P1c") + 0.70, 0.30, 0.3, 1)
-    whoosh(O("P1d") + 0.05, 0.30, 0.2, 0)
-    for t, x, g in heartbeat(O("P1e"), 15.0, 72, 104, 0.55):
+        place(B, tick(1900 if k % 2 == 0 else 1500), O("P1b") + k * 0.5, 0, 0.12 + 0.015 * k)
+    whoosh(O("P1c") + 0.05, 0.36, -0.3, -2)
+    whoosh(O("P1c") + 0.70, 0.26, 0.3, 1)
+    whoosh(O("P1d") + 0.05, 0.26, 0.2, 0)
+    for t, x, g in heartbeat(O("P1e"), 13.0, 72, 104, 0.45):
         place(B, x, t, 0, g)
     r = sfx("riser")
-    place(B, fade(r, 0.6, 0.05)[: int(3.04 * SR) + 200], 13.21, int(3.04 * SR), 0.35)   # crest on "F*ck"
+    place(B, fade(r, 0.6, 0.05)[: int(3.04 * SR) + 200], 13.21, int(3.04 * SR), 0.30)   # crest on "F*ck"
     # ---- panic ----
-    impact(13.21, 0.75, "impact-bass-2", 0.55)
-    impact(13.21, 0.45, "impact-bass-1", 0.30)
-    place(B, sub_drop(1.4, 90, 30, 0.6), 13.21)
+    impact(13.21, 0.70, "impact-bass-2", 0.55)
+    impact(13.21, 0.40, "impact-bass-1", 0.30)
+    place(B, sub_drop(1.4, 90, 30, 0.35), 13.21)
     glitch(13.21, "glitch-3", 0.20, 0.25)
-    impact(14.80, 0.40, "impact-bass-1", 0.25)                         # 08:00:00 slams in
-    place(B, beep(1000, 0.08, 0.12), 14.80)
+    impact(14.80, 0.38, "impact-bass-1", 0.25)                         # 08:00:00 slams in
     for k in range(1, int((O("P4") - 15.07))):                         # HUD ticking until the call connects
-        place(B, tick(2100), 15.07 + k, 0, 0.08)
-    whoosh(O("P3"), 0.30, 0.3)
-    ping(15.90, 0.18, 4, "pop")                                        # calling card slides in
-    place(B, sfx("click-soft"), 21.26, onset(sfx("click-soft")), 0.14)  # connected: a soft click on the green pulse, under the voice
-    place(B, tick(1200, 0.04), 22.0, 0, 0.25)
-    impact(25.01, 0.35, "impact-bass-1", 0.22)                         # "today"
-    ping(26.20, 0.20, 0, "pop")                                        # "notes?"
-    place(B, blip(660, 440, 0.16), 44.40)                              # call ended
-    # ---- breakdown + storm ----
-    impact(44.65, 0.55, "impact-bass-1", 0.30)
+        place(B, tick(2100), 15.07 + k, 0, 0.07)
+    whoosh(O("P3"), 0.28, 0.3)
+    place(B, wa_pop(0.16), 15.90)                                      # call screen slides in
+    place(B, sfx("click-soft"), 21.26, onset(sfx("click-soft")), 0.14)  # connected
+    impact(25.01, 0.32, "impact-bass-1", 0.22)                         # "today"
+    place(B, blip(660, 440, 0.15), 44.40)                              # call ended
+    # ---- breakdown: the song's hi-hat build, then the bass drops out ----
+    impact(44.65, 0.50, "impact-bass-1", 0.30)
     x = sfx("whoosh-cinematic")
-    place(B, fade(x, 0, 0.4), 44.66, int(2.55 * SR), 0.35)             # cards blow apart
-    impact(45.20, 0.80, "impact-bass-2", 0.55)
-    glitch(45.20, "glitch-2", 0.40, 0.35)
-    place(B, sub_drop(1.6, 85, 28, 0.7), 45.20)
-    glitch(46.36, "glitch-1", 0.18, 0.25)
-    place(B, drone(51.80 - 45.5, 55, 220, 0.22), 45.5)
-    for t, x, g in heartbeat(46.0, 51.8, 96, 168, 0.65):
-        place(B, x, t, 0, g)
-    t, k = 44.65, 0                                                     # the HUD clock racing
-    while t < 51.45:
-        place(B, tick(2300 - (k % 3) * 300, 0.035), t, 0, 0.13)
-        t += max(0.045, 0.32 * 0.93 ** k)
-        k += 1
-    for th in (49.83, 50.94):                                          # an hour falls off the racing clock
-        place(B, thump(64, 0.4, 0.5), th, 0, 0.55)
-        place(B, tick(900, 0.06), th, 0, 0.30)
-    glitch(51.45, "glitch-2", 0.38, 0.55)
+    place(B, fade(x, 0, 0.4), 44.66, int(2.55 * SR), 0.30)
+    impact(45.20, 0.75, "impact-bass-2", 0.55)
+    glitch(45.20, "glitch-2", 0.40, 0.32)
+    glitch(46.36, "glitch-1", 0.18, 0.22)
+    gap = MU.GAP1 - MU.MAP[2][3] + MU.MAP[2][1]                       # the bass leaves (output s)
+    for t, k in MU.grid(44.65, 51.45, sub=2):                         # the racing clock ticks on the song's 8ths,
+        place(B, tick(2300 - int(k * 2) % 3 * 300, 0.035), t, 0, 0.10)
+    for t, k in MU.grid(gap, 51.45, sub=4):                           # then 16ths once the bass is gone
+        if abs(k * 2 - round(k * 2)) > 1e-6:
+            place(B, tick(2600, 0.03), t, 0, 0.07)
+    for t, k in MU.grid(gap, 50.45):                                  # a heartbeat fills the bass's absence
+        place(B, thump(52, 0.32), t, 0, 0.55)
+        place(B, thump(46, 0.30), t + 0.12, 0, 0.38)
+    glitch(51.45, "glitch-2", 0.38, 0.50)
     xr = sfx("whoosh")[::-1]
-    place(B, xr, O("P6a"), len(xr) - int(0.16 * SR), 0.5)              # sucked out...
-    # ---- the founders: calm, cool ----
-    place(B, sub_drop(2.2, 70, 26, 0.9), O("P6a"))                    # ...into a deep, clean boom
-    impact(O("P6a"), 0.55, "impact-bass-2", 0.9)
+    place(B, xr, O("P6a"), len(xr) - int(0.16 * SR), 0.45)             # sucked out...
+    # ---- drop 1: the founders ----
+    impact(O("P6a"), 0.60, "impact-bass-2", 0.9)                      # ...into the drop
+    place(B, sub_drop(1.6, 70, 26, 0.35), O("P6a"))
     for tg, gx, gy, size, dur in D.GLINT:
-        place(B, ting(3300, 0.9, 0.22), tg + 0.05)
+        place(B, ting(3300, 0.9, 0.18), tg + 0.05)
         x = sfx("sparkle")
-        place(B, x, tg, onset(x), 0.35, 0.1)
-    impact(54.88, 0.40, "impact-bass-1", 0.30)                         # "SHELF." lands
-    place(B, sfx("sparkle"), 54.95, 0, 0.20)
-    whoosh(57.60, 0.22, 0, 3)                                          # "y'all"
-    for tn in (60.83, 66.30):                                          # giant names rise
-        place(B, noise_swell(0.55, 600, 9000, 0.25), tn - 0.55)
-        impact(tn, 0.40, "impact-bass-1", 0.35)
-    for fz, nxt in ((O("P6c_f"), O("P6d")), (O("P6d_f"), O("P7"))):    # freeze-frame name cards
-        place(B, shutter(0.55), fz)
+        place(B, x, tg, onset(x), 0.30, 0.1)
+    impact(54.88, 0.36, "impact-bass-1", 0.30)                         # "SHELF." lands
+    place(B, sfx("sparkle"), 54.95, 0, 0.18)
+    whoosh(57.60, 0.20, 0, 3)                                          # "y'all"
+    for tn in (60.83, V(66.30)):                                       # giant names rise
+        place(B, noise_swell(0.55, 600, 9000, 0.20), tn - 0.55)
+        impact(tn, 0.36, "impact-bass-1", 0.35)
+    for fz, nxt in ((O("P6c_f"), O("P6d")), (O("P6d_f"), O("P7"))):    # freeze-frame name cards, on the beat
+        place(B, shutter(0.50), fz)
         impact(fz, 0.55, "impact-bass-2", 0.6)
-        place(B, noise_swell(0.7, 500, 8000, 0.30), nxt - 0.7)         # reverse swell back into the music
-        impact(nxt, 0.35, "impact-bass-1", 0.25)
+        place(B, noise_swell(0.6, 500, 8000, 0.18), nxt - 0.6)
+        whoosh(nxt, 0.22, 0, -1)
     # ---- the problem ----
-    impact(79.45, 0.40, "impact-bass-1", 0.25)                         # "all of it"
-    place(B, drone(2.3, 110, 160, 0.16), 80.6)                         # the tangle tightens
-    glitch(82.18, "glitch-1", 0.30, 0.35)
-    impact(82.18, 0.45, "impact-bass-2", 0.35)
+    impact(V(79.45), 0.36, "impact-bass-1", 0.25)                      # "all of it"
+    glitch(V(82.18), "glitch-1", 0.30, 0.32)
+    impact(V(82.18), 0.42, "impact-bass-2", 0.35)
     xr = pitch(sfx("whoosh"), 3)[::-1]
-    place(B, xr, O("P8"), len(xr), 0.45)                               # everything vanishes
-    x = sfx("chime")
-    place(B, x, O("P8") + 0.05, onset(x), 0.16)                        # calm
-    place(B, x, 85.75, onset(x), 0.22)                                 # "simple"
-    # ---- the payoff ----
-    place(B, noise_swell(0.9, 300, 10000, 0.40), 88.13 - 0.9)
-    impact(88.13, 0.85, "impact-bass-2", 0.7)
-    impact(88.13, 0.50, "impact-bass-1", 0.4)
-    place(B, sub_drop(2.0, 90, 28, 0.8), 88.13)
-    place(B, sfx("sparkle"), 88.40, 0, 0.28)
+    place(B, xr, O("P8"), len(xr), 0.40)                               # everything vanishes; the song resets
+    impact(O("P8"), 0.30, "impact-bass-1", 0.35)
+    # ---- the payoff: the song's own silence on "so we built", drop 2 on "S.H.E.L.F" ----
+    impact(MU.SHELF_WORD, 0.80, "impact-bass-2", 0.7)
+    impact(MU.SHELF_WORD, 0.45, "impact-bass-1", 0.4)
+    place(B, sfx("sparkle"), MU.SHELF_WORD + 0.27, 0, 0.26)
     x = sfx("whoosh-cinematic")
-    place(B, fade(x[int(2.55 * SR):], 0, 0.8), 88.13, 0, 0.30)
-    # "in one place": the tiles fly in, stack, dock
-    for k in range(6):
-        whoosh(89.50 + k * 0.07, 0.18, (-1) ** k * 0.6, k - 2)
-    for k in range(6):
-        place(B, sfx("click-soft"), 90.71 + k * 0.11, onset(sfx("click-soft")), 0.18, (k - 2.5) / 4)
-    place(B, sfx("click"), 91.50, onset(sfx("click")), 0.22)
+    place(B, fade(x[int(2.55 * SR):], 0, 0.8), MU.SHELF_WORD, 0, 0.26)
+    # "in one place": the S.H.E.L.F chat (its message pops come from the overlay, below)
     x = sfx("chime")
-    place(B, x, 92.19, onset(x), 0.30)
-    place(B, sfx("sparkle"), 92.19, 0, 0.30)
+    place(B, x, V(92.19), onset(x), 0.22)
     # ---- tease into STAY TUNED (the card brings its own riser + boom) ----
-    place(B, noise_swell(1.2, 300, 8000, 0.30), 95.70 - 1.2)
-    glitch(95.70, "glitch-3", 0.30, 0.40)
+    place(B, noise_swell(1.2, 300, 8000, 0.24), V(95.70) - 1.2)
+    glitch(V(95.70), "glitch-3", 0.30, 0.38)
     # ---- whips ----
     for tw, dxn in D.WHIP:
-        whoosh(tw, 0.30, 0.5 * dxn, rng.uniform(-2, 2))
+        whoosh(tw, 0.28, 0.5 * dxn, rng.uniform(-2, 2))
+
+    # ---- the f-word, bleeped by a WhatsApp ping ----
+    for a_, b_ in censor_spans():
+        place(B, wa_pop(0.55), a_ + 0.01)
+        place(B, pitch(wa_pop(0.30), 7), a_ + 0.09)
+    # ---- the racing clock loses whole hours on the 808 pickups ----
+    for th in (49.385, 50.609, 51.221):
+        place(B, thump(110, 0.18, 0.8), th, 0, 0.45)
+        place(B, tick(900, 0.06), th, 0, 0.32)
+    # ---- the loop: the last frame pings like the first ----
+    place(B, wa_pop(0.34), TOTAL - 0.20)
 
     # ---- cues from the overlays themselves ----
     import composite
-    gaps = {"cards": 0.4, "problem": 0.08}            # a sliding card can register on consecutive frames: one ping each
-    cues = {d.split("/")[2]: alpha_onsets(d, t0, min_gap=gaps.get(d.split("/")[2], 0.05)) for d, t0, _ in composite.OVERLAYS}
+    gaps = {"cards": 0.4, "problem": 0.08, "oneplace": 0.10}  # a sliding card can register on consecutive frames: one pop each
+    cues = {d.split("/")[2]: alpha_onsets(d, t0, min_gap=gaps.get(d.split("/")[2], 0.05)) for d, t0, *_ in composite.OVERLAYS}
     for t, dcov in cues.get("cards", []):
         if t < 44.3:                                   # the 44.4 tremble is not an arrival
-            ping(t, 0.32, 0, "notification", rng.uniform(-0.3, 0.3))
+            place(B, wa_pop(0.30), t, 0, 1.0, rng.uniform(-0.3, 0.3))
     for name, lo, hi in (("storm_hook", 0, 3.4), ("storm", 44.6, 51.45)):
         for t, dcov in cues.get(name, []):
             if lo <= t < hi:
                 u = (t - lo) / (hi - lo)
-                ping(t, 0.16 + 0.10 * u, rng.uniform(-3, 5), "notification" if rng.random() < 0.6 else "ping", rng.uniform(-0.7, 0.7))
+                place(B, pitch(wa_pop(0.14 + 0.08 * u), rng.uniform(-2, 4)), t, 0, 1.0, rng.uniform(-0.7, 0.7))
     for t, dcov in cues.get("problem", []):
-        if t < 83.3:
-            x = sfx("pop")
-            place(B, x, t, onset(x), 0.18 + min(0.2, dcov * 4), rng.uniform(-0.6, 0.6))
+        if t < O("P8") - 0.05:
+            place(B, wa_pop(0.14 + min(0.14, dcov * 3)), t, 0, 1.0, rng.uniform(-0.6, 0.6))
+    for t, dcov in cues.get("oneplace", []):
+        place(B, wa_pop(0.20, up=True), t, 0, 1.0, rng.uniform(-0.3, 0.3))
+    for t, dcov in cues.get("cta_end", [])[:1]:          # the "send this to..." bubble arrives
+        whoosh(t - 0.02, 0.22, 0, 3)
+        place(B, wa_pop(0.34, up=True), t)
     return B, cues
 
 
@@ -488,17 +582,28 @@ def write(path, x):
 
 
 def main():
+    import soundfile as sf
     orig = load("renders/source_audio.wav")
-    A = stem_A(orig)
-    B, cues = stem_B(A)
+    dlg = load("renders/dialogue.wav")
+    song = load("renders/song.mp3")
+    Dl = stem_D(dlg, orig)
+    M = stem_M(song)
+    B, cues = stem_B(Dl)
     n = int(TOTAL * SR)
-    A, B = A[:n], B[:n]
-    write("renders/stem_A.wav", A)
-    write("renders/stem_B.wav", B / max(1.0, np.abs(B).max()))
-    mix = A * 1.0 + B * 0.9
-    master(mix)
+    Dl, M, B = Dl[:n], M[:n], B[:n]
+    Dl = mute(level_dialogue(Dl), censor_spans())
+    env = speech_env(Dl)
+    Mc = carve(M, env)
+    Bc = carve(B, env, -6.0, -2.0) * 0.70
+    for name, x in (("D", Dl), ("M", Mc), ("B", Bc)):               # float stems, exactly as mixed
+        sf.write(f"renders/stem_{name}.wav", x.astype(np.float32), SR, subtype="FLOAT")
+    master(Dl + Mc + Bc)
+    global OUT
+    full, OUT = OUT, "renders/mix_nomusic.wav"             # for posting without the song (if it gets muted)
+    master(Dl + Bc)
+    OUT = full
     print("cues:", {k: len(v) for k, v in cues.items()})
-    print("->", OUT)
+    print("->", full, "and renders/mix_nomusic.wav")
 
 
 if __name__ == "__main__":

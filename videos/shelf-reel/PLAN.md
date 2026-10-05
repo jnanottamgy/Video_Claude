@@ -34,3 +34,34 @@ where nobody speaks, and every join gets a 30 ms fade plus a sound that masks th
 `tools/edl.py` (cut list) · `tools/direction.py` (every camera move and look) ·
 `tools/composite.py` (the frame engine) · `tools/mix_audio.py` (sound) · `slots/*` (HyperFrames
 overlays, see `slots/BRIEF.md`) · `design/` (shared fonts, tokens, logo mark) · `build.sh`.
+
+## v2 — WhatsApp-first, cut to the song (Oct 5)
+Brief: notifications should be WhatsApp (the class's notes live in WhatsApp groups), S.H.E.L.F
+itself runs on WhatsApp, and the edit should follow the song their reel is cut to ("My Eyes",
+147 BPM), which builds and gets more hyped. Plus: what Instagram needs for a reel to travel.
+
+**Sound.** The song sits in their mix unprocessed at -17.5 dB from sample 0, so it is subtracted
+(tools/dialogue.py) instead of separated: clean dialogue, music removed by 22-30 dB. The song is
+then laid continuously (tools/music.py) instead of being chopped with the picture:
+| Output | Song | What lands |
+|---|---|---|
+| 0.0-3.5 | the pre-drop bar | drop 1 on "f*ck" (0.797) |
+| 4.3-51.8 | ambient intro → groove (35.6) → hi-hat build (43.7) | the bass drops out as his head goes into his hand (48.57); 808 pickups 50.61, 51.22 |
+| 51.8 | DROP 1 | the white flash into the founders |
+| 83.4 | the breakdown | the hard reset ("pretty simple") |
+| 87.4-88.2 | 0.76 s of dead silence, then DROP 2 | "so we built…" in silence, "S.H.E.L.F" on the drop |
+| end | drop 2 | the last frame loops into the hook on the beat |
+The founders' freeze frames and every cut after them were moved by 1-9 frames to sit on beats.
+Music is carved under speech (speech band -11 dB, lows kept), dialogue is levelled; -14 LUFS.
+
+**Picture.** WhatsApp everywhere (slots/BRIEF.md v2): iOS banners with WhatsApp group messages,
+a WhatsApp voice call, the scattered stuff as WhatsApp documents/voice notes/forwards, and the
+payoff as S.H.E.L.F answering inside a WhatsApp chat. On the music: beat bumps on every bar in the
+drops, tunnel vision (colour drains) in the bass-out gap and the silence, radial blur and a
+shockwave on each drop, the storm and the racing clock on the song's 8ths and 16ths.
+
+**Instagram** (research, cited in the delivery notes): a "14 groups. 0 notes." title on frame 1
+(the ranker predicts sub-3 s skips), a send-this ending (sends drive non-follower reach), a beat-
+seamless loop, the f-word bleeped with a WhatsApp ping (strong language is not recommended to
+teen accounts), and a 48 s main cut (tools/shortcut.py: 30-60 s reels get the best reach) with
+the full 1:49 as part 2.

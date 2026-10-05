@@ -33,50 +33,62 @@ SRC = "renders/source.mp4"
 DECODE_VF = "scale=in_color_matrix=bt709:in_range=full:out_range=full"
 FOUNDERS_AT = edl.BY_ID["P6a"]["o"] / FPS
 
-# overlay windows: (png dir, window start in output s, layer)
+# overlay windows: (png dir, window start in output s, layer[, opts])
+#   opts: until=t  stop showing it at output t (trim at a cut); hold=t  keep its last frame up to t
+O = lambda sid: edl.BY_ID[sid]["o"] / FPS
+V = edl.from_v1
 OVERLAYS = [
     ("slots/notifs/storm_hook/renders/png", 0.000, "front"),
     ("slots/notifs/cards/renders/png", 30.000, "front"),
     ("slots/notifs/storm/renders/png", 44.600, "front"),
     ("slots/hud/hud/renders/png", 14.300, "front"),          # over the storm: the racing clock must stay readable
     ("slots/titles/shelf_behind/renders/png", 54.100, "behind"),
-    ("slots/titles/jnanottam_behind/renders/png", 60.600, "behind"),
-    ("slots/titles/namecard_j/renders/png", 63.400, "front"),
-    ("slots/titles/kartik_behind/renders/png", 66.100, "behind"),
-    ("slots/titles/namecard_k/renders/png", 68.633, "front"),
-    ("slots/tiles/problem/renders/png", 70.100, "front"),
-    ("slots/titles/simple_behind/renders/png", 85.450, "behind"),
-    ("slots/titles/shelf2_behind/renders/png", 87.950, "behind"),
-    ("slots/tiles/oneplace/renders/png", 89.000, "front"),
+    ("slots/titles/jnanottam_behind/renders/png", 60.600, "behind", dict(until=O("P6d"))),
+    ("slots/titles/namecard_j/renders/png", O("P6c_f") - 0.1, "front", dict(until=O("P6d"))),
+    ("slots/titles/kartik_behind/renders/png", O("P6d") + 1.133, "behind", dict(hold=O("P7"))),
+    ("slots/titles/namecard_k/renders/png", O("P6d_f") - 0.1, "front", dict(until=O("P7"))),
+    ("slots/tiles/problem/renders/png", 70.133, "front"),
+    ("slots/titles/simple_behind/renders/png", V(85.450), "behind"),
+    ("slots/titles/shelf2_behind/renders/png", V(87.950), "behind"),
+    ("slots/tiles/oneplace/renders/png", 89.033, "front", dict(hold=O("P9a"))),
+    ("slots/viral/hook_title/renders/png", 0.000, "front"),         # "14 groups. 0 notes." — frame 1 is the thumbnail
+    ("slots/viral/cta_end/renders/png", 105.000, "front"),           # "send this to the friend who says..."
 ]
 NO_CAPTION_SEGS = {"P1a", "P1b", "P1c", "P1d", "P9b", "END"}
 
 
 def overlay_index():
+    """[(dir, first frame, frame count, layer, last output frame + 1)] for overlays and captions."""
     idx = []
-    for d, t0, layer in OVERLAYS:
+    for d, t0, layer, *rest in OVERLAYS:
         if not os.path.isdir(d):
             print(f"  (missing overlay {d})")
             continue
+        opts = rest[0] if rest else {}
         n = len([f for f in os.listdir(d) if f.endswith(".png")])
-        idx.append((d, int(round(t0 * FPS)), n, layer))
+        f0 = int(round(t0 * FPS))
+        end = max(f0 + n, int(round(opts["hold"] * FPS))) if "hold" in opts else f0 + n
+        if "until" in opts:
+            end = min(end, int(round(opts["until"] * FPS)))
+        idx.append((d, f0, n, layer, end))
     cap = []
     if os.path.exists("renders/captions/manifest.json"):
         for m in json.load(open("renders/captions/manifest.json")):
             d = f"{m['dir']}/renders/png"
             if os.path.isdir(d):
-                cap.append((d, m["start_frame"], len(os.listdir(d)), "caption"))
+                k = len(os.listdir(d))
+                cap.append((d, m["start_frame"], k, "caption", m["start_frame"] + k))
     return idx, cap
 
 
-HOLD_LAST = {"slots/tiles/oneplace/renders/png": 111}    # its frame 112 is empty: hold the panel through the shot's last frame
+HOLD_LAST = {}
 
 
 def layer_frames(index, n, layer):
     out = []
-    for d, f0, cnt, lay in index:
-        if lay == layer and f0 <= n < f0 + cnt:
-            k = min(n - f0 + 1, HOLD_LAST.get(d, cnt))
+    for d, f0, cnt, lay, end in index:
+        if lay == layer and f0 <= n < end:
+            k = min(n - f0 + 1, HOLD_LAST.get(d, cnt), cnt)
             im = fx.load_rgba(f"{d}/frame_{k:06d}.png")
             if im is not None:
                 out.append(im)
@@ -270,6 +282,9 @@ class Comp:
                 img = cv2.filter2D(img, -1, kern, borderType=cv2.BORDER_REFLECT101)
                 img = np.roll(img, int(dxn * 30 * k * (1 if t < tw else -1)), axis=1)
 
+        for t0, t1, k in D.TUNNEL:              # tension before a drop: the scene drains, the UI stays vivid
+            if t0 <= t < t1:
+                img = fx.tunnel(img, k * ease_io((t - t0) / (t1 - t0)))
         for layer in layer_frames(self.overlays, n, "front"):
             img = fx.over(img, layer)
         if seg["kind"] == "rewind":            # the cold open's notification storm rewinds with the tape
@@ -300,6 +315,12 @@ class Comp:
             if t0 <= t < t1:
                 img = fx.vhs(img, n)
                 img = self.osd(img, n)
+        for ts, (sx, sy) in D.SHOCK:            # the drops: a refraction ring and a radial blur burst
+            if ts <= t < ts + 0.55:
+                img = fx.shockwave(img, t - ts, sx, sy)
+        zk = max([amp * env(t, tz, 0.08) for tz, amp in D.ZBLUR if tz <= t < tz + 0.3], default=0.0)
+        if zk > 0.02:
+            img = fx.zoom_blur(img, zk)
         for tf, rgb, a, d in D.FLASH:
             img = fx.flash(img, rgb, a * env(t, tf, d))
         for t0, t1 in D.FADE:

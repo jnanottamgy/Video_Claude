@@ -23,8 +23,8 @@ OUT = "renders/mattes"
 # Source frame ranges [a, b] whose person is composited over a "behind" layer (see slots/titles/SPEC.md)
 RANGES = {
     "shelf_behind": (1925, 1968),
-    "jnanottam_behind": (2147, 2234),
-    "kartik_behind": (2288, 2367),
+    "jnanottam_behind": (2147, 2239),
+    "kartik_behind": (2288, 2376),
     "simple_behind": (2844, 2881),
     "shelf2_behind": (2919, 2953),
 }
@@ -50,9 +50,18 @@ def guided(I, p, r=8, eps=1e-3):
 
 
 def main():
+    """All ranges, or only the named ones; --missing skips frames that already have a matte."""
     os.makedirs(OUT, exist_ok=True)
+    names = [a for a in sys.argv[1:] if not a.startswith("--")] or list(RANGES)
+    missing = "--missing" in sys.argv
     sess = new_session("u2net_human_seg")
-    for name, (a, b) in RANGES.items():
+    for name in names:
+        a, b = RANGES[name]
+        if missing:
+            todo = [n for n in range(a, b + 1) if not os.path.exists(f"{OUT}/f_{n:05d}.png")]
+            if not todo:
+                continue
+            a, b = min(todo), max(todo)
         raw = {}
         for n, rgb in frames(max(0, a - 1), b + 1):
             m = np.asarray(remove(Image.fromarray(rgb), session=sess, only_mask=True), np.float32) / 255

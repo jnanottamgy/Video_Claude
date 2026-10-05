@@ -226,3 +226,45 @@ def load_rgba(path):
     if im.shape[2] == 3:
         im = np.dstack([im, np.ones(im.shape[:2], np.float32)])
     return np.dstack([im[..., 2::-1], im[..., 3:4]])
+
+
+def zoom_blur(img, k, cx=W / 2, cy=H / 2, taps=7):
+    """Radial (zoom) blur: the average of copies scaled up to 1 + 0.09k about (cx, cy). k in 0..1."""
+    if k <= 0.01:
+        return img
+    acc = img.copy()
+    for i in range(1, taps):
+        s = 1 + 0.09 * k * i / (taps - 1)
+        M = camera_matrix(s, cx, cy)
+        acc += cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT101)
+    return acc / taps
+
+
+_GRID = None
+
+
+def shockwave(img, u, cx=W / 2, cy=H / 2, amp=28.0, width=90.0):
+    """A refraction ring expanding from (cx, cy); u = seconds since the hit (0..~0.5)."""
+    global _GRID
+    if u < 0 or u > 0.55:
+        return img
+    if _GRID is None:
+        _GRID = np.meshgrid(np.arange(W, dtype=np.float32), np.arange(H, dtype=np.float32))
+    xs, ys = _GRID
+    dx, dy = xs - cx, ys - cy
+    r = np.sqrt(dx * dx + dy * dy) + 1e-3
+    radius = 2400 * (u / 0.55) ** 0.7
+    ring = np.exp(-((r - radius) / width) ** 2) * amp * (1 - u / 0.55)
+    mx = (xs - dx / r * ring).astype(np.float32)
+    my = (ys - dy / r * ring).astype(np.float32)
+    return cv2.remap(img, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT101)
+
+
+def tunnel(img, k):
+    """Tension: drain colour, darken, close the vignette in. k in 0..1."""
+    if k <= 0.005:
+        return img
+    l = img.mean(axis=2, keepdims=True)
+    img = img * (1 - 0.45 * k) + l * 0.45 * k
+    img = img * (1 - 0.10 * k)
+    return vignette(img, 0.30 * k)
