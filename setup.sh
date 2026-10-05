@@ -38,8 +38,13 @@ else
   echo "Install Node.js 22+: https://nodejs.org" >&2
 fi
 
+say "Null Motion (fetched, never committed: upstream has no licence)"
+"$(dirname "$0")/scripts/fetch-nullmotion.sh" \
+  || echo "Null Motion fetch failed. It is optional: re-run scripts/fetch-nullmotion.sh later." >&2
+
 say "Verify"
 ffmpeg -version 2>/dev/null | head -1 || echo "ffmpeg MISSING"
+[ -f "$(dirname "$0")/vendor/nullmotion/server.js" ] && echo "nullmotion OK" || echo "nullmotion not fetched (optional)"
 python3 -c "import requests, librosa, numpy; print('python helpers OK')" || true
 python3 -c "import whisper; print('whisper OK')" 2>/dev/null || echo "whisper not installed (optional)"
 echo "skills wired: $(ls .claude/skills 2>/dev/null | wc -l)"

@@ -1,6 +1,6 @@
 # Video_Claude
 
-An AI video-production workspace for Claude Code. **34 skills** from four upstream
+An AI video-production workspace for Claude Code. **35 skills** from five upstream
 projects are installed and wired up, covering the whole pipeline: transcribe and
 cut real footage, generate voiceover/music/imagery, compose in HTML or React, and
 render to MP4.
@@ -20,6 +20,7 @@ claude
 | [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) | `hyperframes` + 8 `hyperframes-*` / `media-use` | **Write HTML, render video.** Composition contract, GSAP/Lottie/Three.js animation, audio mixing, a ~400-item block registry, and an asset resolver. Start at `/hyperframes` — it routes to the rest and installs creation workflows on demand. |
 | [remotion-dev/skills](https://github.com/remotion-dev/skills) | 12 × `remotion-*` | **Video as React.** Official Remotion skills — create, caption, animate, preview in Studio, render, upgrade. `remotion-best-practices` is the router. |
 | [digitalsamba/claude-code-video-toolkit](https://github.com/digitalsamba/claude-code-video-toolkit) | `ffmpeg`, `elevenlabs`, `acestep`, `ideogram4`, `ltx2`, `qwen-edit`, `moviepy`, `runpod`, `playwright-recording`, `frontend-design`, `remotion` | **Generation + encoding.** AI voiceover, music, image and video generation on open-source models via your own GPU, plus raw FFmpeg and browser screen-recording. Also ships 14 slash commands (`/video`, `/setup`, `/brand`, …). |
+| [blixvip/NullMotion](https://github.com/blixvip/NullMotion) | `nullmotion` | **26 ready-made motion templates + an ad-breakdown viewer.** Notification toasts, AI chat, prompt typing, CTAs, stat bars, HUD and more, each a HyperFrames composition: copy one, change the text, render. Fetched by `setup.sh`, never committed ([why](#about-null-motion)). |
 
 Run `/hyperframes` for HTML-based motion graphics, `remotion-best-practices` for
 React video, or just describe footage you want edited and `video-use` takes over.
@@ -42,6 +43,24 @@ Use it to rough out a transcript at no cost; use Scribe when you need word-level
 timestamps, speaker diarization and filler tagging, which is what `video-use`'s
 cutting logic is built around.
 
+### About Null Motion
+
+[blixvip/NullMotion](https://github.com/blixvip/NullMotion) was also requested. Like Whisper,
+it is **not a skill**: it is a local web app with no `SKILL.md`. Two parts of it are useful
+here, so a small wrapper skill, `nullmotion`, explains them to Claude:
+
+- **26 motion templates**, each a self-contained HyperFrames composition. The wrapper's
+  `scripts/template.mjs` copies one out with its own GSAP, assets and the Inter font, ready
+  to edit and render with `npx hyperframes render`.
+- **The breakdown viewer**: a finished ad on top, black-and-white drafts for each section
+  underneath, frame-synced, with MP4 export. Export needs Chrome or Edge on your own machine.
+
+It is **fetched, not committed**. Upstream has no licence (all rights reserved) and ships
+other creators' ads, and this repo is public. `setup.sh` runs `scripts/fetch-nullmotion.sh`,
+which pulls the pinned 1.0.0 commit into the gitignored `vendor/nullmotion/`. For the same
+reason, treat the templates as drafts and inspiration: ask the author before a template's
+code or exact look goes into a published video.
+
 ## Layout
 
 ```
@@ -51,13 +70,16 @@ cutting logic is built around.
 vendor/
   claude-code-video-toolkit/   toolkit checkout; its skills reference
                                tools/, lib/, templates/ at this root
-setup.sh            installs ffmpeg + python packages
+  nullmotion/                  Null Motion app, fetched by setup.sh (gitignored)
+scripts/            fetch-nullmotion.sh, vendor-cdn-deps.sh
+setup.sh            installs ffmpeg + python packages, fetches Null Motion
 .env.example        API keys — copy to .env
 ```
 
 Skills are **committed to this repo**, so a fresh clone or a new Claude Code web
 session has them immediately with no network fetch. Only system dependencies need
-`./setup.sh`.
+`./setup.sh`. The one exception is the Null Motion app behind the `nullmotion` skill,
+which `./setup.sh` fetches (see [About Null Motion](#about-null-motion)).
 
 ## API keys
 
@@ -113,3 +135,5 @@ machine, or copy a `.pt` model into `~/.cache/whisper/` and it will work offline
   `lib/`, `scripts/`, `templates/`, `brands/` — is intact, which is what its skills
   reference. For the full upstream checkout, clone it separately.
 - Upstream licences: hyperframes Apache-2.0; video-use, the toolkit and whisper MIT.
+  Null Motion has none, which is why it is fetched rather than committed. The Inter font
+  bundled with the `nullmotion` skill is SIL OFL 1.1 (licence alongside it).

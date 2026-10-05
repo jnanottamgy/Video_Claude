@@ -6,6 +6,10 @@
 # .agents/skills is the source of truth; .claude/skills symlinks into it.
 /agent/
 
+# Null Motion: fetched by scripts/fetch-nullmotion.sh, never committed (no upstream
+# licence, and it ships other creators' footage). Templates copied from it go to /edit/.
+/vendor/nullmotion/
+
 # Python
 .venv/
 __pycache__/

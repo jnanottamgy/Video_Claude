@@ -1,6 +1,6 @@
 # Video_Claude — working notes for Claude Code
 
-An AI video-production workspace. 34 skills across four upstream projects. See
+An AI video-production workspace. 35 skills across five upstream projects. See
 `README.md` for the full inventory.
 
 ## Picking an engine
@@ -12,6 +12,7 @@ Four engines are installed and they overlap. Choose by the *input*, not by taste
 | Raw footage to cut (talking head, montage, tutorial, interview) | `video-use` |
 | A brief/URL/PR and wants motion graphics, no footage | `/hyperframes` (routes itself) |
 | An existing React codebase, or wants video as React components | `remotion-best-practices` (router) |
+| A UI or social motion graphic close to a stock template (toasts, AI chat, prompt typing, CTA, stat bars, HUD) | `nullmotion`: copy the template, change the text, render with HyperFrames |
 | A need to *generate* voiceover, music, images, or AI clips | toolkit skills: `elevenlabs`, `acestep`, `ideogram4`, `ltx2`, `qwen-edit` |
 | Raw encode/convert/concat work | `ffmpeg` |
 
@@ -29,6 +30,9 @@ HyperFrames composition without reading it first.
   `vendor/claude-code-video-toolkit/tools/voiceover.py`.
 - `video-use` references its helpers by bare name (`transcribe.py`, `render.py`) —
   those are at `.agents/skills/video-use/helpers/`.
+- `vendor/nullmotion/` — the Null Motion app, fetched by `scripts/fetch-nullmotion.sh`
+  (`setup.sh` runs it). **Gitignored: upstream has no licence and this repo is public.**
+  Never commit it, or a template copied from it; copies go to the gitignored `edit/nullmotion/`.
 
 ## Transcription: two backends, different costs
 
