@@ -548,8 +548,9 @@ def stem_B(A):
             if lo <= t < hi:
                 u = (t - lo) / (hi - lo)
                 place(B, pitch(wa_pop(0.14 + 0.08 * u), rng.uniform(-2, 4)), t, 0, 1.0, rng.uniform(-0.7, 0.7))
+    burst = edl.out_time(89.967, "P7")                    # the orbit bursts on this cut: the whip whoosh covers it
     for t, dcov in cues.get("problem", []):
-        if t < O("P8") - 0.05:
+        if t < O("P8") - 0.05 and abs(t - burst) > 0.05:
             place(B, wa_pop(0.14 + min(0.14, dcov * 3)), t, 0, 1.0, rng.uniform(-0.6, 0.6))
     for t, dcov in cues.get("oneplace", []):
         place(B, wa_pop(0.20, up=True), t, 0, 1.0, rng.uniform(-0.3, 0.3))
