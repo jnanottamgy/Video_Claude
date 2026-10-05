@@ -7,23 +7,28 @@
     <script src="./vendor/gsap.min.js"></script>
     <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
-    <!-- shared notification card (master: slots/notifs/_shared) -->
-    <link rel="stylesheet" href="./lib/notif-kit.css" />
-    <script src="./lib/notif-kit.js"></script>
+    <!-- v2 WhatsApp kit (master: slots/notifs/_shared, run _shared/sync.sh after edits) -->
+    <link rel="stylesheet" href="./lib/wa-kit.css" />
+    <script src="./lib/wa-kit.js"></script>
     <style>
       #stage { position: relative; width: 100%; height: 100%; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
-      #stack { position: absolute; inset: 0; transform-origin: 540px 590px; }
-      .nk-card { left: 70px; top: 330px; }
+      #stack { position: absolute; inset: 0; }
     </style>
   </head>
   <body>
     <!--
-      notifs/cards — output window 30.000 -> 45.600 s (15.6 s = 468 frames), layer FRONT.
-      Group-chat notification cards stack like a lock screen as the friends name each group:
-        30.22 Unofficial Group · 37.01 Official Class Group · 40.40 Boys Group
-      44.40 hard cut: stack trembles, badges pulse red. 44.65 "What": the three cards blow apart.
-      Nothing visible after 45.30.
+      notifs/cards v2 — output window 30.000 -> 45.600 s (15.6 s = 468 frames), layer FRONT.
+      As the friends name each WhatsApp group, an iOS dark-mode banner for that group drops in and
+      the banners stack like a lock screen (newest on top at y 330, older ones pushed down 185 px,
+      scaled 0.95 / 0.90 and dimmed). Arrivals (first frame each banner shows, output s):
+        30.233 Unofficial Group ("unofficial")   pill 47
+        37.000 Official Class Group ("official") pill 128
+        40.400 Boys Group ("boys", the 40.405 downbeat) pill 99+
+      Beats 37.14-44.08: the unread pills tick up and pulse (downbeats also ping a green ring).
+      44.400 hard cut: the stack trembles, pills flash red/green.
+      44.667 "What": the three banners blow apart off-screen (rotation + motion blur), gone by 45.20.
+      Frames are a pure function of time: lib/wa-kit.js tracks, sampled by one GSAP driver tween.
     -->
     <div id="stage" data-composition-id="main" data-start="0" data-duration="15.6" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="15.6" data-track-index="0">
@@ -35,149 +40,230 @@
         "use strict";
         var D = 15.6;
         var W = 940;
-        var H = 150;
-        // cue times, local seconds (= output time - 30.000)
-        var T_A = 0.223; // "unofficial group"
-        var T_B = 7.01; // "the official class group"
-        var T_C = 10.4; // "also in the boys group"
-        var T_CUT = 14.4; // hard cut to the laptop
-        var T_BLOW = 14.653; // "What"
+        var H = 156;
+        var CX = 540;
 
-        var SLOT_Y = [0, 185, 370]; // newest at y=330, older pushed down 185 px each
+        // cue times in local seconds (= output - 30.000), snapped to the frame each banner first shows on
+        var T_A = WA.snap(0.223); // "unofficial" 30.223 -> 30.233
+        var T_B = WA.snap(7.013); // "official" 37.013 -> 37.000
+        var T_C = WA.snap(10.401); // "boys" 40.401 -> 40.400 (downbeat 40.405)
+        var T_CUT = WA.snap(14.4); // 44.400 hard cut to the laptop
+        var T_BLOW = WA.snap(14.653); // "What" 44.653 -> 44.667
+        // the groove fades in: small accents only (output - 30). d = bar downbeat, s = snare
+        var BEATS = [
+          [7.14, "d"], [7.548, ""], [7.956, "s"], [8.365, ""], [8.773, "d"], [9.181, ""], [9.589, "s"], [9.997, ""],
+          [10.405, "d"], [10.813, ""], [11.222, "s"], [11.63, ""], [12.038, "d"], [12.446, ""], [12.854, "s"],
+          [13.262, ""], [13.671, "d"], [14.079, ""],
+        ];
+
+        // lock-screen slots: top edge y, scale, dim (top-anchored, so a smaller card keeps its top edge)
+        var SLOT_TOP = [330, 515, 700];
         var SLOT_S = [1, 0.95, 0.9];
-        var SLOT_DIM = [0, 0.26, 0.44];
+        var SLOT_D = [0, 0.24, 0.42];
+        function slotCY(i) {
+          return SLOT_TOP[i] + (H / 2) * SLOT_S[i];
+        }
 
         var stack = document.getElementById("stack");
-        var A = NK.card({ id: "card-a", app: "unofficial", sender: "CR:", msg: "all the notes, units 1-5", time: "now", badge: 12, w: W, h: H });
-        var B = NK.card({ id: "card-b", app: "official", sender: "Teacher:", msg: "syllabus copy attached", time: "now", badge: 48, w: W, h: H });
-        var C = NK.card({ id: "card-c", app: "boys", sender: "Zaid:", msg: "solved PYQs", time: "now", badge: "99+", w: W, h: H });
-        // oldest first in the DOM so the newest card paints on top
-        [A, B, C].forEach(function (c) {
-          stack.appendChild(c.el);
-          gsap.set(c.el, { transformOrigin: "50% 0%", opacity: 0 });
-        });
+        function make(id, spec) {
+          spec.id = id;
+          spec.w = W;
+          spec.h = H;
+          var k = WA.card(spec);
+          stack.appendChild(k.el);
+          var a = new WA.Actor(k, { x: CX, y: slotCY(0) - 140, s: 1.05, o: 0 });
+          a.pill = { s: new WA.Track(0), red: new WA.Track(0), ps: new WA.Track(1), po: new WA.Track(0) };
+          a.counts = []; // [t, delta]
+          return a;
+        }
+        // oldest first in the DOM, so the newest banner paints on top
+        var A = make("card-a", { chat: "unofficial", sender: "CR", icon: "pdf", msg: "Notes_unit1-5.pdf", pill: 47 });
+        var B = make("card-b", { chat: "official", sender: "Prof. Mehta", msg: "Syllabus copy attached", pill: 128 });
+        var C = make("card-c", { chat: "boys", sender: "Zaid", icon: "photo", msg: "Solved PYQs (12 photos)", pill: "99+" });
+        A.base = 47;
+        B.base = 128;
+        C.base = null; // reads "99+" throughout
+        var ALL = [A, B, C];
 
-        var tl = gsap.timeline({ paused: true });
+        var IOS_DROP = WA.springEase(20, 0.66, 0.7); // quick drop, ~6 % soft overshoot
+        var IOS_SCALE = WA.springEase(17, 0.72, 0.6);
+        var PUSH = WA.springEase(16, 0.8, 0.6); // the stack making room: smooth, ~1.5 % overshoot
 
-        /* ---------- arrival of one card at the top slot ---------- */
-        function arrive(c, t0) {
-          tl.fromTo(
-            c.el,
-            { y: -120, rotationX: -64, transformPerspective: 1600 },
-            { y: 0, rotationX: 0, transformPerspective: 1600, duration: 0.8, ease: "back.out(1.25)" },
-            t0
-          );
-          tl.fromTo(c.el, { scale: 0.9 }, { scale: 1, duration: 0.7, ease: "expo.out" }, t0);
-          tl.fromTo(c.el, { opacity: 0 }, { opacity: 1, duration: 0.22, ease: "power2.out" }, t0);
-          tl.fromTo(c.el, { filter: "blur(16px)" }, { filter: "blur(0px)", duration: 0.34, ease: "power2.out" }, t0);
-          // light sheen sweeps across as it lands
-          tl.fromTo(c.sheen, { x: -320, opacity: 1 }, { x: W + 80, opacity: 1, duration: 0.9, ease: "power2.inOut" }, t0 + 0.14);
-          // badge pops after the card lands
-          tl.fromTo(c.badge, { scale: 0 }, { scale: 1, duration: 0.5, ease: "back.out(2.8)" }, t0 + 0.2);
+        function ping(a, t, peak) {
+          a.pill.ps.add(t, 0.001, 1, "none", 1);
+          a.pill.ps.add(t, 0.55, peak || 1.9, "power2.out", 1);
+          a.pill.po.add(t, 0.001, 0.95, "none", 0);
+          a.pill.po.add(t + 0.05, 0.5, 0, "power1.in", 0.95);
+        }
+        function pulse(a, t, peak) {
+          a.pill.s.add(t, 0.07, peak, "power2.out");
+          a.pill.s.add(t + 0.07, 0.3, 1, "back.out(2.2)");
         }
 
-        /* ---------- older card pushed down one slot ---------- */
-        function push(c, from, t0) {
-          var to = from + 1;
-          tl.fromTo(
-            c.el,
-            { y: SLOT_Y[from], scale: SLOT_S[from] },
-            { y: SLOT_Y[to], scale: SLOT_S[to], duration: 0.75, ease: "expo.out", immediateRender: false },
-            t0 + 0.02
-          );
-          tl.fromTo(c.dim, { opacity: SLOT_DIM[from] }, { opacity: SLOT_DIM[to], duration: 0.6, ease: "power2.out", immediateRender: false }, t0 + 0.02);
+        /* ---------- one banner dropping into the top slot ---------- */
+        function arrive(a, T) {
+          var y0 = slotCY(0);
+          var v0 = T - 0.05; // the spring starts just above, so the first visible frame is already falling
+          a.ch("y").add(v0, 0.7, y0, IOS_DROP, y0 - 140);
+          a.ch("s").add(v0, 0.6, 1, IOS_SCALE, 1.05);
+          a.ch("o").set(T - 0.004, 1);
+          a.ch("b").add(T - 0.004, 0.26, 0, "power2.out", 11);
+          // glass sheen sweeps across as it settles
+          a.ch("sh").set(T + 0.08, 0);
+          a.ch("sh").add(T + 0.08, 0.8, 1, "power2.inOut", 0);
+          a.ch("sh").set(T + 0.9, -1);
+          // the unread pill pops in, then pings
+          a.pill.s.set(T - 0.004, 0);
+          a.pill.s.add(T + 0.1, 0.45, 1, "back.out(3)", 0);
+          ping(a, T + 0.16, 2.0);
         }
-
-        /* ---------- badge tick: punchy pulse while the count climbs ---------- */
-        function pulse(c, t0, peak) {
-          tl.fromTo(c.badge, { scale: 1 }, { scale: peak, duration: 0.12, ease: "power2.out", immediateRender: false }, t0);
-          tl.fromTo(c.badge, { scale: peak }, { scale: 1, duration: 0.4, ease: "back.out(2.2)", immediateRender: false }, t0 + 0.12);
+        /* ---------- an older banner pushed down one slot ---------- */
+        function push(a, from, T) {
+          var t = T - 0.034; // the stack starts making room one frame before the new banner shows
+          a.ch("y").add(t, 0.6, slotCY(from + 1), PUSH);
+          a.ch("s").add(t, 0.6, SLOT_S[from + 1], PUSH);
+          a.ch("d").add(t, 0.5, SLOT_D[from + 1], "power2.out");
+        }
+        // counts tick up one per 2 frames
+        function tick(a, t, n) {
+          for (var i = 0; i < n; i++) a.counts.push([t + (i * 2) / 30, 1]);
         }
 
         arrive(A, T_A);
+        // a few new messages while it sits there
+        tick(A, 2.2, 1);
+        tick(A, 4.1, 2);
+        tick(A, 5.9, 1);
 
         arrive(B, T_B);
         push(A, 0, T_B);
-        pulse(A, T_B + 0.3, 1.24);
+        tick(A, T_B + 0.3, 4);
+        pulse(A, T_B + 0.3, 1.2);
 
         arrive(C, T_C);
         push(B, 0, T_C);
         push(A, 1, T_C);
-        pulse(B, T_C + 0.3, 1.24);
-        pulse(A, T_C + 0.36, 1.24);
+        tick(B, T_C + 0.3, 5);
+        tick(A, T_C + 0.36, 5);
+        pulse(B, T_C + 0.3, 1.2);
+        pulse(A, T_C + 0.36, 1.2);
 
-        /* ---------- 44.40 hard cut: tremble + red alarm ---------- */
-        tl.fromTo("#stack", { scale: 1.035 }, { scale: 1, duration: 0.15, ease: "expo.out", immediateRender: false }, T_CUT);
-        // anticipation: the stack sucks in for a beat, then blows apart
-        tl.fromTo("#stack", { scale: 1 }, { scale: 0.965, duration: T_BLOW - T_CUT - 0.15, ease: "power2.in", immediateRender: false }, T_CUT + 0.15);
-        tl.fromTo("#stack", { scale: 0.965 }, { scale: 1, duration: 0.12, ease: "power2.out", immediateRender: false }, T_BLOW);
-        var rnd = NK.rng(4440);
-        [A, B, C].forEach(function (c, ci) {
-          var steps = Math.round((T_BLOW - T_CUT) * 30); // ~8 frames
-          var px = 0, py = 0, pr = 0;
-          for (var k = 0; k < steps; k++) {
-            var t = T_CUT + k / 30;
-            var u = (k + 1) / steps;
-            var amp = 2.5 + 7 * u;
-            var last = k === steps - 1;
-            var nx = last ? 0 : amp * (rnd() * 2 - 1);
-            var ny = last ? 0 : amp * 0.7 * (rnd() * 2 - 1);
-            var nr = last ? 0 : (0.5 + 1.2 * u) * (rnd() * 2 - 1);
-            var dur = last ? T_BLOW - t : 1 / 30;
-            tl.fromTo(
-              c.fly,
-              { x: px, y: py, rotation: pr },
-              { x: nx, y: ny, rotation: nr, duration: dur, ease: "sine.inOut", immediateRender: false },
-              t
-            );
-            px = nx;
-            py = ny;
-            pr = nr;
+        /* ---------- beats: pills tick + pulse (downbeats also ping the newest) ---------- */
+        var turn = 0;
+        BEATS.forEach(function (b) {
+          var t = WA.snap(b[0]) - 0.004;
+          if (Math.abs(t - T_C) < 0.2) return; // the Boys Group arrival owns that downbeat
+          var visible = t < T_C ? [B, A] : [C, B, A];
+          var a = visible[turn % visible.length];
+          turn++;
+          if (b[1] === "d") {
+            // the newest banner pings, unless it is still landing (then the next one does)
+            var top = t - (t < T_C ? T_B : T_C) < 0.35 ? visible[1] : visible[0];
+            ping(top, t, 1.8);
+            pulse(top, t, 1.22);
+            if (top.base !== null) tick(top, t, 1);
+            if (a !== top) {
+              pulse(a, t + 0.03, 1.12);
+              if (a.base !== null) tick(a, t + 0.03, 1);
+            }
+          } else {
+            pulse(a, t, b[1] === "s" ? 1.18 : 1.12);
+            if (a.base !== null) tick(a, t, b[1] === "s" ? 2 : 1);
           }
-          tl.fromTo(c.alarm, { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "power2.out" }, T_CUT + 0.02 * ci);
-          // red badge pulse
-          tl.fromTo(c.badge, { scale: 1 }, { scale: 1.34, duration: 0.09, ease: "power2.out", immediateRender: false }, T_CUT + 0.01);
-          tl.fromTo(c.badge, { scale: 1.34 }, { scale: 1.06, duration: 0.08, ease: "power2.in", immediateRender: false }, T_CUT + 0.1);
-          tl.fromTo(c.badge, { scale: 1.06 }, { scale: 1.4, duration: 0.07, ease: "power2.out", immediateRender: false }, T_CUT + 0.18);
         });
 
-        /* ---------- 44.65 "What": blow apart, off-screen, rotation + motion blur ---------- */
+        /* ---------- 44.40 hard cut: the stack trembles, pills flash red/green ---------- */
+        var rnd = WA.rng(4440);
+        var nTrem = Math.round((T_BLOW - T_CUT) * 30); // 8 frames
+        ALL.forEach(function (a, ci) {
+          a.ch("js").add(T_CUT - 0.004, 0.001, 1.03, "none", 1);
+          a.ch("js").add(T_CUT, 0.14, 1, "expo.out", 1.03);
+          a.ch("js").add(T_CUT + 0.14, T_BLOW - T_CUT - 0.14, 0.965, "power2.in", 1); // sucks in, then blows
+          for (var k = 0; k < nTrem; k++) {
+            var t = T_CUT + k / 30 - 0.004;
+            var u = (k + 1) / nTrem;
+            var amp = 2.5 + 7 * u;
+            var last = k === nTrem - 1;
+            a.ch("jx").add(t, 1 / 30, last ? 0 : amp * (rnd() * 2 - 1), "sine.inOut");
+            a.ch("jy").add(t, 1 / 30, last ? 0 : amp * 0.7 * (rnd() * 2 - 1), "sine.inOut");
+            a.ch("jr").add(t, 1 / 30, last ? 0 : (0.5 + 1.3 * u) * (rnd() * 2 - 1), "sine.inOut");
+            // pill strobes red / green every other frame, and punches
+            a.pill.red.set(t, k % 2 === 0 ? 1 : 0);
+            a.pill.s.add(t, 1 / 30, k % 2 === 0 ? 1.34 : 1.06, "power2.out");
+          }
+          if (a.base !== null) for (var q = 0; q < nTrem; q++) a.counts.push([T_CUT + q / 30, ci === 0 ? 3 : 2]);
+          a.pill.red.set(T_BLOW - 0.004, 1);
+        });
+
+        /* ---------- 44.667 "What": blow apart, off-screen, rotation + motion blur ----------
+           a blast kick on the main pose (expo.out: 80 px + a scale pop in ~3 frames), then the inner
+           channel flings each banner out of frame, accelerating (power2.in), so it reads for ~12 frames */
         var BLOW = [
-          { c: C, x: -1050, y: -980, r: -38, s: 1.22 }, // top card: up-left
-          { c: B, x: 1500, y: -200, r: 42, s: 1.2 }, // middle card: hard right
-          { c: A, x: -1480, y: 190, r: -30, s: 1.16 }, // bottom card: left, slightly down
+          { a: C, x: -1150, y: -980, r: -42, s: 1.24 }, // top banner: up and left
+          { a: B, x: 1560, y: -160, r: 46, s: 1.22 }, // middle: hard right
+          { a: A, x: -1500, y: 340, r: -34, s: 1.18 }, // bottom: left and down
         ];
-        BLOW.forEach(function (b, i) {
-          var t0 = T_BLOW + i * 0.012;
-          tl.fromTo(
-            b.c.fly,
-            { x: 0, y: 0, rotation: 0, scale: 1 },
-            { x: b.x, y: b.y, rotation: b.r, scale: b.s, duration: 0.85, ease: "power2.out", immediateRender: false },
-            t0
-          );
-          tl.fromTo(b.c.fly, { filter: "blur(0px)" }, { filter: "blur(14px)", duration: 0.12, ease: "power2.out", immediateRender: false }, t0);
-          tl.fromTo(b.c.fly, { opacity: 1 }, { opacity: 0, duration: 0.18, ease: "power1.in", immediateRender: false }, t0 + 0.4);
+        BLOW.forEach(function (o, i) {
+          var a = o.a;
+          var t0 = T_BLOW - 0.004;
+          var len = Math.hypot(o.x, o.y);
+          var cx = a.ch("x").at(t0);
+          var cy = a.ch("y").at(t0);
+          var cs = a.ch("s").at(t0);
+          a.mbMax = 22;
+          a.ch("x").add(t0, 0.3, cx + (80 * o.x) / len, "expo.out");
+          a.ch("y").add(t0, 0.3, cy + (80 * o.y) / len, "expo.out");
+          a.ch("s").add(t0, 0.18, cs * 1.08, "expo.out");
+          a.ch("jx").add(t0, 0.52, o.x, "power2.in", 0);
+          a.ch("jy").add(t0, 0.52, o.y, "power2.in", 0);
+          a.ch("jr").add(t0, 0.52, o.r, "none", 0);
+          a.ch("js").add(t0, 0.52, o.s, "power1.in", 0.965);
+          a.ch("o").add(15.04 + i * 0.02, 0.12, 0, "power1.in", 1);
         });
 
-        /* ---------- badge counts + timestamps: one state function driven by time ---------- */
-        var keysA = [[0, 12], [T_B + 0.3, 12], [T_B + 0.75, 19], [T_C + 0.36, 19], [T_C + 0.8, 27], [T_CUT, 27], [T_BLOW, 41]];
-        var keysB = [[0, 48], [T_C + 0.3, 48], [T_C + 0.75, 56], [T_CUT, 56], [T_BLOW, 73]];
-        function applyState(t) {
-          A.setBadge(NK.lerpKeys(keysA, t));
-          B.setBadge(NK.lerpKeys(keysB, t));
-          var ta = t < T_B + 0.2 ? "now" : t < T_C + 0.2 ? "1m" : "2m";
-          var tb = t < T_C + 0.2 ? "now" : "1m";
-          if (A.timeEl.textContent !== ta) A.timeEl.textContent = ta;
-          if (B.timeEl.textContent !== tb) B.timeEl.textContent = tb;
+        /* ---------- per-frame state ---------- */
+        var RED = "#ff3b30";
+        var GREEN = "#25d366";
+        function countAt(a, t) {
+          var n = a.base;
+          for (var i = 0; i < a.counts.length; i++) if (a.counts[i][0] <= t) n += a.counts[i][1];
+          return n;
         }
+        var last = {};
+        function applyPill(a, t, key) {
+          var p = a.k.pill;
+          var s = a.pill.s.at(t).toFixed(3);
+          var red = a.pill.red.at(t) > 0.5;
+          var ps = a.pill.ps.at(t).toFixed(3);
+          var po = a.pill.po.at(t).toFixed(3);
+          var L = last[key] || (last[key] = {});
+          if (L.s !== s) { p.style.transform = "scale(" + s + ")"; L.s = s; }
+          if (L.red !== red) {
+            p.style.background = red ? RED : GREEN;
+            p.style.color = red ? "#ffffff" : "#111b21";
+            a.k.ping.style.boxShadow = red
+              ? "0 0 0 3px rgba(255,59,48,0.95), 0 0 16px rgba(255,59,48,0.7)"
+              : "0 0 0 3px rgba(37,211,102,0.95), 0 0 16px rgba(37,211,102,0.7)";
+            L.red = red;
+          }
+          if (L.po !== po) { a.k.ping.style.opacity = po; L.po = po; }
+          if (L.ps !== ps) { a.k.ping.style.transform = "scale(" + ps + ")"; L.ps = ps; }
+          if (a.base !== null) a.k.setPill(countAt(a, t));
+        }
+        function apply(t) {
+          ALL.forEach(function (a, i) {
+            a.apply(t);
+            applyPill(a, t, i);
+          });
+          // relative times, as iOS updates them
+          A.k.setTime(t < T_B + 0.2 ? "now" : t < T_C + 0.2 ? "1m" : "2m");
+          B.k.setTime(t < T_C + 0.2 ? "now" : "1m");
+        }
+
+        var tl = gsap.timeline({ paused: true });
         var clock = { t: 0 };
-        tl.fromTo(
-          clock,
-          { t: 0 },
-          { t: D, duration: D, ease: "none", onUpdate: function () { applyState(clock.t); } },
-          0
-        );
-        applyState(0);
+        tl.fromTo(clock, { t: 0 }, { t: D, duration: D, ease: "none", onUpdate: function () { apply(clock.t); } }, 0);
+        apply(0);
 
         window.__timelines["main"] = tl;
         tl.seek(0);

@@ -7,307 +7,493 @@
     <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
+      /* tiles/oneplace v2 — THE PAYOFF: S.H.E.L.F is an agent you chat with on WhatsApp.
+         A floating WhatsApp dark-mode chat (glass card, slight 3D tilt) flies in, lands on the 8th at
+         89.388 and fills up on the 8ths: question, typing, PDF, syllabus, PYQ album, reminder.
+         Kartik's face fills the middle of the frame, so the chat lives in the clear column on the
+         left (x 64..~370) and grows downward as messages land (top-anchored, never into the caption band). */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
       #world { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
-      #tiles { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 3; }
 
-      /* The S.H.E.L.F tile (same design as slots/tiles/problem): .tile from design/shelf.css.
-         Its glass lives on an inner layer so it can melt into the panel when the stack docks. */
-      .tile.tt { left: 0; top: 0; white-space: nowrap; visibility: hidden; background: none; border-color: transparent; box-shadow: none; }
-      .tile.tt .glass {
-        position: absolute;
-        inset: -2px;
-        pointer-events: none;
-        border-radius: 30px;
-        background: linear-gradient(160deg, rgba(40, 62, 104, 0.9), var(--navy-glass) 55%);
-        border: 2px solid var(--navy-edge);
-        box-shadow: 0 0 34px rgba(var(--glow), 0.28), 0 18px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      /* ---------- streaking silhouettes (the problem section's bubbles, docking in) ---------- */
+      .sil {
+        position: absolute; left: 0; top: 0; width: 96px; height: 32px; border-radius: 10px;
+        background: #202c33; visibility: hidden; transform-origin: 50% 50%;
+        box-shadow: inset 4px 0 0 var(--c, #53bdeb);
       }
-      .tile.tt .glass::before {
-        content: "";
-        position: absolute;
-        left: 3px;
-        right: 3px;
-        top: 3px;
-        height: 46%;
-        border-radius: 27px 27px 12px 12px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
-      }
-      .tile.tt svg, .tile.tt .label { position: relative; }
-      .tile.tt .label {
-        background: linear-gradient(180deg, #ffffff 0%, #eef3fa 46%, #b6c4d7 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-      }
-      .tile svg { fill: none; stroke: #eaf0f8; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-      .tile svg .ac { stroke: #6cb0ff; }
-      .tile svg .acf { fill: #6cb0ff; stroke: none; }
-      .tile svg .dot { fill: #eaf0f8; stroke: none; opacity: 0.62; }
-      .tile svg .red { fill: #ff3b30; stroke: none; }
-      .tile svg .cut { stroke: #142441; stroke-width: 2.6; }
+      .sil::after { content: ""; position: absolute; left: 14px; top: 9px; width: 58px; height: 5px; border-radius: 3px; background: var(--c, #53bdeb); opacity: 0.85; }
+      .sil::before { content: ""; position: absolute; left: 14px; top: 19px; width: 40px; height: 4px; border-radius: 2px; background: #8696a0; opacity: 0.7; }
+      .sil.out { background: #005c4b; }
 
-      /* ONE glass panel: beside Kartik's head (his hair ends at x ~728), clear of the IG rail */
-      .pbox { position: absolute; left: 736px; top: 466px; width: 280px; height: 592px; border-radius: 36px; }
-      #aura {
-        z-index: 1;
-        pointer-events: none;
-        opacity: 0;
-        box-shadow: 0 0 46px 4px rgba(79, 157, 255, 0.55), 0 0 110px 18px rgba(79, 157, 255, 0.22);
+      /* ---------- the chat card ---------- */
+      #card {
+        position: absolute; left: 0; top: 0; width: 336px; height: 180px;
+        transform-origin: 0 0; visibility: hidden; font-family: var(--font-ui);
+        border-radius: 34px;
       }
-      #panel {
-        z-index: 2;
-        opacity: 0;
-        overflow: hidden;
-        background: linear-gradient(165deg, rgba(46, 72, 120, 0.95) 0%, rgba(15, 26, 50, 0.92) 44%, rgba(8, 15, 31, 0.94) 100%);
-        border: 2px solid rgba(150, 195, 255, 0.45);
-        box-shadow: 0 0 40px rgba(var(--glow), 0.32), 0 26px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      #halo { /* S.H.E.L.F's blue glow, behind the card (alpha stays < 0.5: it never counts as a new card) */
+        position: absolute; inset: -2px; border-radius: 36px; pointer-events: none;
+        box-shadow: 0 0 38px 4px rgba(79, 157, 255, 0.34), 0 0 90px 10px rgba(79, 157, 255, 0.12);
       }
-      #panel::before {
-        content: "";
-        position: absolute;
-        left: 3px;
-        right: 3px;
-        top: 3px;
-        height: 34%;
-        border-radius: 33px 33px 16px 16px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+      #shadow { position: absolute; inset: 0; border-radius: 34px; box-shadow: 0 34px 70px rgba(0, 0, 0, 0.5), 0 10px 22px rgba(0, 0, 0, 0.35); }
+      #body {
+        position: absolute; inset: 0; border-radius: 34px; overflow: hidden;
+        background: #0b141a;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11), inset 0 1.5px 0 rgba(255, 255, 255, 0.1);
       }
-      #mark {
-        position: absolute;
-        left: 86px;
-        top: 20px;
-        width: 104px;
-        height: 91px;
-        filter: drop-shadow(0 0 14px rgba(120, 180, 255, 0.5));
+      #wall { /* WhatsApp's doodle wallpaper at 5 % */
+        position: absolute; left: 0; right: 0; top: 70px; bottom: 0; opacity: 0.055;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 22l3.5 7 7.7 1.1-5.6 5.4 1.3 7.7-6.9-3.6-6.9 3.6 1.3-7.7-5.6-5.4 7.7-1.1z'/%3E%3Cpath d='M70 30c-3-5-11-4-11 3 0 6 11 12 11 12s11-6 11-12c0-7-8-8-11-3z'/%3E%3Ccircle cx='122' cy='24' r='9'/%3E%3Cpath d='M118 21h.1M126 21h.1M117.5 27c2.5 2.6 6.5 2.6 9 0'/%3E%3Cpath d='M22 78c6-8 14-8 20 0s14 8 20 0'/%3E%3Cpath d='M96 70h22v16H96zM100 70v-5h14v5'/%3E%3Cpath d='M134 66v18M125 75h18'/%3E%3Cpath d='M30 112a10 10 0 0 1 19-4 7 7 0 0 1 1 14H31a6 6 0 0 1-1-10z'/%3E%3Cpath d='M84 104l6 22 4-9 9 4z'/%3E%3Cpath d='M118 108c0-5 4-9 9-9s9 4 9 9-9 17-9 17-9-12-9-17z'/%3E%3Ccircle cx='127' cy='108' r='3'/%3E%3Cpath d='M64 136h8l3-6 4 12 3-6h8'/%3E%3C/g%3E%3C/svg%3E");
+        background-size: 150px 150px;
       }
-      #word {
-        position: absolute;
-        left: 0;
-        top: 120px;
-        width: 276px;
-        text-align: center;
-        font: 800 44px/1.1 var(--font-brand);
-        letter-spacing: 0.03em;
-        white-space: nowrap;
-        filter: drop-shadow(0 0 14px rgba(var(--glow), 0.4));
+      #sheen { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(128deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 32%, rgba(255, 255, 255, 0) 55%); }
+
+      /* header */
+      #hdr {
+        position: absolute; left: 0; top: 0; width: 336px; height: 70px; display: flex; align-items: center;
+        padding: 0 12px 0 8px; gap: 8px; background: linear-gradient(180deg, #24333c 0%, #202c33 100%);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
       }
-      #word .ch {
-        display: inline-block;
-        background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 50%, #a9b8cd 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+      #back { flex: none; display: flex; align-items: center; gap: 1px; }
+      #back svg { width: 15px; height: 22px; display: block; }
+      #unread { min-width: 28px; height: 22px; padding: 0 7px; border-radius: 11px; background: #25d366; color: #111b21; font: 700 13.5px/22px var(--font-ui); text-align: center; }
+      #ava {
+        flex: none; position: relative; width: 44px; height: 44px; border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #1d3466 0%, #0d1a36 62%, #08112a 100%);
+        box-shadow: 0 0 0 1.5px rgba(140, 190, 255, 0.55), 0 0 12px rgba(79, 157, 255, 0.45);
+        display: grid; place-items: center;
       }
-      #rule {
-        position: absolute;
-        left: 24px;
-        top: 184px;
-        width: 228px;
-        height: 2px;
-        background: linear-gradient(90deg, rgba(190, 215, 255, 0), rgba(190, 215, 255, 0.75), rgba(190, 215, 255, 0));
+      #ava img { width: 31px; height: 31px; object-fit: contain; filter: drop-shadow(0 0 4px rgba(140, 190, 255, 0.55)); }
+      #who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+      #name {
+        position: relative; font: 600 22.5px/26px var(--font-ui); letter-spacing: 0.01em; white-space: nowrap;
+        color: #e9edef;
       }
-      .shelf-line {
-        position: absolute;
-        left: 16px;
-        width: 244px;
-        height: 1px;
-        background: linear-gradient(90deg, rgba(170, 200, 245, 0), rgba(170, 200, 245, 0.22), rgba(170, 200, 245, 0));
+      #name .shim { /* silver -> blue shimmer on "place" */
+        position: absolute; left: 0; top: 0; white-space: nowrap; color: transparent;
+        -webkit-background-clip: text; background-clip: text;
+        background-image: linear-gradient(100deg, #e9edef 0%, #e9edef 34%, #ffffff 44%, #d9ecff 50%, #8ec3ff 58%, #5aa6ff 70%, #4f9dff 100%);
+        background-size: 300% 100%; background-position: 0% 0; opacity: 0;
       }
-      #sheen { z-index: 4; overflow: hidden; pointer-events: none; }
-      #band {
-        position: absolute;
-        top: -20%;
-        left: 0;
-        width: 56%;
-        height: 140%;
-        opacity: 0;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 28%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0.1) 72%, rgba(255, 255, 255, 0) 100%);
+      #status { position: relative; height: 18px; font: 500 14.5px/18px var(--font-ui); color: #25d366; white-space: nowrap; }
+      #status span { position: absolute; left: 0; top: 0; }
+      #icons { flex: none; display: flex; align-items: center; gap: 14px; }
+      #icons svg { width: 24px; height: 24px; display: block; }
+
+      /* message area (absolute, top-anchored) */
+      #area { position: absolute; left: 0; top: 70px; width: 336px; height: 60px; overflow: hidden; }
+      .m { position: absolute; visibility: hidden; }
+      .m.in { left: 14px; transform-origin: 0 0; }
+      .m.out { right: 14px; transform-origin: 100% 0; }
+      .bub {
+        position: relative; border-radius: 15px; padding: 7px 9px 6px 10px; color: #e9edef;
+        box-shadow: 0 1.5px 1px rgba(0, 0, 0, 0.28), 0 6px 14px rgba(0, 0, 0, 0.22);
       }
+      .bub.in { background: #202c33; }
+      .bub.out { background: #005c4b; }
+      .bub.in.tail { border-top-left-radius: 0; }
+      .bub.out.tail { border-top-right-radius: 0; }
+      .bub .tl { position: absolute; top: 0; width: 11px; height: 17px; display: block; }
+      .bub.in .tl { left: -10px; }
+      .bub.out .tl { right: -10px; }
+      .tx { font: 400 19px/24px var(--font-ui); letter-spacing: -0.005em; }
+      .tm { font: 400 11.5px/14px var(--font-ui); color: #8696a0; white-space: nowrap; }
+      .bub.out .tm { color: rgba(233, 237, 239, 0.62); }
+      .tm.br { position: absolute; right: 9px; bottom: 5px; display: flex; align-items: center; gap: 3px; }
+      .ticks { width: 17px; height: 11px; display: block; }
+
+      .datechip { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); padding: 0 11px; height: 24px; border-radius: 8px; background: #182229; color: #8696a0; font: 500 12.5px/24px var(--font-ui); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25); }
+
+      /* typing dots */
+      .typing { width: 74px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; gap: 7px; }
+      .typing i { width: 8.5px; height: 8.5px; border-radius: 50%; background: #8696a0; display: block; }
+
+      /* source chip ("from Unofficial Group") */
+      .src { display: flex; align-items: center; gap: 5px; height: 18px; font: 500 12.5px/18px var(--font-ui); color: #8696a0; white-space: nowrap; margin: 0 0 5px; }
+      .src svg { width: 15px; height: 15px; display: block; flex: none; }
+      .src b { font-weight: 600; }
+
+      /* document */
+      .docbox { display: flex; align-items: center; gap: 9px; height: 58px; padding: 0 10px 0 8px; border-radius: 9px; background: rgba(11, 20, 26, 0.5); }
+      .docbox svg { width: 33px; height: 40px; display: block; flex: none; }
+      .dn { min-width: 0; flex: 1; }
+      .fn { font: 600 15.5px/19px var(--font-ui); color: #e9edef; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .fm { font: 400 12px/16px var(--font-ui); color: #8696a0; white-space: nowrap; margin-top: 2px; }
+      .docfoot { display: flex; justify-content: space-between; align-items: flex-end; height: 18px; margin-top: 4px; }
+      .docfoot .sz { font: 400 11.5px/14px var(--font-ui); color: #8696a0; }
+
+      /* album: four blurry paper photos, "+8" on the last */
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 226px; border-radius: 9px; overflow: hidden; }
+      .ph { position: relative; height: 104px; overflow: hidden; background: #3b342c; }
+      .ph .pg { position: absolute; left: -14%; top: -12%; width: 128%; height: 124%; filter: blur(1.4px); }
+      .ph .pg::before { /* the page */
+        content: ""; position: absolute; left: 14%; top: 10%; width: 74%; height: 84%;
+        background:
+          repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 7px, rgba(70, 92, 140, 0.32) 7px 8px),
+          linear-gradient(160deg, #f1ebde 0%, #e2d9c6 60%, #cfc4ae 100%);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+        transform: rotate(var(--r, -6deg));
+      }
+      .ph .pg::after { /* handwriting smudges */
+        content: ""; position: absolute; left: 24%; top: 22%; width: 52%; height: 58%;
+        background:
+          linear-gradient(90deg, rgba(40, 46, 70, 0.55) 0 70%, transparent 70%) 0 6% / 100% 3px no-repeat,
+          linear-gradient(90deg, rgba(40, 46, 70, 0.5) 0 88%, transparent 88%) 0 22% / 100% 3px no-repeat,
+          linear-gradient(90deg, rgba(40, 46, 70, 0.5) 0 56%, transparent 56%) 0 38% / 100% 3px no-repeat,
+          linear-gradient(90deg, rgba(40, 46, 70, 0.5) 0 80%, transparent 80%) 0 54% / 100% 3px no-repeat,
+          linear-gradient(90deg, rgba(150, 40, 40, 0.45) 0 40%, transparent 40%) 0 70% / 100% 3px no-repeat,
+          linear-gradient(90deg, rgba(40, 46, 70, 0.5) 0 74%, transparent 74%) 0 86% / 100% 3px no-repeat;
+        transform: rotate(var(--r, -6deg));
+      }
+      .ph.more::after { content: ""; position: absolute; inset: 0; background: rgba(11, 20, 26, 0.58); }
+      .ph .plus { position: absolute; inset: 0; display: grid; place-items: center; z-index: 2; font: 600 30px/1 var(--font-ui); color: #ffffff; }
+      .cap { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: 6px; }
+      .cap .tx { font-size: 16.5px; line-height: 20px; font-weight: 500; white-space: nowrap; }
+
+      /* reminder text */
+      .rem { display: flex; gap: 7px; align-items: flex-start; }
+      .rem svg { width: 19px; height: 19px; flex: none; margin-top: 2.5px; display: block; }
+      .rem .tx { font-size: 17.5px; line-height: 22.5px; }
+
+      /* input bar */
+      #inp {
+        position: absolute; left: 0; width: 336px; height: 60px; top: 120px; display: flex; align-items: center;
+        gap: 8px; padding: 0 9px 0 10px; background: linear-gradient(180deg, #1c262d 0%, #18222a 100%);
+        box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.04);
+      }
+      #inp .pill { flex: 1; height: 38px; border-radius: 19px; background: #2a3942; display: flex; align-items: center; gap: 7px; padding: 0 10px; color: #8696a0; font: 400 15.5px/38px var(--font-ui); }
+      #inp svg { display: block; flex: none; }
+      #mic { width: 40px; height: 40px; border-radius: 50%; background: #00a884; display: grid; place-items: center; flex: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+
+      /* light sweep on "place" */
+      #sweep { position: absolute; top: -40%; left: 0; width: 150px; height: 180%; opacity: 0; pointer-events: none;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(214, 233, 255, 0.1) 30%, rgba(236, 245, 255, 0.34) 50%, rgba(214, 233, 255, 0.1) 70%, rgba(255, 255, 255, 0) 100%); }
+      #ring { position: absolute; inset: -2px; border-radius: 36px; pointer-events: none; opacity: 0;
+        box-shadow: 0 0 0 1.5px rgba(160, 205, 255, 0.45), 0 0 26px 3px rgba(79, 157, 255, 0.4); }
     </style>
   </head>
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="3.733" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="3.733" data-track-index="0">
         <div id="world">
-        <div id="aura" class="pbox"></div>
-        <div id="panel" class="pbox">
-          <img id="mark" src="./design/shelf-mark.png" alt="" />
-          <div id="word" data-layout-allow-occlusion><span class="ch" data-layout-allow-occlusion>S</span><span class="ch" data-layout-allow-occlusion>.</span><span class="ch" data-layout-allow-occlusion>H</span><span class="ch" data-layout-allow-occlusion>.</span><span class="ch" data-layout-allow-occlusion>E</span><span class="ch" data-layout-allow-occlusion>.</span><span class="ch" data-layout-allow-occlusion>L</span><span class="ch" data-layout-allow-occlusion>.</span><span class="ch" data-layout-allow-occlusion>F</span></div>
-          <div id="rule"></div>
-          <div id="shelves"></div>
-        </div>
-        <div id="tiles"></div>
-        <div id="sheen" class="pbox"><div id="band" data-layout-allow-overflow></div></div>
+          <div id="sils"></div>
+          <div id="card" data-layout-allow-overflow data-layout-allow-occlusion>
+            <div id="halo"></div>
+            <div id="shadow"></div>
+            <div id="body">
+              <div id="wall"></div>
+              <div id="area">
+                <div class="datechip" data-layout-allow-occlusion>Today</div>
+                <!-- 1. the question (outgoing) -->
+                <div class="m out" id="m-q" data-layout-allow-occlusion>
+                  <div class="bub out tail" style="width: 214px; height: 60px">
+                    <svg class="tl" viewBox="0 0 11 17"><path d="M0 0h8.6c1.9 0 2.9 2.3 1.6 3.7L0 16.2z" fill="#005c4b" /></svg>
+                    <div class="tx">where are the unit 3 notes??</div>
+                    <div class="tm br"><span>11:52 PM</span><svg class="ticks" id="ticks" viewBox="0 0 17 11"><path id="tk1" d="M1.2 6.1l3 3L11 2.2" fill="none" stroke="#8696a0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /><path id="tk2" d="M6.2 9.1L13 2.2" fill="none" stroke="#8696a0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></div>
+                  </div>
+                </div>
+                <!-- 2. typing -->
+                <div class="m in" id="m-typ" data-layout-allow-occlusion>
+                  <div class="bub in tail typing">
+                    <svg class="tl" viewBox="0 0 11 17"><path d="M11 0H2.4C.5 0-.5 2.3.8 3.7L11 16.2z" fill="#202c33" /></svg>
+                    <i></i><i></i><i></i>
+                  </div>
+                </div>
+                <!-- 3. Unit 3 notes -->
+                <div class="m in" id="m-d1" data-layout-allow-occlusion>
+                  <div class="bub in tail" style="width: 262px">
+                    <svg class="tl" viewBox="0 0 11 17"><path d="M11 0H2.4C.5 0-.5 2.3.8 3.7L11 16.2z" fill="#202c33" /></svg>
+                    <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#53bdeb" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#53bdeb" /><circle cx="10.2" cy="7.2" r="1.6" fill="#53bdeb" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#53bdeb" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#53bdeb" fill-opacity=".75" /></svg>from <b style="color: #53bdeb">Unofficial Group</b></div>
+                    <div class="docbox"><svg viewBox="0 0 33 40"><path d="M4 1h17.5L31 10.5V36a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V4a3 3 0 0 1 3-3z" fill="#e5534b" /><path d="M21.5 1v7.2a2.3 2.3 0 0 0 2.3 2.3H31z" fill="#f4a29d" /><text x="16" y="30.5" text-anchor="middle" font-family="Inter" font-weight="800" font-size="9.4" fill="#fff">PDF</text></svg><div class="dn"><div class="fn">Unit3_Notes_CR.pdf</div><div class="fm">14 pages · PDF</div></div></div>
+                    <div class="docfoot"><span class="sz">2.1 MB</span><span class="tm">11:52 PM</span></div>
+                  </div>
+                </div>
+                <!-- 4. syllabus -->
+                <div class="m in" id="m-d2" data-layout-allow-occlusion>
+                  <div class="bub in" style="width: 262px">
+                    <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#f06292" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#f06292" /><circle cx="10.2" cy="7.2" r="1.6" fill="#f06292" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#f06292" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#f06292" fill-opacity=".75" /></svg>from <b style="color: #f06292">Official Class Group</b></div>
+                    <div class="docbox"><svg viewBox="0 0 33 40"><path d="M4 1h17.5L31 10.5V36a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V4a3 3 0 0 1 3-3z" fill="#e5534b" /><path d="M21.5 1v7.2a2.3 2.3 0 0 0 2.3 2.3H31z" fill="#f4a29d" /><text x="16" y="30.5" text-anchor="middle" font-family="Inter" font-weight="800" font-size="9.4" fill="#fff">PDF</text></svg><div class="dn"><div class="fn">Syllabus_copy.pdf</div><div class="fm">3 pages · PDF</div></div></div>
+                    <div class="docfoot"><span class="sz">412 kB</span><span class="tm">11:52 PM</span></div>
+                  </div>
+                </div>
+                <!-- 5. PYQ album -->
+                <div class="m in" id="m-al" data-layout-allow-occlusion>
+                  <div class="bub in" style="width: 246px">
+                    <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#fa6533" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#fa6533" /><circle cx="10.2" cy="7.2" r="1.6" fill="#fa6533" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#fa6533" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#fa6533" fill-opacity=".75" /></svg>from <b style="color: #fa6533">Boys Group</b></div>
+                    <div class="grid">
+                      <div class="ph"><div class="pg" style="--r: -7deg"></div></div>
+                      <div class="ph"><div class="pg" style="--r: 5deg"></div></div>
+                      <div class="ph"><div class="pg" style="--r: 3deg"></div></div>
+                      <div class="ph more"><div class="pg" style="--r: -4deg"></div><div class="plus">+8</div></div>
+                    </div>
+                    <div class="cap"><span class="tx">Solved PYQs 2019-24</span><span class="tm">11:52 PM</span></div>
+                  </div>
+                </div>
+                <!-- 6. the reminder -->
+                <div class="m in" id="m-rm" data-layout-allow-occlusion>
+                  <div class="bub in" style="width: 262px">
+                    <div class="rem"><svg viewBox="0 0 20 20"><path d="M10 2.4c-3 0-5.1 2.3-5.1 5.2v3.4c0 .8-.3 1.5-.8 2.1l-1 1.2c-.4.5 0 1.2.6 1.2h12.6c.6 0 1-.7.6-1.2l-1-1.2c-.5-.6-.8-1.3-.8-2.1V7.6C15.1 4.7 13 2.4 10 2.4z" fill="#ffb74d" /><path d="M8 16.6a2.1 2.1 0 0 0 4 0z" fill="#ffb74d" /></svg><div class="tx">Exam at 9:00 AM. I'll remind you at 7:30.</div></div>
+                    <div class="tm" style="text-align: right; margin-top: 1px">11:52 PM</div>
+                  </div>
+                </div>
+              </div>
+              <div id="hdr">
+                <div id="back"><svg viewBox="0 0 15 22"><path d="M11.5 3 3.6 11l7.9 8" fill="none" stroke="#e9edef" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg><div id="unread">47</div></div>
+                <div id="ava"><img src="./design/shelf-mark.png" alt="" /></div>
+                <div id="who">
+                  <div id="name"><span class="base">S.H.E.L.F</span><span class="shim" data-layout-allow-occlusion>S.H.E.L.F</span></div>
+                  <div id="status"><span id="st-on">online</span><span id="st-ty" style="opacity: 0">typing…</span></div>
+                </div>
+                <div id="icons">
+                  <svg viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="13" height="11" rx="2.6" fill="none" stroke="#aebac1" stroke-width="1.9" /><path d="M15.5 10.4l5.2-3v9.2l-5.2-3z" fill="none" stroke="#aebac1" stroke-width="1.9" stroke-linejoin="round" /></svg>
+                  <svg viewBox="0 0 24 24"><path d="M7.4 3.6l2.3 4.2c.3.6.2 1.3-.3 1.8l-1.5 1.4c1.1 2.2 2.9 4 5.1 5.1l1.4-1.5c.5-.5 1.2-.6 1.8-.3l4.2 2.3c.6.3.8 1 .6 1.6l-.7 2c-.4 1.1-1.5 1.7-2.6 1.5C10.9 20.6 3.4 13.1 2.3 6.3c-.2-1.1.4-2.2 1.5-2.6l2-.7c.6-.2 1.3 0 1.6.6z" fill="none" stroke="#aebac1" stroke-width="1.8" stroke-linejoin="round" /></svg>
+                </div>
+              </div>
+              <div id="inp">
+                <svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 4v14M4 11h14" stroke="#aebac1" stroke-width="2.2" stroke-linecap="round" /></svg>
+                <div class="pill"><span style="flex: 1">Message</span><svg width="19" height="19" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="#8696a0" stroke-width="1.7" /><path d="M6.7 11.6c.9 1.4 2 2 3.3 2s2.4-.6 3.3-2" fill="none" stroke="#8696a0" stroke-width="1.7" stroke-linecap="round" /><circle cx="7.3" cy="8" r="1.1" fill="#8696a0" /><circle cx="12.7" cy="8" r="1.1" fill="#8696a0" /></svg></div>
+                <svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.7l1.5-2h4.6l1.5 2h1.7A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="#aebac1" stroke-width="1.9" stroke-linejoin="round" /><circle cx="12" cy="12.3" r="3.4" fill="none" stroke="#aebac1" stroke-width="1.9" /></svg>
+                <div id="mic"><svg width="18" height="22" viewBox="0 0 18 22"><rect x="5.5" y="1.5" width="7" height="12" rx="3.5" fill="#fff" /><path d="M2.5 10.5a6.5 6.5 0 0 0 13 0M9 17v3.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" /></svg></div>
+              </div>
+              <div id="sheen"></div>
+              <div id="sweep" data-layout-allow-overflow></div>
+            </div>
+            <div id="ring"></div>
+          </div>
         </div>
       </div>
     </div>
     <script>
       (function () {
         "use strict";
-        var DUR = 3.733; // window 89.000 -> 92.733 on the reel's output timeline (112 frames)
+        var DUR = 3.733; // window 89.033 -> 92.767 on the reel's output timeline (112 frames)
 
         /* ---------------- utilities ---------------- */
         function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
         function lerp(a, b, t) { return a + (b - a) * t; }
         function prog(t, t0, d) { return clamp((t - t0) / d, 0, 1); }
         function sstep(e0, e1, x) { var u = clamp((x - e0) / (e1 - e0), 0, 1); return u * u * (3 - 2 * u); }
-        var P4O = gsap.parseEase("power4.out");
+        var EO = gsap.parseEase("expo.out");
         var P3O = gsap.parseEase("power3.out");
         var P2O = gsap.parseEase("power2.out");
-        var P3IO = gsap.parseEase("power3.inOut");
-        var BO = gsap.parseEase("back.out(1.5)");
-        function mulberry32(a) {
-          return function () {
-            a |= 0; a = (a + 0x6d2b79f5) | 0;
-            var t = Math.imul(a ^ (a >>> 15), 1 | a);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-          };
-        }
-        var rnd = mulberry32(92192026);
-        function rr(a, b) { return a + (b - a) * rnd(); }
+        var P2IO = gsap.parseEase("power2.inOut");
+        var BO = gsap.parseEase("back.out(2.2)");
+        // a beat lands on a frame: the arrival's first frame is frame f (1-based) at t = (f - 1) / 30
+        function F(f) { return (f - 1) / 30 - 0.004; }
 
-        /* ---------------- cue sheet (composition seconds = output seconds - 89.000) ---------------- */
+        /* ---------------- cue sheet: composition s = output s - 89.0333 (frames 1-based) ---------------- */
         var T = {
-          agent: 0.56,   // "an agent": six tiles fly in from the edges
-          keep: 1.71,    // "keep all of it": they line up into a vertical stack
-          inOne: 2.57,   // "in one place": the stack snaps into ONE panel
-          place: 3.19,   // "place": light sweep + glow, hold to the end
-          cut: 3.7       // 92.700: the composite already shows the next shot here, so this frame stays empty
+          land: F(12),   // 89.400  (8th 89.388): the chat slams in
+          q: F(18),      // 89.600  (89.592 "an agent"): the question
+          tick2: F(21),  // 89.700: delivered
+          typ: F(24),    // 89.800  (89.796*): read, "typing…", typing dots
+          d1: F(36),     // 90.200  (90.204): Unit3_Notes_CR.pdf
+          d2: F(48),     // 90.600  (90.612): Syllabus_copy.pdf
+          al: F(61),     // 91.033  (91.021): the PYQ album
+          rm: F(73),     // 91.433  (91.429*): the reminder
+          online: F(79), // 91.633: back to "online"
+          place: F(97)   // 92.233  (92.245 "place"): glow, light sweep, name shimmer; hold to the end
         };
 
-        /* ---------------- the six tile types (same design as slots/tiles/problem) ---------------- */
-        var ICON = {
-          files: '<path d="M5 14.2a4 4 0 0 1 4-4h8.4a3 3 0 0 1 2.2 1l3 3.3h16.4a4 4 0 0 1 4 4V36a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"/><path d="M5 20.4h38"/><path class="ac" d="M11.5 30.5h10.5"/>',
-          info: '<circle cx="24" cy="24" r="18"/><path d="M24 22.2v11.6"/><circle class="acf" cx="24" cy="15.4" r="2.4"/>',
-          dead: '<rect x="6" y="9.5" width="36" height="32" rx="4.5"/><path d="M6 18.4h36M15.5 5.5v7.6M32.5 5.5v7.6"/><circle class="dot" cx="14" cy="26" r="1.7"/><circle class="dot" cx="24" cy="26" r="1.7"/><circle class="dot" cx="34" cy="26" r="1.7"/><circle class="dot" cx="14" cy="34" r="1.7"/><circle class="dot" cx="24" cy="34" r="1.7"/><rect class="red" x="29.2" y="29.2" width="9.6" height="9.6" rx="2.2"/>',
-          rem: '<path d="M24 6.8c-6.3 0-10.6 4.8-10.6 10.9v7.3c0 1.6-.6 3.2-1.6 4.4l-2.2 2.7c-.8 1-.1 2.5 1.2 2.5h26.4c1.3 0 2-1.5 1.2-2.5l-2.2-2.7c-1-1.2-1.6-2.8-1.6-4.4v-7.3c0-6.1-4.3-10.9-10.6-10.9z"/><path d="M19.7 38.4a4.5 4.5 0 0 0 8.6 0"/><circle class="acf cut" cx="35.6" cy="10.4" r="4.6"/>',
-          doc: '<path d="M13 5.5h15.6l9.4 9.4v25.6a3 3 0 0 1-3 3H13a3 3 0 0 1-3-3v-32a3 3 0 0 1 3-3z"/><path d="M28.6 5.5v9.4H38"/><path class="ac" d="M16.2 23.6h9"/><path d="M16.2 29.6h15.6M16.2 35.6h15.6"/>',
-          pers: '<rect x="4.5" y="10" width="39" height="28" rx="4.5"/><circle class="ac" cx="16" cy="20.8" r="4.3"/><path d="M9.6 31.6c1-3.5 3.5-5.3 6.4-5.3s5.4 1.8 6.4 5.3"/><path d="M27.6 19.4h10M27.6 25h10M27.6 30.6h6"/>'
+        /* ---------------- card geometry ---------------- */
+        var CX = 64, CY = 376;            // top-left of the card (layout); the tilt keeps its right edge clear of his face
+        var RY = 15, RX = 3.2, PERSP = 1500;
+        var HDR = 70, INP = 60;
+        var AREA0 = 46;                    // empty chat: the date chip
+        // message slots (top inside the area) and their heights
+        var M = {
+          q: { el: "m-q", top: 46, h: 60 },
+          typ: { el: "m-typ", top: 114, h: 42 },
+          d1: { el: "m-d1", top: 114, h: 0 },
+          d2: { el: "m-d2", top: 0, h: 0 },
+          al: { el: "m-al", top: 0, h: 0 },
+          rm: { el: "m-rm", top: 0, h: 0 }
         };
-        var LABEL = { files: "Files", info: "Information", dead: "Deadlines", rem: "Reminders", doc: "Documents", pers: "Personal Info" };
-        var BASEW = { files: 260, info: 471, dead: 397, rem: 409, doc: 436, pers: 508 }; // measured .tile widths at scale 1
+        var GAP_RUN = 5, AREA_PAD = 10;
 
-        /* ---------------- choreography data ----------------
-           from: off-frame entry point (every edge but the bottom: captions own it)
-           land: loose constellation around his head (face stays clear)
-           via:  control point of the curved path into the stack (over his hair or under his chin) */
-        var S_LAND = 0.66, S_ROW = 0.55, ROW_LEFT = 735.6, ROW_Y0 = 698.25, ROW_PITCH = 63; // rows: icon at x 751, label ends <= 996
-        var CAST = [
-          { type: "files", from: [-190, 600], spin: -22, land: [200, 655], via: [520, 440], t0: 0.5 },
-          { type: "info", from: [-200, 150], spin: -16, land: [300, 452], via: [580, 420], t0: 0.55 },
-          { type: "dead", from: [690, -110], spin: 14, land: [652, 396], via: [810, 470], t0: 0.6 },
-          { type: "rem", from: [1290, 470], spin: 20, land: [880, 590], via: [900, 760], t0: 0.53 },
-          { type: "doc", from: [1300, 930], spin: 16, land: [868, 838], via: [905, 905], t0: 0.63 },
-          { type: "pers", from: [-260, 1190], spin: -18, land: [236, 1070], via: [560, 1150], t0: 0.68 }
+        var card = document.getElementById("card");
+        var area = document.getElementById("area");
+        var inp = document.getElementById("inp");
+        Object.keys(M).forEach(function (k) { M[k].node = document.getElementById(M[k].el); });
+        // heights of the incoming bubbles (measured once at setup: fonts are local and the layout is static)
+        function hOf(k) { return M[k].node.firstElementChild.offsetHeight; }
+        M.d1.h = hOf("d1"); M.d2.h = hOf("d2"); M.al.h = hOf("al"); M.rm.h = hOf("rm");
+        M.d2.top = M.d1.top + M.d1.h + GAP_RUN;
+        M.al.top = M.d2.top + M.d2.h + GAP_RUN;
+        M.rm.top = M.al.top + M.al.h + GAP_RUN;
+        Object.keys(M).forEach(function (k) { M[k].node.style.top = M[k].top + "px"; });
+        // the area grows to each message's bottom as it lands
+        var GROW = [
+          [T.q, M.q.top + M.q.h + 8],
+          [T.typ, M.typ.top + M.typ.h + AREA_PAD],
+          [T.d1, M.d1.top + M.d1.h + AREA_PAD],
+          [T.d2, M.d2.top + M.d2.h + AREA_PAD],
+          [T.al, M.al.top + M.al.h + AREA_PAD],
+          [T.rm, M.rm.top + M.rm.h + AREA_PAD]
         ];
-        var layer = document.getElementById("tiles");
-        var shelves = document.getElementById("shelves");
-        for (var sl = 1; sl < 6; sl++) {
-          var line = document.createElement("div");
-          line.className = "shelf-line";
-          line.style.top = (ROW_Y0 + (sl - 0.5) * ROW_PITCH - 466 - 2).toFixed(1) + "px"; // panel top = 466, minus its border
-          shelves.appendChild(line);
-        }
-        CAST.forEach(function (o, k) {
-          var el = document.createElement("div");
-          el.className = "tile tt";
-          el.id = "tile-" + o.type;
-          el.setAttribute("data-layout-allow-occlusion", "");
-          el.setAttribute("data-layout-allow-overflow", ""); // they fly in from beyond the frame edges
-          el.innerHTML = '<div class="glass"></div><svg viewBox="0 0 48 48" aria-hidden="true">' + ICON[o.type] + '</svg><div class="label" data-layout-allow-occlusion>' + LABEL[o.type] + "</div>";
-          layer.appendChild(el);
-          o.el = el;
-          o.glass = el.querySelector(".glass");
-          o.k = k;
-          o.row = [ROW_LEFT + (BASEW[o.type] * S_ROW) / 2, ROW_Y0 + k * ROW_PITCH];
-          o.landR = rr(-3.5, 3.5);
-          o.bobP = rr(0, 6.283);
-          o.bobW = rr(2.2, 3.0);
-          o.st = T.keep + k * 0.055; // stack flight start (top row first)
-        });
-
-        /* ---------------- per-frame tile state ---------------- */
-        function stateOf(o, t) {
-          if (t < o.t0) return null;
-          // 1) fly in from the edge (motion blur that resolves to sharp)
-          var u = prog(t, o.t0, 0.46), p = P4O(u);
-          var x = lerp(o.from[0], o.land[0], p), y = lerp(o.from[1], o.land[1], p);
-          var s = lerp(0.95, S_LAND, P3O(u)) * (1 + 0.06 * Math.sin(Math.PI * sstep(0.45, 1, u)));
-          var r = lerp(o.spin, o.landR, P3O(u));
-          var b = 16 * (1 - sstep(0, 0.62, u));
-          var a = clamp(u / 0.07, 0, 1);
-          // 2) float while it lands ("agent", "that helps you")
-          var fw = sstep(0.4, 1, u) * (1 - sstep(o.st - 0.1, o.st + 0.05, t));
-          x += 4 * Math.sin(o.bobW * t + o.bobP) * fw;
-          y += 5 * Math.cos(o.bobW * 0.8 * t + o.bobP) * fw;
-          r += 1.2 * Math.sin(o.bobW * 0.6 * t + o.bobP) * fw;
-          // 3) "keep all of it": curve into the stack, over his hair or under his chin
-          var g = 1; // tile glass
-          if (t >= o.st) {
-            var v = prog(t, o.st, 0.44), q = P3IO(v);
-            var sx = o.land[0], sy = o.land[1], m = 1 - q;
-            x = m * m * sx + 2 * m * q * o.via[0] + q * q * o.row[0];
-            y = m * m * sy + 2 * m * q * o.via[1] + q * q * o.row[1];
-            s = lerp(S_LAND, S_ROW, P3O(v));
-            r = lerp(o.landR, 0, P3O(v));
-            b = 5 * Math.sin(Math.PI * v);
+        function areaH(t) {
+          var h = AREA0;
+          for (var i = 0; i < GROW.length; i++) {
+            if (t < GROW[i][0]) break;
+            var target = GROW[i][1];
+            var u = EO(prog(t, GROW[i][0], 0.3));
+            h = lerp(h, target, u);
           }
-          // 4) "in one place": the stack squeezes as the panel clamps on, then each tile's own glass melts
-          var sq = sstep(T.inOne - 0.02, T.inOne + 0.08, t) * (1 - sstep(T.inOne + 0.1, T.inOne + 0.3, t));
-          y = lerp(y, o.row[1] - (o.k - 2.5) * 4, sq);
-          g = 1 - P2O(prog(t, T.inOne + 0.06, 0.24));
-          return { x: x, y: y, s: s, r: r, b: b, a: a, g: g };
+          return h;
         }
 
-        var world = document.getElementById("world");
-        function render(t) {
-          var gone = t >= T.cut - 0.005;
-          world.style.opacity = gone ? "0" : "1";
-          world.style.visibility = gone ? "hidden" : "visible";
-          CAST.forEach(function (o) {
-            var S = stateOf(o, t), el = o.el;
-            if (!S || S.a <= 0.003) { el.style.visibility = "hidden"; return; }
-            el.style.visibility = "visible";
-            el.style.transform = "translate(-50%,-50%) translate(" + S.x.toFixed(2) + "px," + S.y.toFixed(2) + "px) rotate(" + S.r.toFixed(2) + "deg) scale(" + S.s.toFixed(4) + ")";
-            el.style.opacity = S.a.toFixed(3);
-            el.style.filter = S.b > 0.15 ? "blur(" + S.b.toFixed(2) + "px)" : "none";
-            o.glass.style.opacity = S.g.toFixed(3);
+        /* ---------------- fly-in + landing ---------------- */
+        var FROM = { x: -560, y: 1130, ry: 62, rz: -16, s: 0.84 };
+        function cardPose(t) {
+          var P = { x: CX, y: CY, ry: RY, rx: RX, rz: 0, s: 1, blur: 0, a: 1 };
+          if (t < T.land) {
+            var u = clamp(t / T.land, 0, 1), e = u * u * u;          // accelerates into the slam
+            var arc = Math.sin(Math.PI * e) * 120;                     // a slight upward arc
+            P.x = lerp(FROM.x, CX, e) + arc * 0.35;
+            P.y = lerp(FROM.y, CY, e) - arc;
+            P.ry = lerp(FROM.ry, RY, e);
+            P.rz = lerp(FROM.rz, 0, e);
+            P.s = lerp(FROM.s, 1, e);
+            var sp = 3 * u * u;                                        // d(e)/du: speed
+            P.blur = clamp(2 + sp * 7, 0, 18);
+            P.a = 0.42;                                                // ghosted in flight: only the landing frame counts as a new card
+            return P;
+          }
+          // landing: overshoot + settle (a damped bounce on the beat)
+          var d = t - T.land;
+          var k = Math.exp(-d / 0.11) * Math.cos(d * 26);
+          P.x += 14 * k;
+          P.y -= 9 * k;
+          P.s = 1 + 0.03 * k;
+          P.ry = RY + 7 * k;
+          P.blur = d < 0.04 ? 2.5 : 0;
+          return P;
+        }
+
+        /* ---------------- silhouettes from the problem section ---------------- */
+        var SILS = [
+          { c: "#53bdeb", from: [-260, 520], via: [-40, 560], to: [130, 470], t0: 0.0, t1: F(11), o: false },
+          { c: "#f06292", from: [-240, 980], via: [40, 820], to: [210, 520], t0: 0.03, t1: F(11), o: false },
+          { c: "#fa6533", from: [120, 1620], via: [40, 1120], to: [160, 560], t0: 0.0, t1: F(12), o: false },
+          { c: "#ffb74d", from: [-200, 220], via: [60, 300], to: [250, 460], t0: 0.06, t1: F(12), o: false },
+          { c: "#25d366", from: [260, -120], via: [200, 220], to: [270, 500], t0: 0.08, t1: F(12), o: true },
+          { c: "#ce93d8", from: [-300, 1330], via: [-60, 1000], to: [110, 540], t0: 0.05, t1: F(11), o: false }
+        ];
+        var silLayer = document.getElementById("sils");
+        SILS.forEach(function (s, i) {
+          var el = document.createElement("div");
+          el.className = "sil" + (s.o ? " out" : "");
+          el.style.setProperty("--c", s.c);
+          el.setAttribute("data-layout-allow-overflow", "");
+          silLayer.appendChild(el);
+          s.el = el;
+        });
+        function bez(a, b, c, u) { var v = 1 - u; return v * v * a + 2 * v * u * b + u * u * c; }
+        function drawSils(t) {
+          SILS.forEach(function (s) {
+            if (t < s.t0 || t > s.t1 + 0.07) { s.el.style.visibility = "hidden"; return; }
+            var u = clamp((t - s.t0) / (s.t1 - s.t0), 0, 1), e = u * u * (3 - 2 * u) * 0.35 + u * u * 0.65;
+            var x = bez(s.from[0], s.via[0], s.to[0], e), y = bez(s.from[1], s.via[1], s.to[1], e);
+            var e2 = clamp(e + 0.04, 0, 1);
+            var dx = bez(s.from[0], s.via[0], s.to[0], e2) - x, dy = bez(s.from[1], s.via[1], s.to[1], e2) - y;
+            var ang = Math.atan2(dy, dx) * 180 / Math.PI;
+            var sp = Math.hypot(dx, dy);
+            var absorb = prog(t, s.t1, 0.07);                          // docks: shrinks into the chat
+            var sc = (1 - absorb) * 0.9;
+            s.el.style.visibility = sc > 0.02 ? "visible" : "hidden";
+            s.el.style.transform = "translate(" + (x - 48).toFixed(1) + "px," + (y - 16).toFixed(1) + "px) rotate(" + ang.toFixed(1) + "deg) scale(" + (sc * (1 + clamp(sp / 60, 0, 1.6))).toFixed(3) + "," + sc.toFixed(3) + ")";
+            s.el.style.opacity = (0.4 * (1 - absorb)).toFixed(3);
+            s.el.style.filter = "blur(" + clamp(1.5 + sp / 9, 0, 9).toFixed(2) + "px)";
           });
         }
 
-        /* ---------------- one paused timeline ---------------- */
-        var tl = gsap.timeline({ paused: true });
-        // the tiles: a clock whose setter redraws (GSAP writes it on every render, events or not)
+        /* ---------------- messages ---------------- */
+        function popState(t, t0) { // the measured chat arrival (scale .75 -> 1 from the sender's corner) + a small overshoot
+          if (t < t0) return null;
+          var u = prog(t, t0, 0.26);
+          return { s: 0.78 + 0.22 * BO(u), a: 0.66 + 0.34 * prog(t, t0, 0.07) };
+        }
+        function show(node, st) {
+          if (!st) { node.style.visibility = "hidden"; return; }
+          node.style.visibility = "visible";
+          node.style.transform = "scale(" + st.s.toFixed(4) + ")";
+          node.style.opacity = st.a.toFixed(3);
+        }
+        var tk1 = document.getElementById("tk1"), tk2 = document.getElementById("tk2");
+        var stOn = document.getElementById("st-on"), stTy = document.getElementById("st-ty");
+        var dots = document.querySelectorAll("#m-typ i");
+        var nameShim = document.querySelector("#name .shim"), nameBase = document.querySelector("#name .base");
+        var halo = document.getElementById("halo"), ring = document.getElementById("ring"), sweep = document.getElementById("sweep");
+        var ava = document.getElementById("ava");
+
+        function render(t) {
+          drawSils(t);
+          // card
+          var P = cardPose(t);
+          var ah = areaH(t);
+          var H = HDR + ah + INP;
+          card.style.visibility = "visible";
+          card.style.height = H.toFixed(2) + "px";
+          area.style.height = ah.toFixed(2) + "px";
+          inp.style.top = (HDR + ah).toFixed(2) + "px";
+          card.style.transform = "translate(" + P.x.toFixed(2) + "px," + P.y.toFixed(2) + "px) perspective(" + PERSP + "px) rotateY(" + P.ry.toFixed(2) + "deg) rotateX(" + P.rx.toFixed(2) + "deg) rotateZ(" + P.rz.toFixed(2) + "deg) scale(" + P.s.toFixed(4) + ")";
+          card.style.opacity = P.a.toFixed(3);
+          card.style.filter = P.blur > 0.2 ? "blur(" + P.blur.toFixed(2) + "px)" : "none";
+
+          // messages
+          show(M.q.node, popState(t, T.q));
+          var typ = t >= T.typ && t < T.d1 ? popState(t, T.typ) : null;
+          show(M.typ.node, typ);
+          if (typ) { // WhatsApp's dots breathe in sequence
+            for (var i = 0; i < 3; i++) {
+              var ph = (t - T.typ) * 5.2 - i * 0.28;
+              var b = 0.5 + 0.5 * Math.sin(ph * Math.PI * 2);
+              dots[i].style.opacity = (0.45 + 0.55 * b).toFixed(3);
+              dots[i].style.transform = "translateY(" + (-2.2 * b).toFixed(2) + "px)";
+            }
+          }
+          show(M.d1.node, popState(t, T.d1));
+          show(M.d2.node, popState(t, T.d2));
+          show(M.al.node, popState(t, T.al));
+          show(M.rm.node, popState(t, T.rm));
+
+          // ticks: sent -> delivered -> read (blue) as S.H.E.L.F starts typing
+          tk2.style.opacity = t >= T.tick2 ? "1" : "0";
+          var blue = t >= T.typ;
+          tk1.setAttribute("stroke", blue ? "#53bdeb" : "#8696a0");
+          tk2.setAttribute("stroke", blue ? "#53bdeb" : "#8696a0");
+          // status: online -> typing… (while S.H.E.L.F sends everything) -> online
+          var ty = t >= T.typ && t < T.online;
+          stOn.style.opacity = ty ? "0" : "1";
+          stTy.style.opacity = ty ? "1" : "0";
+
+          // header details settle in after the landing
+          var hu = prog(t, T.land, 0.3);
+          ava.style.transform = "scale(" + (t < T.land ? 1 : 0.86 + 0.14 * BO(hu)).toFixed(4) + ")";
+
+          // "place": the whole chat glows, a light sweep crosses it, the name shimmers silver -> blue
+          var g = sstep(T.place - 0.02, T.place + 0.22, t);
+          var flash = t >= T.place ? Math.exp(-(t - T.place) / 0.16) : 0;
+          halo.style.opacity = (1 + 0.55 * g).toFixed(3);
+          halo.style.boxShadow = "0 0 " + (38 + 18 * g).toFixed(1) + "px " + (4 + 4 * g).toFixed(1) + "px rgba(79,157,255," + (0.34 + 0.1 * g + 0.04 * flash).toFixed(3) + "), 0 0 " + (90 + 40 * g).toFixed(1) + "px " + (10 + 8 * g).toFixed(1) + "px rgba(79,157,255," + (0.12 + 0.1 * g).toFixed(3) + ")";
+          ring.style.opacity = (0.35 * g + 0.6 * flash).toFixed(3);
+          var su = prog(t, T.place, 0.5);
+          sweep.style.opacity = su > 0 && su < 1 ? "1" : "0";
+          sweep.style.transform = "translate(" + lerp(-220, 520, P2IO(su)).toFixed(1) + "px,0) rotate(18deg)";
+          var nu = prog(t, T.place + 0.03, 0.62);
+          nameShim.style.opacity = t >= T.place ? "1" : "0";
+          nameBase.style.opacity = t >= T.place + 0.05 ? "0" : "1";
+          nameShim.style.backgroundPosition = lerp(0, 100, P3O(nu)).toFixed(2) + "% 0";
+        }
+
+        /* ---------------- one paused timeline; a single clock drives the deterministic render ---------------- */
         var clockT = 0, clock = {};
         Object.defineProperty(clock, "t", { get: function () { return clockT; }, set: function (v) { clockT = v; render(v); } });
+        var tl = gsap.timeline({ paused: true });
         tl.to(clock, { t: DUR, duration: DUR, ease: "none", lazy: false, immediateRender: false }, 0);
-
-        // the panel clamps around the stack (it grows up out of the rows; header on top)
-        tl.fromTo("#panel", { scaleX: 0.95, scaleY: 0.66, transformOrigin: "50% 100%" },
-          { scaleX: 1, scaleY: 1, duration: 0.42, ease: "back.out(1.4)" }, T.inOne + 0.04);
-        tl.fromTo("#panel", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "power2.out", immediateRender: false }, T.inOne + 0.04);
-        tl.fromTo("#aura", { opacity: 0 }, { opacity: 0.35, duration: 0.3, ease: "power2.out" }, T.inOne + 0.06);
-        tl.fromTo("#mark", { opacity: 0, y: -26, scale: 0.78 }, { opacity: 1, y: 0, scale: 1, duration: 0.42, ease: "back.out(1.7)" }, T.inOne + 0.16);
-        // wordmark tracks in: each glyph slides in from a wider spacing (transforms only)
-        tl.fromTo("#word", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.46, ease: "expo.out" }, T.inOne + 0.24);
-        tl.fromTo("#word .ch", { x: function (i) { return (i - 4) * 8; } }, { x: 0, duration: 0.5, ease: "expo.out" }, T.inOne + 0.24);
-        tl.fromTo("#rule", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.4, ease: "power3.out" }, T.inOne + 0.32);
-        tl.fromTo(".shelf-line", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.36, ease: "power3.out", stagger: 0.03 }, T.inOne + 0.2);
-
-        // "place": one light sweep across the glass, then it glows and holds
-        // the band only exists while it crosses (parked off-panel its skewed corner would leak into the clip)
-        tl.fromTo("#band", { opacity: 0 }, { opacity: 1, duration: 0.04, ease: "none", immediateRender: false }, T.place);
-        tl.fromTo("#band", { xPercent: -130, skewX: -16 }, { xPercent: 250, skewX: -16, duration: 0.42, ease: "power2.inOut" }, T.place);
-        tl.fromTo("#band", { opacity: 1 }, { opacity: 0, duration: 0.04, ease: "none", immediateRender: false }, T.place + 0.38);
-        tl.fromTo("#aura", { opacity: 0.35 }, { opacity: 1, duration: 0.3, ease: "power2.out", immediateRender: false }, T.place + 0.06);
-        tl.fromTo("#panel", { borderColor: "rgba(150, 195, 255, 0.45)" }, { borderColor: "rgba(205, 228, 255, 0.9)", duration: 0.24, ease: "power2.out", immediateRender: false }, T.place + 0.06);
-        tl.fromTo("#mark", { scale: 1 }, { scale: 1.06, duration: 0.14, ease: "power2.out", immediateRender: false }, T.place + 0.08);
-        tl.fromTo("#mark", { scale: 1.06 }, { scale: 1, duration: 0.26, ease: "power2.inOut", immediateRender: false }, T.place + 0.22);
-
         render(0);
+        window.__onepDebug = { render: render, M: M, areaH: areaH };
         window.__timelines = window.__timelines || {};
         window.__timelines["main"] = tl;
         tl.seek(0);

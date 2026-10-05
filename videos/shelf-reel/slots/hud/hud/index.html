@@ -8,12 +8,16 @@
     <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
-      /* ===== S.H.E.L.F reel - HUD slot: exam countdown + phone-call UI =====
+      /* ===== S.H.E.L.F reel - HUD slot v2: exam countdown + WhatsApp voice call =====
          Window 14.300 -> 51.833 s of the reel (1126 frames). Transparent canvas. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
       .layer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
-      :root { --green: #34c759; }
+      .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+      :root {
+        --wa-green: #25d366; --wa-teal: #00a884; --wa-bg: #0b141a; --wa-panel: #1f2c34; --wa-panel-2: #202c33;
+        --wa-text: #e9edef; --wa-meta: #8696a0; --wa-end: #ea0038;
+      }
 
       /* ---- label: red dot + EXAM IN, em-based so it scales as one piece ---- */
       .lbl { display: inline-flex; align-items: center; font-family: var(--font-ui); font-weight: 700; line-height: 1; letter-spacing: 0.3em; white-space: nowrap; }
@@ -41,8 +45,8 @@
       .bigclock .k i:first-child { top: 40px; }
       .bigclock .k i:last-child { top: 105px; }
 
-      /* ---- exam pill (top-left) ---- */
-      #examWrap { position: absolute; left: 64px; top: 236px; height: 64px; opacity: 0; }
+      /* ---- exam pill (top-left, x 64 / y 276) ---- */
+      #examWrap { position: absolute; left: 64px; top: 276px; height: 64px; opacity: 0; }
       #examPulse { position: relative; height: 64px; transform-origin: 0% 50%; }
       #examPill.hud-pill, .exam-static.hud-pill { position: relative; padding: 0 24px 0 22px; gap: 0; background: rgba(14, 14, 16, 0.84);
         box-shadow: 0 0 0 1.5px rgba(255, 110, 100, 0.26) inset, 0 10px 26px rgba(0, 0, 0, 0.42); }
@@ -70,81 +74,184 @@
       #examFlash, #examHot { position: absolute; inset: 0; border-radius: 32px; background: #fff; opacity: 0; }
       #examHot { box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.95), 0 0 42px 8px rgba(255, 70, 50, 0.85); }
 
-      /* ---- call card -> call pill ---- */
+      /* ---- WhatsApp voice call: card (760 x 232 at 160,356) -> green pill (top-right) ---- */
       #callLayer { opacity: 0; }
-      #callShell { position: absolute; left: 160px; top: 236px; width: 856px; height: 270px; overflow: visible;
-        filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.44)) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3)); }
-      #shellRect { fill: rgba(26, 26, 30, 0.93); stroke: rgba(255, 255, 255, 0.12); stroke-width: 1.5; }
-      .ripple { position: absolute; left: 192px; top: 362px; width: 112px; height: 112px; border-radius: 50%;
-        border: 3px solid rgba(166, 184, 255, 0.95); opacity: 0; }
-      #ripG { border-color: rgba(52, 199, 89, 0.95); }
-      #avatar { position: absolute; left: 192px; top: 362px; width: 112px; height: 112px; }
-      #avatarPop, #avatarThump { position: absolute; inset: 0; }
-      .avdisc { position: absolute; inset: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-      #avatarFace { background: linear-gradient(150deg, #93adff 0%, #6d5cf6 52%, #9d5cf2 100%);
-        box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.34), inset 0 -8px 16px rgba(46, 24, 130, 0.32);
-        font: 700 54px/1 var(--font-ui); color: #fff; text-shadow: 0 2px 8px rgba(40, 20, 120, 0.35); }
-      #avatarGreen { background: var(--green); opacity: 0; box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.25); }
-      #avatarHandset { width: 56px; height: 56px; fill: #fff; }
-      #callName { position: absolute; left: 332px; top: 372px; height: 50px; font: 700 42px/50px var(--font-ui); color: var(--text-1);
-        white-space: nowrap; transform-origin: 0% 50%; }
-      #callStatus { position: absolute; left: 332px; top: 428px; width: 320px; height: 36px; }
-      #statusCalling { position: absolute; left: 0; top: 0; font: 500 28px/36px var(--font-ui); color: var(--text-2); white-space: nowrap; }
-      #statusCalling .cdot { display: inline-block; width: 9px; text-align: center; }
-      #statusLive { position: absolute; left: 0; top: 0; height: 36px; display: flex; align-items: center; gap: 10px; opacity: 0; }
-      #liveDot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px rgba(52, 199, 89, 0.85); }
-      .tclock { display: flex; align-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 28px; color: rgba(245, 246, 248, 0.88); }
-      .tclock .col { position: relative; display: block; width: 0.6em; height: 44px; overflow: hidden;
+      #callShell { position: absolute; left: 0; top: 0; width: 1080px; height: 700px; overflow: visible;
+        filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.46)) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.32)); }
+      .sh-edge { fill: none; stroke: url(#gEdge); stroke-width: 1.5; }
+      #shellSheen { opacity: 0.9; }
+      #cardBody { position: absolute; left: 0; top: 0; width: 1080px; height: 700px; transform-origin: 920px 356px; }
+      #avGlow { position: absolute; left: 110px; top: 338px; width: 240px; height: 240px; border-radius: 50%; opacity: 0.55;
+        background: radial-gradient(closest-side, rgba(37, 211, 102, 0.34), rgba(37, 211, 102, 0.1) 55%, rgba(37, 211, 102, 0) 100%); }
+      .ripple { position: absolute; left: 186px; top: 414px; width: 88px; height: 88px; border-radius: 50%;
+        border: 3px solid rgba(37, 211, 102, 0.95); box-shadow: 0 0 16px rgba(37, 211, 102, 0.5), inset 0 0 12px rgba(37, 211, 102, 0.3);
+        background: radial-gradient(closest-side, rgba(37, 211, 102, 0) 55%, rgba(37, 211, 102, 0.16) 100%); opacity: 0; }
+      #ripG { border-width: 4px; border-color: rgba(80, 240, 140, 1); }
+      #avatar { position: absolute; left: 186px; top: 414px; width: 88px; height: 88px; }
+      #avatarThump { position: absolute; inset: 0; }
+      #avatarFace { position: absolute; inset: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(150deg, #a3b8ff 0%, #7a68f6 50%, #a56cf0 100%);
+        box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.32), inset 0 -8px 16px rgba(46, 24, 130, 0.34), 0 6px 16px rgba(0, 0, 0, 0.35);
+        font: 600 42px/1 var(--font-ui); color: #fff; text-shadow: 0 2px 8px rgba(40, 20, 120, 0.35); }
+      #avatarRing { position: absolute; inset: -5px; border-radius: 50%; border: 3px solid var(--wa-green); opacity: 0;
+        box-shadow: 0 0 14px rgba(37, 211, 102, 0.6); }
+      #waLabel { position: absolute; left: 222px; top: 374px; height: 28px; font: 500 24px/28px var(--font-ui); color: var(--wa-meta); white-space: nowrap; }
+      #e2e { position: absolute; left: 662px; top: 374px; height: 28px; display: flex; align-items: center; gap: 7px;
+        font: 500 20px/28px var(--font-ui); color: var(--wa-meta); white-space: nowrap; }
+      #e2e svg { flex: none; width: 15px; height: 15px; fill: var(--wa-meta); margin-top: -1px; }
+      #callStatus { position: absolute; left: 296px; top: 464px; width: 260px; height: 34px; }
+      .st { position: absolute; left: 0; top: 0; height: 34px; font: 400 27px/34px var(--font-ui); color: var(--wa-meta); white-space: nowrap; }
+      .st .cdot { display: inline-block; width: 8px; text-align: center; }
+      #stRinging { opacity: 0; }
+      #ctrlBar { position: absolute; left: 176px; top: 514px; width: 728px; height: 60px; border-radius: 30px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.035));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.035); }
+      .cbtn { position: absolute; top: 5px; width: 50px; height: 50px; margin-left: -25px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.1));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+      .cbtn svg { width: 25px; height: 25px; fill: var(--wa-text); }
+      #btnEnd { background: linear-gradient(180deg, #ff1f55, var(--wa-end) 60%, #d10032);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 14px rgba(234, 0, 56, 0.45); }
+      #btnEnd svg { width: 28px; height: 28px; fill: #fff; }
+      /* shared elements: card state in CSS, pill state reached by transforms */
+      #badge { position: absolute; left: 184px; top: 374px; width: 28px; height: 28px; transform-origin: 0 0; }
+      #badge svg { position: absolute; inset: 0; width: 28px; height: 28px; overflow: visible; }
+      #callName { position: absolute; left: 296px; top: 418px; height: 46px; font: 600 40px/46px var(--font-ui); color: var(--wa-text);
+        white-space: nowrap; transform-origin: 0% 50%; letter-spacing: -0.005em; }
+      #callTimerBox { position: absolute; left: 296px; top: 459px; height: 44px; }
+      #callTimerIn { height: 44px; opacity: 0; }
+      .tclock { display: flex; align-items: center; font-family: var(--font-ui); font-weight: 500; font-size: 28px; color: var(--wa-green);
+        font-feature-settings: "tnum" 1, "case" 1; }
+      .tclock .col { position: relative; display: block; width: 0.648em; height: 44px; overflow: hidden;
         -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9px, #000 35px, transparent 44px);
         mask-image: linear-gradient(to bottom, transparent 0, #000 9px, #000 35px, transparent 44px); }
       .tclock .row { position: absolute; left: 0; top: 3px; display: block; width: 100%; height: 38px; line-height: 38px; text-align: center; }
-      .tclock .k { position: relative; display: block; width: 0.34em; height: 44px; }
-      .tclock .k i { position: absolute; left: 1.96px; width: 5.6px; height: 5.6px; border-radius: 1.5px; background: currentColor; }
-      .tclock .k i:first-child { top: 14px; }
-      .tclock .k i:last-child { top: 24.4px; }
-      #callEnded { position: absolute; left: 849px; top: 249px; height: 38px; font: 700 28px/38px var(--font-ui); color: #fff; white-space: nowrap; opacity: 0; }
-      #cardGlyph { position: absolute; left: 812px; top: 380px; width: 76px; height: 76px; border-radius: 50%;
-        background: rgba(52, 199, 89, 0.17); box-shadow: inset 0 0 0 1.5px rgba(52, 199, 89, 0.38);
-        display: flex; align-items: center; justify-content: center; }
-      #cardGlyphIcon { width: 38px; height: 38px; fill: var(--green); }
+      .tclock .kc { position: relative; display: block; width: 0.2686em; height: 44px; padding-top: 3px; line-height: 38px; text-align: center; }
+      #endIcon { position: absolute; left: 802px; top: 288px; width: 40px; height: 40px; opacity: 0; display: flex; align-items: center; justify-content: center; }
+      #endIcon svg { width: 32px; height: 32px; fill: #fff; }
+      #callEnded { position: absolute; left: 852px; top: 285px; height: 46px; font: 600 28px/46px var(--font-ui); color: #fff;
+        white-space: nowrap; opacity: 0; text-shadow: 0 1px 2px rgba(80, 0, 20, 0.35); }
     </style>
   </head>
   <body>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="37.533333" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="37.533333" data-track-index="0">
 
-        <!-- ===== call card / call pill (bottom layer) ===== -->
+        <!-- vertical motion-blur filters for the six exam digit columns (stdDeviation driven per frame) -->
+        <svg class="defs" width="0" height="0" aria-hidden="true">
+          <defs>
+            <filter id="vb0" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="0 0" /></filter>
+            <filter id="vb1" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="0 0" /></filter>
+            <filter id="vb2" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="0 0" /></filter>
+            <filter id="vb3" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="0 0" /></filter>
+            <filter id="vb4" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="0 0" /></filter>
+            <filter id="vb5" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="0 0" /></filter>
+          </defs>
+        </svg>
+
+        <!-- ===== WhatsApp voice call (bottom layer) ===== -->
         <div id="callLayer" class="layer">
-          <svg id="callShell" width="856" height="270" viewBox="0 0 856 270" aria-hidden="true">
-            <rect id="shellRect" x="0" y="94" width="760" height="176" rx="44" />
+          <svg id="callShell" width="1080" height="700" viewBox="0 0 1080 700" aria-hidden="true">
+            <defs>
+              <linearGradient id="gDark" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#24333c" stop-opacity="0.94" />
+                <stop offset="0.45" stop-color="#17232a" stop-opacity="0.93" />
+                <stop offset="1" stop-color="#0b141a" stop-opacity="0.92" />
+              </linearGradient>
+              <linearGradient id="gGreen" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#34e27a" />
+                <stop offset="0.55" stop-color="#22c460" />
+                <stop offset="1" stop-color="#1aa852" />
+              </linearGradient>
+              <linearGradient id="gRed" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ff2a5c" />
+                <stop offset="0.55" stop-color="#ea0038" />
+                <stop offset="1" stop-color="#c90030" />
+              </linearGradient>
+              <linearGradient id="gSheen" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff" stop-opacity="0.09" />
+                <stop offset="0.35" stop-color="#ffffff" stop-opacity="0.02" />
+                <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+              </linearGradient>
+              <linearGradient id="gEdge" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff" stop-opacity="0.24" />
+                <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.08" />
+                <stop offset="1" stop-color="#ffffff" stop-opacity="0.05" />
+              </linearGradient>
+            </defs>
+            <rect id="shellDark" class="shr" x="160" y="356" width="760" height="232" rx="40" fill="url(#gDark)" />
+            <rect id="shellGreen" class="shr" x="160" y="356" width="760" height="232" rx="40" fill="url(#gGreen)" opacity="0" />
+            <rect id="shellRed" class="shr" x="160" y="356" width="760" height="232" rx="40" fill="url(#gRed)" opacity="0" />
+            <rect id="shellSheen" class="shr" x="160" y="356" width="760" height="232" rx="40" fill="url(#gSheen)" />
+            <rect id="shellDim" class="shr" x="160" y="356" width="760" height="232" rx="40" fill="#3a0010" opacity="0" />
+            <rect id="shellFlash" class="shr" x="160" y="356" width="760" height="232" rx="40" fill="#fff4f6" opacity="0" />
+            <rect id="shellEdge" class="shr sh-edge" x="160" y="356" width="760" height="232" rx="40" />
           </svg>
-          <div id="rip0" class="ripple"></div>
-          <div id="rip1" class="ripple"></div>
-          <div id="rip2" class="ripple"></div>
-          <div id="rip3" class="ripple"></div>
-          <div id="rip4" class="ripple"></div>
-          <div id="rip5" class="ripple"></div>
-          <div id="rip6" class="ripple"></div>
-          <div id="ripG" class="ripple"></div>
-          <div id="avatar">
-            <div id="avatarPop">
+
+          <div id="cardBody">
+            <div id="avGlow"></div>
+            <div id="rip0" class="ripple"></div>
+            <div id="rip1" class="ripple"></div>
+            <div id="rip2" class="ripple"></div>
+            <div id="rip3" class="ripple"></div>
+            <div id="rip4" class="ripple"></div>
+            <div id="rip5" class="ripple"></div>
+            <div id="rip6" class="ripple"></div>
+            <div id="ripG" class="ripple"></div>
+            <div id="avatar">
               <div id="avatarThump">
-                <div id="avatarFace" class="avdisc">I</div>
-                <div id="avatarGreen" class="avdisc">
-                  <svg id="avatarHandset" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" /></svg>
-                </div>
+                <div id="avatarRing"></div>
+                <div id="avatarFace">I</div>
+              </div>
+            </div>
+            <div id="waLabel">WhatsApp voice call</div>
+            <div id="e2e">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" /></svg>
+              <span>End-to-end encrypted</span>
+            </div>
+            <div id="callStatus">
+              <div id="stCalling" class="st">Calling<span class="cdot">.</span><span class="cdot">.</span><span class="cdot">.</span></div>
+              <div id="stRinging" class="st">Ringing<span class="cdot">.</span><span class="cdot">.</span><span class="cdot">.</span></div>
+            </div>
+            <div id="ctrlBar">
+              <div id="btnSpk" class="cbtn" style="left: 91px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" /></svg>
+              </div>
+              <div id="btnVid" class="cbtn" style="left: 273px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" /></svg>
+              </div>
+              <div id="btnMute" class="cbtn" style="left: 455px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" /></svg>
+              </div>
+              <div id="btnEnd" class="cbtn" style="left: 637px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" /></svg>
               </div>
             </div>
           </div>
+
+          <!-- shared elements (card -> pill) -->
+          <div id="badge">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <defs>
+                <linearGradient id="gBadge" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#3be27e" />
+                  <stop offset="1" stop-color="#1fbe5b" />
+                </linearGradient>
+              </defs>
+              <rect id="badgeSq" x="0" y="0" width="100" height="100" rx="24" fill="url(#gBadge)" />
+              <g id="badgeGlyph">
+                <path d="M34.51 69.12A27 27 0 1 0 25.53 58.41L21 78Z" fill="none" stroke="#fff" stroke-width="6.5" stroke-linejoin="round" />
+                <path transform="translate(50 47) scale(1.42) translate(-12 -12)" fill="#fff" d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
+              </g>
+            </svg>
+          </div>
           <div id="callName">Ishaan</div>
-          <div id="callStatus">
-            <div id="statusCalling">Calling<span class="cdot">.</span><span class="cdot">.</span><span class="cdot">.</span></div>
-            <div id="statusLive"><span id="liveDot"></span><span id="callTimer" class="tclock"></span></div>
+          <div id="callTimerBox"><div id="callTimerIn"><span id="callTimer" class="tclock"></span></div></div>
+          <div id="endIcon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" /></svg>
           </div>
           <div id="callEnded">Call ended</div>
-          <div id="cardGlyph">
-            <svg id="cardGlyphIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" /></svg>
-          </div>
         </div>
 
         <!-- ===== exam pill (top-left) ===== -->
@@ -192,45 +299,67 @@
 
         var FPS = 30;
         var DUR = 37.533333; // 1126 frames: output 14.300 -> 51.833
+        var W0 = 14.3;
+        function O(out) { return out - W0; } // output seconds -> composition seconds
 
-        /* ---- cues, composition seconds (= output seconds - 14.300) ---- */
+        /* ---- countdown cues (composition s) ---- */
         var T_IN = 0.24;        // "in"     14.54  -> EXAM IN label
         var T_SLAM = 0.5;       // "8"      14.80  -> 08:00:00 slam
         var T_START = 0.77;     // "hours"  15.07  -> countdown starts (07:59:59 at 16.07)
-        var T_CARD = 1.6;       // 15.90 call card slides down
         var T_LAND = 1.8;       // 16.10 clock lands in the corner pill
-        var T_CONNECT = 6.98;   // 21.28 "What's up bro?"
-        var T_MORPH = 7.24;     // card -> pill, done by 22.0
-        var T_END = 30.1;       // 44.40 call ended (cut to laptop)
-        var T_RACE = 30.35;     // 44.65 "What the f*ck" -> time-lapse
-        var T_RACE_END = 37.1;  // 51.40
-        var T_GLITCH = 37.15;   // 51.45 glitch-out, gone by 51.76
-        // avatar pulse rings, synced to the ring tones measured in the source audio
-        // (ring 1: crescendo 15.87-17.02, ring 2: 18.50-20.03 output s)
-        var RIPPLES = [1.92, 2.3, 2.68, 4.21, 4.63, 5.05, 5.47];
+        /* ---- WhatsApp call cues ---- */
+        var T_CARD = O(15.9);       // call card slides down
+        var T_RINGING = O(16.1);    // "Calling..." -> "Ringing..." (other phone rings)
+        var T_CONNECT = O(21.28);   // "What's up bro?" -> timer 0:00
+        var T_MORPH = O(21.5);      // card -> green pill, done by 22.0
+        var T_END = O(44.4);        // call ended (cut to laptop), gone by 44.90
+        // avatar pulse rings during the two ring tones (audible 16.02-17.04 and 18.55-20.04)
+        var RIPPLES = [16.1, 16.44, 16.78, 18.56, 18.92, 19.28, 19.64].map(O);
+        /* ---- breakdown: the clock races on the song (147 BPM; beat 0.40815 s) ---- */
+        var T_RACE = O(44.65);      // pill goes full red
+        var T_GLITCH = O(51.45);    // glitch-out, nothing visible after 51.80
+        var T8 = [], T16 = [];
+        for (var m8 = 0; m8 < 19; m8++) T8.push(O(44.6909 + m8 * 0.204075));    // 8ths 44.691 .. 48.364
+        for (var n16 = 0; n16 < 29; n16++) T16.push(O(48.5683 + n16 * 0.1020375)); // 16ths 48.568 .. 51.425
+        var HOUR_IDX = [8, 20, 26];                 // 49.385, 50.609, 51.221: 07 -> 06 -> 05 -> 04
+        var BEAT_IDX = [8, 12, 16, 20, 24, 28];     // 49.385 49.793 50.201 50.609 51.017 51.425
+        var T_HOURS = HOUR_IDX.map(function (n) { return T16[n]; });
+        var T_BEATS = BEAT_IDX.map(function (n) { return T16[n]; });
+        // 8th-note jumps, seconds: each bigger than the last (seconds, then whole minutes)
+        var J8 = [2, 3, 4, 5, 7, 9, 11, 14, 17, 21, 26, 32, 40, 50, 60, 120, 180, 240, 300];
+        // 16th-note display values (minutes blur; the hour only changes on the three falls)
+        var V16 = ["07:36:09", "07:31:22", "07:27:15", "07:22:41", "07:17:58", "07:13:04", "07:08:47", "07:03:12",
+          "06:58:26", "06:53:51", "06:48:33", "06:43:07", "06:38:44", "06:33:16", "06:27:39", "06:22:52", "06:17:05",
+          "06:11:28", "06:06:41", "06:01:13", "05:55:37", "05:45:08", "05:34:51", "05:24:19", "05:13:46", "05:03:02",
+          "04:51:33", "04:33:18", "04:14:47"];
 
-        /* ---- layout constants (text widths measured in Chrome with the shipped fonts) ---- */
-        var PILL_X = 64, PILL_Y = 236, PILL_H = 64, PILL_CY = PILL_Y + PILL_H / 2;
+        /* ---- layout constants (text widths measured from the shipped fonts) ---- */
+        var PILL_X = 64, PILL_Y = 276, PILL_H = 64, PILL_CY = PILL_Y + PILL_H / 2;
         var LBL20_W = 145.078;                       // dot + "EXAM IN" at 20px
         var EXAM_DIGITS_W = 6 * 18 + 2 * 0.34 * 30;  // mono 30px cells
         var pillLabelCX = PILL_X + 22 + LBL20_W / 2;
         var pillDigitsCX = PILL_X + 22 + LBL20_W + 16 + EXAM_DIGITS_W / 2;
         var BIG_LBL_CY = 392 + 15, BIG_CLK_CY = 454 + 92, BIG_CX = 540;
 
-        var NAME28_W = 90.922, ENDED28_W = 144.875, TIMER28_W = 4 * 16.8 + 0.34 * 28;
-        var CP_R = 1016;                                                   // call pill right edge
-        var cpW = 10 + 44 + 12 + NAME28_W + 10 + TIMER28_W + 22;
+        // card 760 x 232 at (160, 356); call pill: right edge 1016, top 276, height 64
+        var CARD_X = 160, CARD_Y = 356, CARD_W = 760, CARD_H = 232, CARD_R = 40;
+        var NAME28_W = 89.56, ENDED28_W = 143.61, TIMER28_W = 3 * 0.648 * 28 + 0.2686 * 28; // Inter tnum digits + colon
+        var CP_R = 1016, CP_Y = 276, CP_H = 64;
+        var cpW = 12 + 40 + 10 + NAME28_W + 10 + TIMER28_W + 20;
         var cpL = CP_R - cpW;
-        var ceW = 10 + 44 + 12 + ENDED28_W + 22;
+        var ceW = 12 + 40 + 10 + ENDED28_W + 22;
         var ceL = CP_R - ceW;
-        var SHELL_X = 160;
-        var AV_CX = 248, AV_CY = 418, NAME_X = 332, NAME_CY = 397, TIMER_X = 354, TIMER_CY = 446;
+        var NAME_X = 296, NAME_CY = 418 + 23, TIMER_X = 296, TIMER_TOP = 459, BADGE_X = 184, BADGE_Y = 374;
 
         var $ = function (id) { return document.getElementById(id); };
+        $("endIcon").style.left = (ceL + 12).toFixed(2) + "px";
+        $("callEnded").style.left = (ceL + 62).toFixed(2) + "px";
         var clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
         var smooth = function (x) { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
-        var smoother = function (x) { x = clamp(x, 0, 1); return x * x * x * (x * (x * 6 - 15) + 10); };
-        var easeRoll = gsap.parseEase("power3.out");
+        var easeTick = gsap.parseEase("power3.out");
+        var easeE8 = gsap.parseEase("expo.out");
+        var easeE16 = gsap.parseEase("power2.out");
+        var easeHour = gsap.parseEase("back.out(2.2)");
         var easeOutCubic = gsap.parseEase("power3.out");
 
         /* ---- seeded PRNG -> fixed jitter table (deterministic, frame-indexed) ---- */
@@ -246,55 +375,27 @@
         var JN = 4096, J = new Float64Array(JN);
         for (var ji = 0; ji < JN; ji++) J[ji] = rnd();
         function jr(n) { return J[((n % JN) + JN) % JN] * 2 - 1; } // -1..1
+        function lastIdx(arr, t) { var a = 0, b = arr.length; while (a < b) { var mid = (a + b) >> 1; if (arr[mid] <= t) a = mid + 1; else b = mid; } return a - 1; }
+        function hms(s) { var p = s.split(":"); return +p[0] * 3600 + +p[1] * 60 + +p[2]; }
 
         /* ======================= countdown model ======================= */
-        // C(t) = elapsed countdown seconds. Real time from T_START, then a time-lapse whose
-        // log-rate ramps up (seconds blur, minutes then hours fall) and brakes into ~05:44.
+        // display events: real-time ticks, then 19 jumps on 8ths, then 29 jumps on 16ths
         var V0 = 8 * 3600;
-        var C_END = 8148.5;                       // lands on 28800 - 8148 = 05:44:12
-        var C_R0 = T_RACE - T_START;              // 29.58
-        var RDT = 1 / 600;
-        var RN = Math.round((T_RACE_END - T_RACE) / RDT);
-        var RTOT = T_RACE_END - T_RACE;
-        function rate(tau, Lmax) {
-          var brake = 1 - smooth((tau - (RTOT - 0.34)) / 0.34);
-          return Math.exp(Lmax * smoother(tau / 5.4)) * brake;
-        }
-        function integrate(Lmax, out) {
-          var c = 0, prev = rate(0, Lmax);
-          if (out) out[0] = 0;
-          for (var k = 1; k <= RN; k++) {
-            var r = rate(k * RDT, Lmax);
-            c += 0.5 * (r + prev) * RDT; prev = r;
-            if (out) out[k] = c;
-          }
-          return c;
-        }
-        var lo = 1, hi = 14, target = C_END - C_R0;
-        for (var it = 0; it < 60; it++) { var mid = 0.5 * (lo + hi); if (integrate(mid) < target) lo = mid; else hi = mid; }
-        var CR = new Float64Array(RN + 1);
-        var cr = integrate(0.5 * (lo + hi), CR);
-        for (var k0 = 1; k0 <= RN; k0++) CR[k0] *= target / cr;  // exact landing
-
-        // tick i (1-based) happens when C crosses i
-        var nTicks = Math.floor(C_END);
-        var ticks = new Float64Array(nTicks);
-        var kk = 0;
-        for (var i = 1; i <= nTicks; i++) {
-          if (i < C_R0) { ticks[i - 1] = T_START + i; continue; }
-          var need = i - C_R0;
-          while (kk < RN && CR[kk + 1] < need) kk++;
-          var seg = CR[kk + 1] - CR[kk];
-          var f = seg > 0 ? (need - CR[kk]) / seg : 0;
-          ticks[i - 1] = T_RACE + (kk + clamp(f, 0, 1)) * RDT;
-        }
+        var EV = [];
+        for (var i = 1; T_START + i < T8[0]; i++) EV.push({ t: T_START + i, V: V0 - i, kind: "tick", first: i === 1 });
+        var Vc = V0 - EV.length; // 07:59:31 when the race starts
+        J8.forEach(function (j, m) { Vc -= j; EV.push({ t: T8[m], V: Vc, kind: "e8" }); });
+        V16.forEach(function (s, n) { EV.push({ t: T16[n], V: hms(s), kind: HOUR_IDX.indexOf(n) >= 0 ? "hour" : "e16" }); });
+        var VEND = EV[EV.length - 1].V;
 
         /* ======================= odometer columns ======================= */
-        function buildOdometer(host, layout, rowH) {
+        function buildOdometer(host, layout, rowH, textColon) {
           var cols = [];
           layout.forEach(function (it) {
             if (it === ":") {
-              var k = document.createElement("span"); k.className = "k"; k.innerHTML = "<i></i><i></i>"; host.appendChild(k); return;
+              var k = document.createElement("span");
+              if (textColon) { k.className = "kc"; k.textContent = ":"; } else { k.className = "k"; k.innerHTML = "<i></i><i></i>"; }
+              host.appendChild(k); return;
             }
             // odometer column: a 4-row window (rows base-1 .. base+2) slides past a masked slot
             var col = document.createElement("span"); col.className = "col";
@@ -302,41 +403,39 @@
             var rows = [];
             for (var r = 0; r < 4; r++) { var s = document.createElement("span"); s.className = "row"; col.appendChild(s); rows.push(s); }
             host.appendChild(col);
-            cols.push({ el: col, rows: rows, B: it.B, M: it.M, rowH: rowH, ev: null, n0: 0, dir: -1, idx: cols.length });
+            cols.push({ el: col, rows: rows, B: it.B, M: it.M, rowH: rowH, p0: 0, evs: [], t0s: null, idx: cols.length });
           });
           return cols;
         }
-        var examCols = buildOdometer($("pillClock"), [
-          { B: 36000, M: 10 }, { B: 3600, M: 10 }, ":", { B: 600, M: 6 }, { B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }
-        ], 40);
-        // the very first tick (08:00:00 -> 07:59:59, the moment the clock lands) rolls as a
-        // right-to-left carry cascade; every later tick rolls all changing columns together
-        var CASCADE = { 1: 0, 10: 0.035, 60: 0.07, 600: 0.105, 3600: 0.14, 36000: 0.175 };
-        examCols.forEach(function (c) {
-          c.n0 = Math.floor(V0 / c.B); c.dir = -1;
-          var ev = [];
-          for (var i = 1; i <= nTicks; i++) if ((V0 - (i - 1)) % c.B === 0) ev.push(ticks[i - 1] + (i === 1 ? CASCADE[c.B] : 0));
-          c.ev = new Float64Array(ev);
-        });
-        var callCols = buildOdometer($("callTimer"), [{ B: 600, M: 6 }, { B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }], 38);
-        var callTicks = [];
-        for (var ct = 1; T_CONNECT + ct < T_END; ct++) callTicks.push(ct);
-        callCols.forEach(function (c) {
-          c.n0 = 0; c.dir = 1;
-          c.ev = new Float64Array(callTicks.filter(function (k) { return k % c.B === 0; }).map(function (k) { return T_CONNECT + k; }));
-        });
-
-        var ROLL = 0.22;
+        function evalEv(e, t) {
+          var u = (t - e.t0) / e.dur;
+          if (u >= 1) return e.to;
+          if (u <= 0) return e.from;
+          return e.from + (e.to - e.from) * e.ease(u);
+        }
+        // Each column's virtual position follows floor(V / B); a jump of many steps spins at most
+        // one extra revolution so it lands on the right digit inside its roll time.
+        function buildColEvents(c, events, v0, dir, spec) {
+          var idx = Math.floor(v0 / c.B), target = idx, prev = null, evs = [];
+          c.p0 = idx;
+          events.forEach(function (ev) {
+            var nidx = Math.floor(ev.V / c.B);
+            if (nidx === idx) return;
+            var steps = Math.abs(nidx - idx);
+            var vs = steps <= c.M ? steps : (steps % c.M) + c.M;
+            var sp = spec(ev, c);
+            var t0 = ev.t + sp.delay;
+            var from = prev ? evalEv(prev, t0) : target;
+            var to = target + dir * vs;
+            var e = { t0: t0, from: from, to: to, dur: sp.dur, ease: sp.ease, kind: ev.kind };
+            evs.push(e); prev = e; target = to; idx = nidx;
+          });
+          c.evs = evs;
+          c.t0s = new Float64Array(evs.map(function (e) { return e.t0; }));
+        }
         function colPos(c, t) {
-          var ev = c.ev, a = 0, b = ev.length;
-          while (a < b) { var m = (a + b) >> 1; if (ev[m] <= t) a = m + 1; else b = m; }
-          var partial = 0;
-          for (var k = a - 1; k >= 0; k--) {
-            var dt = t - ev[k];
-            if (dt >= ROLL) break;
-            partial += 1 - easeRoll(dt / ROLL);
-          }
-          return c.n0 + c.dir * (a - partial);
+          var k = lastIdx(c.t0s, t);
+          return k < 0 ? c.p0 : evalEv(c.evs[k], t);
         }
         function placeCol(c, p) {
           var base = Math.floor(p + 1e-9);
@@ -351,9 +450,32 @@
           }
         }
 
+        var examCols = buildOdometer($("pillClock"), [
+          { B: 36000, M: 10 }, { B: 3600, M: 10 }, ":", { B: 600, M: 6 }, { B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }
+        ], 40);
+        // the very first tick (08:00:00 -> 07:59:59, the moment the clock lands) rolls as a
+        // right-to-left carry cascade; every later real-time tick rolls all changing columns together
+        var CASCADE = { 1: 0, 10: 0.035, 60: 0.07, 600: 0.105, 3600: 0.14, 36000: 0.175 };
+        examCols.forEach(function (c) {
+          buildColEvents(c, EV, V0, -1, function (ev, col) {
+            if (ev.kind === "tick") return { delay: ev.first ? CASCADE[col.B] : 0, dur: 0.22, ease: easeTick };
+            if (ev.kind === "e8") return { delay: -0.012, dur: 0.13, ease: easeE8 };
+            if (ev.kind === "hour" && col.B >= 3600) return { delay: -0.012, dur: 0.16, ease: easeHour };
+            return { delay: -0.012, dur: 0.13, ease: easeE16 };
+          });
+        });
+        var hourCols = examCols.filter(function (c) { return c.B >= 3600; });
+
+        // call timer M:SS, counting up in real seconds from the connect
+        var callCols = buildOdometer($("callTimer"), [{ B: 60, M: 10 }, ":", { B: 10, M: 6 }, { B: 1, M: 10 }], 38, true);
+        var CEV = [];
+        for (var ct = 1; T_CONNECT + ct < T_END; ct++) CEV.push({ t: T_CONNECT + ct, V: ct, kind: "tick" });
+        callCols.forEach(function (c) {
+          buildColEvents(c, CEV, 0, 1, function () { return { delay: 0, dur: 0.22, ease: easeTick }; });
+        });
+
         // final digits for the static glitch copies
         function fmt2(n) { return (n < 10 ? "0" : "") + n; }
-        var VEND = V0 - nTicks;
         var endStr = fmt2(Math.floor(VEND / 3600)) + ":" + fmt2(Math.floor((VEND % 3600) / 60)) + ":" + fmt2(VEND % 60);
         function staticPill() {
           var el = document.createElement("div");
@@ -376,37 +498,56 @@
 
         /* ======================= procedural layer ======================= */
         var el = {
-          examPulse: $("examPulse"), examGlow: $("examGlow"), pillPing: $("pillPing"), bigPing: $("bigPing"),
-          ghostC: $("ghostC"), ghostM: $("ghostM"), shake: $("slamShake"), glyph: $("cardGlyphIcon"),
-          thump: $("avatarThump"), cdots: document.querySelectorAll("#statusCalling .cdot")
+          examPulse: $("examPulse"), examGlow: $("examGlow"), examFlash: $("examFlash"), pillPing: $("pillPing"), bigPing: $("bigPing"),
+          ghostC: $("ghostC"), ghostM: $("ghostM"), shake: $("slamShake"),
+          thump: $("avatarThump"), avGlow: $("avGlow"),
+          cdots: document.querySelectorAll("#callStatus .cdot"),
+          blur: [0, 1, 2, 3, 4, 5].map(function (q) { return document.querySelector("#vb" + q + " feGaussianBlur"); })
         };
+        examCols.forEach(function (c, q) { c.blurNode = el.blur[q]; c.blurOn = false; });
         function ping(node, t, tp, dur) {
           var u = (t - tp) / dur;
           if (tp < 0 || u < 0 || u >= 1) { node.style.opacity = "0"; return; }
           node.style.opacity = (0.85 * Math.pow(1 - u, 1.4)).toFixed(3);
           node.style.transform = "scale(" + (1 + 2.1 * easeOutCubic(u)).toFixed(3) + ")";
         }
+        function decay(t, times, rate) {           // exp decay from the most recent hit at or before t
+          var k = lastIdx(times, t);
+          return k < 0 ? 0 : Math.exp(-(t - times[k]) * rate);
+        }
         var THUMPS = RIPPLES.concat([T_CONNECT]);
+        var T8B = T8.filter(function (x, m) { return m % 2 === 1; });   // 8ths that are also beats
 
         function renderProc(t) {
           var fr = Math.round(t * FPS);
           var racing = t >= T_RACE;
-          var tau = Math.min(t, T_GLITCH) - T_RACE;
+          var tau = t - T_RACE;
+          var fast = t >= T16[0] - 0.02;
 
-          /* exam odometer: rolls, motion blur when racing, slight jitter */
-          var jit = racing ? 1.7 * smooth(tau / 2.5) : 0;
+          /* exam odometer: rolls, vertical motion blur, slight jitter while racing */
+          var jit = racing && t < T_GLITCH ? (fast ? 1.6 : 1.0 * smooth(tau / 1.5)) : 0;
+          var hotK = decay(t, T_HOURS, 9);
           for (var c = 0; c < examCols.length; c++) {
             var col = examCols[c];
             var p = colPos(col, t);
             placeCol(col, p);
-            var blur = 0;
-            if (racing && t < T_RACE_END + 0.2) {
+            var sd = 0;
+            if (racing && t < T_GLITCH + 0.05) {
               var v = Math.abs(p - colPos(col, t - 1 / FPS));
-              blur = clamp((v - 0.3) * 2.0, 0, 3.4);
+              sd = clamp((v - 0.22) * 7, 0, 13);
             }
-            col.el.style.filter = blur > 0.05 ? "blur(" + blur.toFixed(2) + "px)" : "none";
-            col.el.style.transform = jit > 0 && t < T_GLITCH
-              ? "translate(" + (jr(fr * 7 + c * 31) * jit).toFixed(2) + "px," + (jr(fr * 5 + c * 17 + 3) * jit * 0.6).toFixed(2) + "px)"
+            var on = sd > 0.1;
+            if (on) col.blurNode.setAttribute("stdDeviation", "0 " + sd.toFixed(2));
+            if (on !== col.blurOn) { col.el.style.filter = on ? "url(#vb" + c + ")" : "none"; col.blurOn = on; }
+            var tr = "";
+            if (jit > 0) tr = "translate(" + (jr(fr * 7 + c * 31) * jit).toFixed(2) + "px," + (jr(fr * 5 + c * 17 + 3) * jit * 0.6).toFixed(2) + "px)";
+            if (col.B >= 3600 && hotK > 0.003) tr += " scale(" + (1 + 0.32 * hotK).toFixed(4) + ")";
+            col.el.style.transform = tr || "none";
+          }
+          // hours digits run white-hot for a moment after each hour falls
+          for (var hc = 0; hc < hourCols.length; hc++) {
+            hourCols[hc].el.style.textShadow = hotK > 0.01
+              ? "0 0 " + (6 + 10 * hotK).toFixed(1) + "px rgba(255,255,255," + (0.95 * hotK).toFixed(3) + "), 0 0 " + (18 * hotK).toFixed(1) + "px rgba(255,220,200," + (0.8 * hotK).toFixed(3) + ")"
               : "none";
           }
 
@@ -419,36 +560,49 @@
           if (t >= T_START + 1 && t < T_RACE) pillTick = T_START + Math.floor(t - T_START);
           ping(el.pillPing, t, pillTick, 0.75);
 
-          /* pill: landing bump, then race pulses (accelerating 1.5 -> 6 Hz) */
-          var s = 1, glow = 0;
+          /* exam pill: landing bump; in the breakdown a kick per jump, a pulse per beat, a flash per hour */
+          var s = 1, glow = 0, flash = 0;
           var dl = t - T_LAND;
           if (dl > 0 && dl < 0.6) s = 1 + 0.06 * Math.exp(-dl * 9) * Math.sin(dl * 21);
+          var dfl = t - (T_RACE - 0.02);
+          if (dfl >= 0) flash = dfl < 0.03 ? 0.85 * dfl / 0.03 : 0.85 * Math.exp(-(dfl - 0.03) * 9);
           if (racing) {
-            var ph = 1.5 * tau + (4.5 / (2 * RTOT)) * tau * tau;
-            var pulse = Math.exp(-(ph - Math.floor(ph)) * 4.2);
-            s = 1 + 0.085 * smooth(tau / 0.45) + 0.05 * pulse;
-            glow = (0.3 + 0.7 * pulse) * smooth(tau / 0.2);
+            s = 1 + 0.07 * smooth(tau / 0.4);
+            glow = 0.3 * smooth(tau / 0.25);
+            var m = lastIdx(T8, t);
+            if (m >= 0 && t < T16[0]) {
+              var a8 = (0.014 + 0.016 * m / 18) * (T8B.indexOf(T8[m]) >= 0 ? 1.35 : 1);
+              s += a8 * Math.exp(-(t - T8[m]) * 16);
+              glow += (0.12 + 0.2 * m / 18) * Math.exp(-(t - T8[m]) * 12);
+            }
+            s += 0.014 * decay(t, T16, 22);
+            var kb = decay(t, T_BEATS, 7);
+            s += 0.075 * kb;
+            glow += 0.62 * decay(t, T_BEATS, 5);
+            s += 0.06 * hotK;
+            flash = Math.max(flash, 0.72 * decay(t, T_HOURS, 15));
             if (t >= T_GLITCH) glow *= Math.max(0, 1 - (t - T_GLITCH) / 0.15);
           }
+          if (t >= T_GLITCH) flash = 0;
           el.examPulse.style.transform = "scale(" + s.toFixed(4) + ")";
-          el.examGlow.style.opacity = glow.toFixed(3);
+          el.examGlow.style.opacity = clamp(glow, 0, 1).toFixed(3);
+          el.examFlash.style.opacity = flash.toFixed(3);
 
-          /* "Calling..." dots */
-          var st = Math.floor(Math.max(0, t - T_CARD) / 0.3) % 4;
-          for (var q = 0; q < el.cdots.length; q++) el.cdots[q].style.opacity = q < st ? "1" : "0.2";
+          /* "Calling..." / "Ringing..." dots */
+          var st = Math.floor(Math.max(0, t - T_CARD) / 0.32) % 4;
+          for (var q = 0; q < el.cdots.length; q++) el.cdots[q].style.opacity = (q % 3) < st ? "1" : "0.18";
 
-          /* ringing: glyph wiggle bursts + avatar thump on every pulse ring */
-          var rot = 0, th = 0;
-          for (var r = 0; r < RIPPLES.length; r++) {
-            var x = (t - RIPPLES[r]) / 0.32;
-            if (x > 0 && x < 1) rot += 15 * Math.sin(Math.PI * x) * Math.sin(2 * Math.PI * 11 * (t - RIPPLES[r]));
-          }
+          /* ringing: avatar thump + glow swell on every pulse ring */
+          var th = 0, gl = 0;
           for (var h = 0; h < THUMPS.length; h++) {
             var y = (t - THUMPS[h]) / 0.3;
-            if (y > 0 && y < 1) th += 0.075 * Math.sin(Math.PI * y) * (1 - y);
+            if (y > 0 && y < 1) th += 0.07 * Math.sin(Math.PI * y) * (1 - y);
+            var yg = t - THUMPS[h];
+            if (yg > 0 && yg < 1) gl = Math.max(gl, Math.exp(-yg * 3.5));
           }
-          el.glyph.style.transform = "rotate(" + rot.toFixed(2) + "deg)";
           el.thump.style.transform = "scale(" + (1 + th).toFixed(4) + ")";
+          el.avGlow.style.transform = "scale(" + (1 + 0.12 * gl).toFixed(4) + ")";
+          el.avGlow.style.opacity = (0.5 + 0.45 * gl).toFixed(3);
 
           /* slam impact shake */
           var ds = t - T_SLAM;
@@ -488,7 +642,6 @@
 
         /* 1. EXAM IN on "in", 08:00:00 slams on "8" */
         tl.fromTo("#slamScrim", { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "power2.out" }, T_IN);
-        // tracking-in: each glyph slides in from a wider spread (transform-only), dot pops
         tl.fromTo("#bigLabel", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, T_IN);
         tl.fromTo("#bigLabel .ch", { x: function (i) { return (i - 3) * 22; } }, { x: 0, duration: 0.42, ease: "expo.out" }, T_IN);
         tl.fromTo("#bigDot", { scale: 0 }, { scale: 1, duration: 0.36, ease: "back.out(3)" }, T_IN + 0.04);
@@ -515,62 +668,68 @@
         tl.to("#bigClockFly", { opacity: 0, duration: 0.05, ease: "none" }, 1.7);
         tl.fromTo("#pillClock", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "none" }, 1.69);
 
-        /* 3. in-call card slides down (15.90) */
+        /* 3. WhatsApp call card slides down (15.90): staggered build-in */
         tl.fromTo("#callLayer", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "power1.out" }, T_CARD);
-        tl.fromTo("#callLayer", { y: -120 }, { y: 0, duration: 0.55, ease: "expo.out", immediateRender: false }, T_CARD);
-        tl.fromTo("#callLayer", { filter: "blur(6px)" }, { filter: "blur(0px)", duration: 0.22, ease: "power2.out", immediateRender: false }, T_CARD);
-        tl.fromTo("#avatarPop", { scale: 0.55, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, T_CARD + 0.03);
-        tl.fromTo("#callName", { x: -18, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.07);
-        tl.fromTo("#callStatus", { x: -14, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.11);
-        tl.fromTo("#cardGlyph", { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2.2)" }, T_CARD + 0.14);
+        tl.fromTo("#callLayer", { y: -96 }, { y: 0, duration: 0.55, ease: "expo.out", immediateRender: false }, T_CARD);
+        tl.fromTo("#callLayer", { filter: "blur(7px)" }, { filter: "blur(0px)", duration: 0.2, ease: "power2.out", immediateRender: false }, T_CARD);
+        tl.fromTo("#badge", { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.42, ease: "back.out(2.6)" }, T_CARD + 0.04);
+        tl.fromTo(["#waLabel", "#e2e"], { y: -8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.36, ease: "expo.out", stagger: 0.05 }, T_CARD + 0.06);
+        tl.fromTo("#avatar", { scale: 0.55, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, T_CARD + 0.05);
+        tl.fromTo("#callName", { x: -18, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.08);
+        tl.fromTo("#callStatus", { x: -14, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "expo.out" }, T_CARD + 0.12);
+        tl.fromTo("#ctrlBar", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "expo.out" }, T_CARD + 0.1);
+        tl.fromTo(["#btnSpk", "#btnVid", "#btnMute", "#btnEnd"], { scale: 0.5, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2.4)", stagger: 0.04 }, T_CARD + 0.14);
+
+        /* 4. "Calling..." -> "Ringing..." when the other phone rings (16.10) */
+        tl.to("#stCalling", { y: -12, opacity: 0, duration: 0.12, ease: "power2.in" }, T_RINGING);
+        tl.fromTo("#stRinging", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.32, ease: "expo.out", immediateRender: false }, T_RINGING + 0.06);
         RIPPLES.forEach(function (t0, i) {
-          tl.fromTo("#rip" + i, { scale: 1, opacity: 0.8 }, { scale: 1.95, opacity: 0, duration: 0.95, ease: "power2.out", immediateRender: false }, t0);
+          tl.fromTo("#rip" + i, { scale: 1, opacity: 0.9 }, { scale: 2.15, opacity: 0, duration: 1.0, ease: "power2.out", immediateRender: false }, t0);
         });
 
-        /* 4. connected (21.28): timer, green ring */
-        tl.to("#statusCalling", { y: -14, opacity: 0, duration: 0.12, ease: "power2.in" }, T_CONNECT);
-        tl.fromTo("#statusLive", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.34, ease: "expo.out", immediateRender: false }, T_CONNECT + 0.1);
-        tl.fromTo("#ripG", { scale: 1, opacity: 0.95 }, { scale: 1.9, opacity: 0, duration: 0.5, ease: "power2.out", immediateRender: false }, T_CONNECT);
-        tl.to("#cardGlyph", { backgroundColor: "#34c759", duration: 0.18, ease: "power1.out" }, T_CONNECT);
-        tl.to("#cardGlyphIcon", { fill: "#ffffff", duration: 0.18, ease: "power1.out" }, T_CONNECT);
+        /* 5. connected (21.28): status -> green timer, green ring */
+        tl.to("#stRinging", { y: -12, opacity: 0, duration: 0.12, ease: "power2.in" }, T_CONNECT);
+        tl.fromTo("#callTimerIn", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "expo.out", immediateRender: false }, T_CONNECT + 0.08);
+        tl.fromTo("#ripG", { scale: 1, opacity: 1 }, { scale: 2.3, opacity: 0, duration: 0.6, ease: "power2.out", immediateRender: false }, T_CONNECT);
+        tl.fromTo("#avatarRing", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.3, ease: "expo.out", immediateRender: false }, T_CONNECT);
 
-        /* 5. card collapses into the top-right pill (done by 22.0) */
+        /* 6. card collapses into the green pill at the top-right (21.50 -> 22.00) */
         var MD = 0.5, ME = "power3.inOut";
-        tl.to("#shellRect", { attr: { x: cpL - SHELL_X, y: 0, width: cpW, height: 64, rx: 32 }, duration: MD, ease: ME }, T_MORPH);
-        tl.to("#avatar", { x: cpL + 32 - AV_CX, y: PILL_CY - AV_CY, scale: 44 / 112, duration: MD, ease: ME }, T_MORPH);
-        tl.fromTo("#avatarGreen", { opacity: 0 }, { opacity: 1, duration: 0.24, ease: "power1.inOut", immediateRender: false }, T_MORPH + 0.1);
-        tl.to("#avatarFace", { opacity: 0, duration: 0.04, ease: "none" }, T_MORPH + 0.36);
-        tl.to("#callName", { x: cpL + 66 - NAME_X, y: PILL_CY - NAME_CY, scale: 28 / 42, duration: MD, ease: ME }, T_MORPH);
-        tl.to("#callTimer", { x: cpL + 76 + NAME28_W - TIMER_X, y: PILL_CY - TIMER_CY, duration: MD, ease: ME }, T_MORPH);
-        tl.to("#callTimer", { opacity: 0, duration: 0.08, ease: "power1.in" }, T_MORPH);
-        tl.to("#callTimer", { opacity: 1, duration: 0.12, ease: "power1.out" }, T_MORPH + MD - 0.1);
-        tl.to("#liveDot", { scale: 0, opacity: 0, duration: 0.2, ease: "power2.in" }, T_MORPH);
-        tl.to("#cardGlyph", { scale: 0.5, opacity: 0, duration: 0.22, ease: "power2.in" }, T_MORPH);
+        tl.to(".shr", { attr: { x: cpL, y: CP_Y, width: cpW, height: CP_H, rx: CP_H / 2 }, duration: MD, ease: ME }, T_MORPH);
+        tl.fromTo("#shellGreen", { opacity: 0 }, { opacity: 1, duration: 0.24, ease: "power1.inOut", immediateRender: false }, T_MORPH + 0.22);
+        tl.to("#cardBody", { opacity: 0, scale: 0.93, x: 40, y: -30, duration: 0.2, ease: "power2.in" }, T_MORPH);
+        tl.fromTo("#cardBody", { filter: "blur(0px)" }, { filter: "blur(4px)", duration: 0.2, ease: "power2.in", immediateRender: false }, T_MORPH);
+        tl.to("#badge", { x: cpL + 12 - BADGE_X, y: CP_Y + 12 - BADGE_Y, scale: 40 / 28, duration: MD, ease: ME }, T_MORPH);
+        tl.to("#badgeSq", { opacity: 0, duration: 0.2, ease: "power1.inOut" }, T_MORPH + 0.24);
+        tl.to("#callName", { x: cpL + 62 - NAME_X, y: CP_Y + CP_H / 2 - NAME_CY, scale: 28 / 40, duration: MD, ease: ME }, T_MORPH);
+        tl.fromTo("#callName", { color: "#e9edef" }, { color: "#0b141a", duration: 0.22, ease: "power1.inOut", immediateRender: false }, T_MORPH + 0.24);
+        tl.to("#callTimerBox", { x: cpL + 62 + NAME28_W + 10 - TIMER_X, y: CP_Y + (CP_H - 44) / 2 - TIMER_TOP, duration: MD, ease: ME }, T_MORPH);
+        tl.fromTo("#callTimerBox", { opacity: 1 }, { opacity: 0, duration: 0.08, ease: "power1.in", immediateRender: false }, T_MORPH);
+        tl.to("#callTimer", { color: "#0b141a", duration: 0.05, ease: "none" }, T_MORPH + 0.1);
+        tl.to("#callTimerBox", { opacity: 1, duration: 0.14, ease: "power1.out" }, T_MORPH + MD - 0.12);
 
-        /* 6. call ended (44.40): flash red, "Call ended", slide away by 44.90 */
-        $("callEnded").style.left = (ceL + 66).toFixed(2) + "px";
-        tl.to("#shellRect", { fill: "#ffd0ca", duration: 0.03, ease: "none" }, T_END);
-        tl.to("#shellRect", { fill: "#ff3b30", duration: 0.14, ease: "power1.out" }, T_END + 0.03);
-        tl.to("#shellRect", { attr: { x: ceL - SHELL_X, width: ceW }, duration: 0.32, ease: "expo.out" }, T_END);
-        tl.to("#avatar", { x: ceL + 32 - AV_CX, duration: 0.32, ease: "expo.out" }, T_END);
-        tl.to("#avatarGreen", { backgroundColor: "rgba(255,255,255,0.24)", duration: 0.12, ease: "power1.out" }, T_END);
-        tl.to("#avatarHandset", { rotation: 135, duration: 0.34, ease: "back.out(1.7)" }, T_END);
-        tl.to(["#callName", "#callTimer"], { opacity: 0, duration: 0.1, ease: "power1.in" }, T_END);
+        /* 7. call ended (44.40): flash red, "Call ended", slide away by 44.90 */
+        tl.fromTo("#shellFlash", { opacity: 0 }, { opacity: 0.92, duration: 0.02, ease: "none", immediateRender: false }, T_END);
+        tl.to("#shellFlash", { opacity: 0, duration: 0.16, ease: "power2.out" }, T_END + 0.03);
+        tl.fromTo("#shellRed", { opacity: 0 }, { opacity: 1, duration: 0.02, ease: "none", immediateRender: false }, T_END);
+        tl.to(".shr", { attr: { x: ceL, width: ceW }, duration: 0.32, ease: "expo.out" }, T_END);
+        tl.to("#badge", { x: ceL + 12 - BADGE_X, opacity: 0, duration: 0.1, ease: "power1.in" }, T_END);
+        tl.fromTo("#endIcon", { opacity: 0, rotation: -120, scale: 0.6 }, { opacity: 1, rotation: 0, scale: 1, duration: 0.34, ease: "back.out(1.8)", immediateRender: false }, T_END + 0.02);
+        tl.to(["#callName", "#callTimerBox"], { opacity: 0, duration: 0.1, ease: "power1.in" }, T_END);
         tl.fromTo("#callEnded", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.24, ease: "expo.out", immediateRender: false }, T_END + 0.05);
-        tl.to("#shellRect", { fill: "#a3190f", duration: 0.05, ease: "none" }, T_END + 0.2);
-        tl.to("#shellRect", { fill: "#ff3b30", duration: 0.05, ease: "none" }, T_END + 0.26);
+        tl.fromTo("#shellDim", { opacity: 0 }, { opacity: 0.55, duration: 0.03, ease: "none", immediateRender: false }, T_END + 0.2);
+        tl.to("#shellDim", { opacity: 0, duration: 0.04, ease: "none" }, T_END + 0.26);
         tl.to("#callLayer", { x: 470, duration: 0.2, ease: "power3.in" }, T_END + 0.3);
         tl.to("#callLayer", { filter: "blur(8px)", duration: 0.2, ease: "power2.in" }, T_END + 0.3);
         tl.to("#callLayer", { opacity: 0, duration: 0.08, ease: "none" }, T_END + 0.42);
 
-        /* 7. breakdown (44.65): pill goes full red, clock races */
-        tl.fromTo("#examFlash", { opacity: 0 }, { opacity: 0.85, duration: 0.03, ease: "none", immediateRender: false }, T_RACE - 0.02);
-        tl.to("#examFlash", { opacity: 0, duration: 0.32, ease: "power2.out" }, T_RACE + 0.01);
+        /* 8. breakdown (44.65): pill goes full red, clock races on the music */
         tl.to("#examPill", { backgroundColor: "#ff3b30", duration: 0.05, ease: "none" }, T_RACE);
         tl.to("#pillLabel", { color: "rgba(255,255,255,0.94)", duration: 0.05, ease: "none" }, T_RACE);
         tl.to("#pillDot", { backgroundColor: "#ffffff", duration: 0.05, ease: "none" }, T_RACE);
 
-        /* 8. glitch-out (51.45 -> 51.76): RGB ghosts + tear, collapse to a line, gone */
+        /* 9. glitch-out (51.45 -> 51.76): RGB ghosts + tear, collapse to a line, gone */
         tl.set("#examPill", { opacity: 0 }, T_GLITCH);
         tl.set("#slices", { opacity: 1 }, T_GLITCH);
         tl.set(["#ghostC", "#ghostM"], { opacity: 0.85 }, T_GLITCH);

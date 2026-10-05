@@ -7,24 +7,30 @@
     <script src="./vendor/gsap.min.js"></script>
     <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
-    <!-- shared notification card + storm engine (master: slots/notifs/_shared) -->
-    <link rel="stylesheet" href="./lib/notif-kit.css" />
-    <script src="./lib/notif-kit.js"></script>
-    <script src="./lib/notif-storm.js"></script>
+    <!-- v2 WhatsApp kit + storm engine (master: slots/notifs/_shared, run _shared/sync.sh after edits) -->
+    <link rel="stylesheet" href="./lib/wa-kit.css" />
+    <script src="./lib/wa-kit.js"></script>
+    <script src="./lib/wa-storm.js"></script>
     <style>
       #stage { position: relative; width: 100%; height: 100%; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
-      #world { position: absolute; inset: 0; transform-origin: 540px 760px; }
+      #world { position: absolute; inset: 0; }
     </style>
   </head>
   <body>
     <!--
-      notifs/storm_hook — output window 0.000 -> 3.467 s (3.4667 s = 104 frames), layer FRONT.
-      Cold-open teaser of the storm (same footage as 44.40-47.87, so it is the storm's own plan
-      shifted +0.2 s): What 0.25 burst · f*ck 0.80 · why are my notes 1.18-1.66 ·
-      scattered 1.96 fling outward · many groups? 2.80-3.25 fast pileup of small cards.
-      His face (x ~700-990, y ~750-1060) is kept clear. Does NOT clear: the last frame is full
-      (the compositor freezes it and rewinds).
+      notifs/storm_hook v2 — the reel's COLD OPEN. Output window 0.000 -> 3.467 s (104 frames), layer FRONT.
+      Same laptop shot as the breakdown; the music is the pickup bar into DROP 1 (0.797, on "f*ck").
+        frame 1   the storm is already raging: 3 solid WhatsApp banners mid-entry around the laptop
+                  (+2 ghosts behind the hook title)
+        0.200 0.400 0.600   a banner pops on each 8th, on top of the pile
+        0.800  DROP: 7 banners fling out of the laptop at once, the pile is shoved outward
+        1.000 1.200 1.400 1.600 1.833   "why are my notes" (the notes file lands on the 1.614 snare)
+        1.967  "scattered": everything is flung outward again
+        2.033 2.233 2.433 2.633   then "many groups?": small banners pile up on 2.833 3.033 3.233
+        3.30-3.40  the ghosts behind the title solidify as the title glitches out; the last frame is FULL
+      Keep-clear: his face (x 665-990, y 765-1150, widened for the camera punches) at all times; the
+      hook title band (x 140-940, y 300-648) holds only ghost banners (<= 42 % opacity) until 3.30.
     -->
     <div id="stage" data-composition-id="main" data-start="0" data-duration="3.466667" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="3.466667" data-track-index="0">
@@ -35,17 +41,130 @@
       (function () {
         "use strict";
         var D = 3.466667;
-        var tl = gsap.timeline({ paused: true });
-        var storm = NK.buildStorm(tl, document.getElementById("world"), { off: 0.2, full: false, settleBy: 3.4, seed: 4465 });
+        var LAP = [245, 890]; // the laptop screen: the storm comes out of it
+        var S = new WA.Storm(document.getElementById("world"), {
+          seed: 3101,
+          W: 780,
+          cx: 540,
+          cy: 900,
+          peak: { s: 1.035, r: 0, dx: 0, dy: 0 }, // the DROP punch
+        });
+        S.zones.push({ x0: 665, y0: 765, x1: 990, y1: 1150, t0: -1, t1: 9 }); // his face + hand
+        S.ghostZones.push({ x0: 140, y0: 300, x1: 940, y1: 648, t0: -1, t1: 3.3 }); // the hook title
+        var SOLID = { x0: 0, y0: 650, x1: 1080, y1: 1300 };
+        var BAND = { x0: 0, y0: 280, x1: 1080, y1: 640 };
+        var GHOST = 0.42;
 
+        function pickSolid(t, key, s, r, k) {
+          return S.pick(t, { s: s, r: r || [1, 9], h: S.hOf(key), region: SOLID, k: k || 3 });
+        }
+        function solid(key, t, s, entry, r) {
+          var p = pickSolid(t, key, s, r);
+          if (!p) return null;
+          return S.add(key, t, p, entry || { type: "slam" });
+        }
+
+        /* ---------- frame 1: already raging (entries began before t = 0) ---------- */
+        var hero = S.add("u_pdf", -0.16, { x: 364, y: 716, s: 0.74, r: -2 }, { type: "slam" });
+        var h2 = S.add("b_pyq", -0.124, { x: 346, y: 884, s: 0.68, r: 5 }, { type: "fly", side: -1, dist: 600, dy: 70 });
+        var h3 = S.add("o_128", -0.05, { x: 436, y: 1206, s: 0.76, r: 3.5 }, { type: "pop" });
+        var g1 = S.add("i_bro", -0.3, { x: 300, y: 448, s: 0.6, r: -9 }, { type: "burst", from: LAP }, { ghost: GHOST });
+        var g2 = S.add("l_rec", -0.24, { x: 780, y: 560, s: 0.56, r: 10 }, { type: "burst", from: LAP }, { ghost: GHOST });
+        // ghosts keep drifting so nothing is ever frozen
+        [[g1, 26, 3], [g2, -22, -3]].forEach(function (o) {
+          var a = o[0].a;
+          a.ch("x").add(0.3, 3.1, a.ch("x").at(0.3) + o[1], "sine.inOut");
+          a.ch("r").add(0.3, 3.1, a.ch("r").at(0.3) + o[2], "sine.inOut");
+        });
+
+        /* ---------- the pickup: one banner per 8th ---------- */
+        solid("c_exam", 0.185, [0.68, 0.76], { type: "slam" });
+        solid("i_mic", 0.389, [0.6, 0.68], { type: "pop" });
+        solid("z_pls", 0.593, [0.56, 0.64], { type: "pop" });
+
+        /* ---------- 0.797 DROP: 7 banners fling out of the laptop ---------- */
+        var T_DROP = 0.797;
+        // shove the pile outward from the laptop, punch the whole layer with the camera
+        S.items.slice().forEach(function (it) {
+          var p = it.a.pose(T_DROP);
+          var dx = p.x - LAP[0];
+          var dy = p.y - LAP[1];
+          var len = Math.hypot(dx, dy) || 1;
+          S.shove(it, WA.hit(T_DROP), (34 * dx) / len, (34 * dy) / len, dx > 0 ? 2 : -2);
+        });
+        S.wt.s.add(WA.hit(T_DROP), 0.001, 1.035, "none", 1);
+        S.wt.s.add(WA.snap(T_DROP), 0.4, 1, "expo.out", 1.035);
+        ["o_syl", "b_u3", "h_chg", "r_13"].forEach(function (key) {
+          var p = pickSolid(T_DROP, key, [0.6, 0.78], [3, 13], 2);
+          if (p) S.add(key, T_DROP, p, { type: "burst", from: LAP, dur: 0.55 });
+        });
+        var far = S.items.map(function (it) { var p = it.a.pose(T_DROP + 0.6); return [p.x, p.y]; });
+        ["c_del", "m_eat", "u_47"].forEach(function (key) {
+          var p = S.pick(T_DROP, { s: [0.54, 0.64], r: [6, 14], h: S.hOf(key), region: BAND, ghost: true, far: far, k: 2 });
+          if (p) {
+            far.push([p.x, p.y]);
+            S.add(key, T_DROP, p, { type: "burst", from: LAP, dur: 0.55 }, { ghost: GHOST });
+          }
+        });
+
+        /* ---------- "why are my notes" ---------- */
+        solid("b_blur", 1.001, [0.58, 0.68], { type: "pop" });
+        solid("u_all", 1.205, [0.6, 0.7], { type: "slam" });
+        solid("i_bro", 1.409, [0.56, 0.64], { type: "pop" });
+        solid("p_fwd", 1.614, [0.62, 0.7], { type: "slam" }); // "notes" on the snare
+        solid("l_rec", 1.818, [0.55, 0.62], { type: "pop" });
+
+        /* ---------- 1.967 "scattered": flung outward again ---------- */
+        var T_SCAT = WA.hit(1.963);
+        var seeds = [LAP];
+        S.items
+          .slice()
+          .sort(function (a, b) { return b.a.pose(T_SCAT).s - a.a.pose(T_SCAT).s; })
+          .forEach(function (it) {
+            var cur = it.a.pose(T_SCAT);
+            var s2 = Math.max(0.52, Math.min(0.8, cur.s * S.R(0.9, 1.08)));
+            var p = S.pick(T_SCAT, {
+              s: [s2, s2],
+              r: [5, 14],
+              h: it.h,
+              region: it.ghost ? BAND : SOLID,
+              ghost: it.ghost,
+              far: seeds,
+              k: 2,
+              bias: function (x, y) {
+                // keep the fling outward from the laptop
+                var out = (x - cur.x) * (cur.x - LAP[0]) + (y - cur.y) * (cur.y - LAP[1]);
+                return out >= 0 ? 1.15 : 0.85;
+              },
+            });
+            if (!p) return;
+            seeds.push([p.x, p.y]);
+            S.moveTo(it, T_SCAT, p, 0.55, "expo.out");
+          });
+
+        solid("c_exam", 2.022, [0.56, 0.64], { type: "pop" });
+        solid("r_13", 2.226, [0.56, 0.64], { type: "pop" });
+        solid("u_pdf", 2.43, [0.72, 0.8], { type: "slam" }); // downbeat: a bigger one
+        solid("h_chg", 2.634, [0.54, 0.6], { type: "pop" });
+
+        /* ---------- "many groups?": fast pileup of small banners ---------- */
+        [[2.838, ["o_128", "l_rec"]], [3.042, ["b_u3", "c_del"]], [3.246, ["u_47", "r_13", "p_fwd"]]].forEach(function (g) {
+          g[1].forEach(function (key) {
+            solid(key, g[0], [0.48, 0.56], { type: "pop" }, [2, 14]);
+          });
+        });
+
+        /* ---------- 3.30: the title glitches out, the ghosts solidify (the last frame is full) ---------- */
+        S.items.forEach(function (it) {
+          if (!it.ghost) return;
+          it.a.ch("o").add(3.3, 0.1, 1, "power2.out");
+          it.a.ch("d").add(3.3, 0.1, 0.28, "power2.out", 0);
+        });
+
+        var tl = gsap.timeline({ paused: true });
         var clock = { t: 0 };
-        tl.fromTo(
-          clock,
-          { t: 0 },
-          { t: D, duration: D, ease: "none", onUpdate: function () { storm.applyState(clock.t); } },
-          0
-        );
-        storm.applyState(0);
+        tl.fromTo(clock, { t: 0 }, { t: D, duration: D, ease: "none", onUpdate: function () { S.apply(clock.t); } }, 0);
+        S.apply(0);
 
         window.__timelines["main"] = tl;
         tl.seek(0);
