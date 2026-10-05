@@ -47,13 +47,15 @@
     this.CX = o.cx;
     this.CY = o.cy;
     this.rnd = WA.rng(o.seed || 7);
-    this.safe = o.safe || { x0: 66, x1: 1014, y0: 274, y1: 1284, railX: 938, railY: 1100 };
+    // banner edges (their shadow then ends before the caption band at 1290)
+    this.safe = o.safe || { x0: 66, x1: 1014, y0: 274, y1: 1240, railX: 938, railY: 1100 };
     this.peak = o.peak || { s: 1, r: 0, dx: 0, dy: 0 };
     this.zones = []; // keep-clear rects (faces): {x0, y0, x1, y1, t0, t1}; no banner may rest on one
     this.ghostZones = []; // rects (the hook title) only ghost banners (opacity <= cap) may enter
     this.items = [];
     this.cell = 12;
-    this.wt = { x: new WA.Track(0), y: new WA.Track(0), r: new WA.Track(0), s: new WA.Track(1) };
+    // world transform: drift x/y, rotation, scale, and a separate jolt multiplier for punches
+    this.wt = { x: new WA.Track(0), y: new WA.Track(0), r: new WA.Track(0), s: new WA.Track(1), j: new WA.Track(1) };
     world.style.transformOrigin = this.CX + "px " + this.CY + "px";
     this.order = [];
     this.poolIdx = 0;
@@ -221,7 +223,7 @@
     var h = o.h || 156;
     var G = o.far ? null : this.grid(t + 0.3);
     var cands = [];
-    var tries = o.n || 70;
+    var tries = o.n || 140;
     for (var pass = 0; pass < 4 && !cands.length; pass++) {
       var shrink = Math.pow(0.9, pass);
       for (var i = 0; i < tries; i++) {
@@ -243,19 +245,56 @@
           for (var q = 0; q < o.far.length; q++) d = Math.min(d, Math.hypot((x - o.far[q][0]) / 1.3, y - o.far[q][1]));
           score = d;
         } else {
-          score = this.raster(G, x, y, s, r, h, false);
+          // what the detector sees on the hit frame: the entry overscale (o.es), shrunk by its blur
+          score = this.raster(G, x, y, s * (o.es || 1) * 0.93, r, h, false);
         }
+        var nc = o.far ? undefined : score;
         if (o.bias) score *= o.bias(x, y, s, r);
-        cands.push({ x: x, y: y, s: s, r: r, score: score });
+        cands.push({ x: x, y: y, s: s, r: r, score: score, nc: nc });
       }
     }
     if (!cands.length) return null;
     cands.sort(function (a, b) {
       return b.score - a.score;
     });
-    var k = Math.min(cands.length, o.k || 3);
-    return cands[Math.floor(this.rnd() * k)];
+    // coverage picks must add enough NEW visible area to register as an arrival (the compositor's
+    // detector wants > 0.4 % of the frame: ~58 cells of 12 px); keep a margin
+    var minNew = o.far ? 0 : o.minNew === undefined ? 100 : o.minNew;
+    var good = cands.filter(function (c) {
+      return c.nc === undefined || c.nc >= minNew;
+    });
+    var pool = good.length ? good : cands;
+    var k = Math.min(pool.length, o.k || 3);
+    return pool[Math.floor(this.rnd() * k)];
   };
+
+  // the legal pose closest to a hand-placed one (spiral search, then smaller); null if none
+  P.nearest = function (t, p, h, ghost, until) {
+    var u = until === undefined ? t + 1 : until;
+    for (var sc = 0; sc < 6; sc++) {
+      var s = p.s * Math.pow(0.95, sc);
+      for (var rad = 0; rad <= 260; rad += 8) {
+        var n = rad === 0 ? 1 : Math.max(8, Math.round(rad / 6));
+        for (var i = 0; i < n; i++) {
+          var a = (2 * PI * i) / n;
+          var x = p.x + rad * Math.cos(a);
+          var y = p.y + rad * Math.sin(a);
+          if (this.fits(x, y, s, p.r, h, t, u, !ghost)) return { x: x, y: y, s: s, r: p.r };
+        }
+      }
+    }
+    if (global.console) console.warn("wa-storm: no legal pose near", p);
+    return null;
+  };
+  // add() for a hand-placed pose, corrected to the nearest legal pose
+  P.place = function (key, tHit, pose, entry, opt) {
+    var g = opt && opt.ghost;
+    var q = this.nearest(tHit, pose, this.hOf(typeof key === "string" ? key : ""), g, opt && opt.until);
+    return q ? this.add(key, tHit, q, entry, opt) : null;
+  };
+
+  // hit-frame overscale of each entry type (for pick({es}))
+  WA.ENTRY_SCALE = { slam: 1.42, pop: 1.26, drop: 1.06, fly: 1.0, burst: 0.6, thru: 0.4 };
 
   /* ---------- banners ---------- */
   // spec: a WA.MSG key or a spec object. pose {x, y, s, r} (world, centre). entry {type, ...}.
@@ -267,6 +306,7 @@
     for (var f in spec) cfg[f] = spec[f];
     cfg.w = this.W;
     cfg.decorative = true;
+    cfg.tight = true;
     var card = WA.card(cfg);
     var a = new WA.Actor(card, { x: pose.x, y: pose.y, s: pose.s, r: pose.r, o: 0 });
     if (opt.mb !== undefined) a.mb = opt.mb;
@@ -285,9 +325,13 @@
     };
     this.items.push(it);
     this.enter(it, tHit, pose, entry || { type: "slam" });
-    if (!opt.noAge && !it.ghost) {
+    if (!opt.noAge && !it.ghost && (entry || {}).type !== "thru") {
+      // older banners sink back into the pile: darker, softer, and a little further away (smaller),
+      // which also keeps freeing visible area for the next arrival
       a.ch("d").add(it.born + 0.45, 2.6, opt.dim === undefined ? 0.42 : opt.dim, "sine.inOut", 0);
       a.ch("b").add(it.born + 0.9, 2.4, 1.2, "sine.inOut", 0);
+      var age = this.ageScale === undefined ? 0.9 : this.ageScale;
+      if (age < 1) a.ch("s").add(it.born + 0.5, 2.5, pose.s * age, "sine.inOut");
     }
     return it;
   };
@@ -312,16 +356,27 @@
         break;
       }
       case "slam": {
-        a.ch("y").add(t0, 0.3, p.y, "power4.out", p.y - 24);
-        a.ch("s").add(t0, 0.3, p.s, "power4.out", Math.min(p.s * 1.42, 1.32));
-        a.ch("r").add(t0, 0.3, p.r, "power4.out", p.r + sg * RR(6, 11));
-        a.ch("b").add(t0, 0.22, 0, "power2.out", 12);
+        var s0 = Math.min(p.s * 1.42, 1.32);
+        var r0 = p.r + sg * RR(6, 11);
+        var g0 = this.inward(p, s0, r0, it.h);
+        a.ch("x").add(t0, 0.3, p.x, "power4.out", p.x + g0[0]);
+        a.ch("y").add(t0, 0.3, p.y, "power4.out", p.y - 24 + g0[1]);
+        a.ch("s").add(t0, 0.3, p.s, "power4.out", s0);
+        a.ch("r").add(t0, 0.3, p.r, "power4.out", r0);
+        a.ch("b").add(t0, 0.22, 0, "power2.out", 9);
         break;
       }
       case "pop": {
-        a.ch("s").add(t0, 0.24, p.s, "back.out(1.8)", Math.min(p.s * 1.26, 1.22));
-        a.ch("r").add(t0, 0.24, p.r, "power3.out", p.r + sg * RR(3, 7));
-        a.ch("b").add(t0, 0.17, 0, "power2.out", 8);
+        var s1 = Math.min(p.s * 1.26, 1.22);
+        var r1 = p.r + sg * RR(3, 7);
+        var g1 = this.inward(p, s1, r1, it.h);
+        if (g1[0] || g1[1]) {
+          a.ch("x").add(t0, 0.24, p.x, "power3.out", p.x + g1[0]);
+          a.ch("y").add(t0, 0.24, p.y, "power3.out", p.y + g1[1]);
+        }
+        a.ch("s").add(t0, 0.24, p.s, "back.out(1.8)", s1);
+        a.ch("r").add(t0, 0.24, p.r, "power3.out", r1);
+        a.ch("b").add(t0, 0.17, 0, "power2.out", 6);
         break;
       }
       case "fly": {
@@ -335,21 +390,48 @@
         a.ch("b").add(t0, 0.28, 0, "power2.out", 14);
         break;
       }
+      case "thru": {
+        // blasted out of a point toward the camera and off-frame: it never lands
+        var dt = e.dur || 0.36;
+        a.ch("x").add(t0, dt, e.to[0], "power2.out", e.from[0]);
+        a.ch("y").add(t0, dt, e.to[1], "power2.out", e.from[1]);
+        a.ch("s").add(t0, dt, e.sEnd || p.s * 1.5, "power1.out", p.s * 0.35);
+        a.ch("r").add(t0, dt, p.r + sg * RR(8, 16), "power1.out", p.r);
+        a.ch("b").add(t0, 0.05, 6, "none", 6);
+        a.ch("o").set(t0 + dt, 0);
+        break;
+      }
       case "drop": {
         var v0 = t0 - 0.046;
-        a.ch("y").add(v0, 0.7, p.y, WA.springEase(20, 0.66, 0.7), p.y - 150);
+        var ed = WA.ext(this.W, it.h, p.s * 1.06, p.r);
+        var fall = Math.max(40, Math.min(150, p.y - ed.hy - this.safe.y0)); // never starts above the safe top
+        a.ch("y").add(v0, 0.7, p.y, WA.springEase(20, 0.66, 0.7), p.y - fall);
         a.ch("s").add(v0, 0.6, p.s, WA.springEase(17, 0.72, 0.6), p.s * 1.06);
         a.ch("b").add(t0, 0.26, 0, "power2.out", 11);
         break;
       }
     }
-    a.ch("o").set(t0, it.op);
-    if (!it.ghost) {
+    a.ch("o").add(t0, 1e-4, it.op, "none", it.op);
+    if (!it.ghost && e.type !== "thru") {
       // the unread pill pings as the banner lands
       a.ch("sh").set(t0 + 0.06, 0);
       a.ch("sh").add(t0 + 0.06, 0.7, 1, "power2.inOut", 0);
       a.ch("sh").set(t0 + 0.77, -1);
     }
+  };
+
+  // offset that keeps an oversized entry frame (scale s0, rotation r0) inside the safe rect: the
+  // banner grows inward from the edge instead of spilling over it
+  P.inward = function (p, s0, r0, h) {
+    var S = this.safe;
+    var e = WA.ext(this.W, h, s0, r0);
+    var dx = 0;
+    var dy = 0;
+    if (p.x - e.hx < S.x0) dx = S.x0 - (p.x - e.hx);
+    else if (p.x + e.hx > S.x1) dx = S.x1 - (p.x + e.hx);
+    if (p.y - e.hy < S.y0) dy = S.y0 - (p.y - e.hy);
+    else if (p.y + e.hy > S.y1) dy = S.y1 - (p.y + e.hy);
+    return [dx, dy];
   };
 
   // move a banner to a new pose (scatter / fling)
@@ -361,14 +443,49 @@
     a.ch("r").add(t, dur, p.r, ease || "expo.out");
   };
   // temporary shove on the inner channel (a shockwave), back to rest
-  P.shove = function (it, t, dx, dy, dr) {
+  // (dx, dy) is a SCREEN-space push; it is shortened until the pushed banner stays inside y 280-1240,
+  // x 30-1050 and out of the keep-clear zones, then converted into the card's local (rotated, scaled) space
+  P.shove = function (it, t, dx, dy, dr, out, back) {
     var a = it.a;
-    a.ch("jx").add(t, 0.09, dx, "power2.out");
-    a.ch("jy").add(t, 0.09, dy, "power2.out");
-    a.ch("jr").add(t, 0.09, dr || 0, "power2.out");
-    a.ch("jx").add(t + 0.09, 0.42, 0, "power3.inOut");
-    a.ch("jy").add(t + 0.09, 0.42, 0, "power3.inOut");
-    a.ch("jr").add(t + 0.09, 0.42, 0, "power3.inOut");
+    out = out || 0.09;
+    back = back || 0.42;
+    var p = a.pose(t + out);
+    // test the push over its whole life (the banner may still be travelling): peak, then decaying
+    var samples = [[t + out * 0.6, 0.85], [t + out, 1], [t + out + back * 0.2, 0.9], [t + out + back * 0.4, 0.65], [t + out + back * 0.6, 0.35]];
+    var k = 1;
+    for (; k > 0.01; k -= 0.1) {
+      var ok = true;
+      for (var m = 0; m < samples.length && ok; m++) {
+        var ps = a.pose(samples[m][0]);
+        var amp = k * samples[m][1];
+        var pts = this.points(ps.x + dx * amp, ps.y + dy * amp, ps.s, ps.r, it.h, 6);
+        for (var i = 0; i < pts.length && ok; i++) {
+          var q = pts[i];
+          if (q[1] < 280 || q[1] > 1240 || q[0] < 30 || q[0] > 1050) ok = false;
+          for (var z = 0; z < this.zones.length && ok; z++) {
+            var Z = this.zones[z];
+            if (Z.t1 > t && Z.t0 <= t && inRect(q, Z)) ok = false;
+          }
+        }
+      }
+      if (ok) break;
+    }
+    k = Math.max(0, k);
+    var ang = (-p.r * PI) / 180;
+    var lx = ((dx * Math.cos(ang) - dy * Math.sin(ang)) * k) / p.s;
+    var ly = ((dx * Math.sin(ang) + dy * Math.cos(ang)) * k) / p.s;
+    a.ch("jx").add(t, out, lx, "power2.out");
+    a.ch("jy").add(t, out, ly, "power2.out");
+    a.ch("jr").add(t, out, dr || 0, "power2.out");
+    a.ch("jx").add(t + out, back, 0, "power3.inOut");
+    a.ch("jy").add(t + out, back, 0, "power3.inOut");
+    a.ch("jr").add(t + out, back, 0, "power3.inOut");
+  };
+  // a whole-layer scale punch: peak on the hit frame, back to 1 over `frames` frames
+  P.jolt = function (t, peak, frames) {
+    var t0 = WA.hit(t);
+    this.wt.j.add(t0, 0.001, peak, "none", 1);
+    this.wt.j.add(t0 + 0.004, (frames || 3) / WA.FPS, 1, "power2.out", peak);
   };
   // white edge-glow flash on every banner that is up at t
   P.flash = function (t) {
@@ -401,7 +518,7 @@
   /* ---------- per-frame ---------- */
   P.apply = function (t) {
     var wt = this.wt;
-    var tf = "translate(" + wt.x.at(t).toFixed(2) + "px," + wt.y.at(t).toFixed(2) + "px) rotate(" + wt.r.at(t).toFixed(3) + "deg) scale(" + wt.s.at(t).toFixed(4) + ")";
+    var tf = "translate(" + wt.x.at(t).toFixed(2) + "px," + wt.y.at(t).toFixed(2) + "px) rotate(" + wt.r.at(t).toFixed(3) + "deg) scale(" + (wt.s.at(t) * wt.j.at(t)).toFixed(4) + ")";
     if (tf !== this._wtf) {
       this.world.style.transform = tf;
       this._wtf = tf;

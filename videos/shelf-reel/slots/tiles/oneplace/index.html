@@ -15,6 +15,9 @@
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
       #world { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      /* everything in flight shares ONE group opacity (< .5): overlapping ghosts never add up to an opaque
+         pixel, so the mixer's alpha-onset detector hears exactly one arrival — the landing frame */
+      #flight { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
 
       /* ---------- streaking silhouettes (the problem section's bubbles, docking in) ---------- */
       .sil {
@@ -34,9 +37,9 @@
       }
       #halo { /* S.H.E.L.F's blue glow, behind the card (alpha stays < 0.5: it never counts as a new card) */
         position: absolute; inset: -2px; border-radius: 36px; pointer-events: none;
-        box-shadow: 0 0 38px 4px rgba(79, 157, 255, 0.34), 0 0 90px 10px rgba(79, 157, 255, 0.12);
+        box-shadow: 0 0 34px 3px rgba(79, 157, 255, 0.34), 0 0 60px 6px rgba(79, 157, 255, 0.1);
       }
-      #shadow { position: absolute; inset: 0; border-radius: 34px; box-shadow: 0 34px 70px rgba(0, 0, 0, 0.5), 0 10px 22px rgba(0, 0, 0, 0.35); }
+      #shadow { position: absolute; inset: 0; border-radius: 34px; box-shadow: 0 18px 34px rgba(0, 0, 0, 0.46), 0 6px 14px rgba(0, 0, 0, 0.32); }
       #body {
         position: absolute; inset: 0; border-radius: 34px; overflow: hidden;
         background: #0b141a;
@@ -101,7 +104,7 @@
       .tm { font: 400 11.5px/14px var(--font-ui); color: #8696a0; white-space: nowrap; }
       .bub.out .tm { color: rgba(233, 237, 239, 0.62); }
       .tm.br { position: absolute; right: 9px; bottom: 5px; display: flex; align-items: center; gap: 3px; }
-      .ticks { width: 17px; height: 11px; display: block; }
+      .ticks { width: 18px; height: 11px; display: block; }
 
       .datechip { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); padding: 0 11px; height: 24px; border-radius: 8px; background: #182229; color: #8696a0; font: 500 12.5px/24px var(--font-ui); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25); }
 
@@ -125,13 +128,15 @@
 
       /* album: four blurry paper photos, "+8" on the last */
       .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 226px; border-radius: 9px; overflow: hidden; }
-      .ph { position: relative; height: 104px; overflow: hidden; background: #3b342c; }
+      .ph { position: relative; height: 104px; overflow: hidden; background: radial-gradient(120% 90% at 30% 20%, #4a3e33 0%, #2c241d 70%, #211b16 100%); }
+      .ph.v2 { background: radial-gradient(120% 90% at 70% 10%, #5a5650 0%, #3a3732 70%, #2a2824 100%); }
+      .ph.v3 { background: radial-gradient(130% 100% at 20% 80%, #574533 0%, #35291f 70%, #261d16 100%); }
       .ph .pg { position: absolute; left: -14%; top: -12%; width: 128%; height: 124%; filter: blur(1.4px); }
       .ph .pg::before { /* the page */
         content: ""; position: absolute; left: 14%; top: 10%; width: 74%; height: 84%;
         background:
-          repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 7px, rgba(70, 92, 140, 0.32) 7px 8px),
-          linear-gradient(160deg, #f1ebde 0%, #e2d9c6 60%, #cfc4ae 100%);
+          repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 7px, rgba(70, 92, 140, var(--rl, 0.32)) 7px 8px),
+          linear-gradient(160deg, var(--p0, #f1ebde) 0%, var(--p1, #e2d9c6) 60%, var(--p2, #cfc4ae) 100%);
         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
         transform: rotate(var(--r, -6deg));
       }
@@ -146,6 +151,20 @@
           linear-gradient(90deg, rgba(40, 46, 70, 0.5) 0 74%, transparent 74%) 0 86% / 100% 3px no-repeat;
         transform: rotate(var(--r, -6deg));
       }
+      .ph.v2 .pg { --p0: #f4f5f6; --p1: #e4e6e8; --p2: #c9ccd0; --rl: 0; }
+      .ph.v2 .pg::after { /* a printed question paper: a heading and a table */
+        background:
+          linear-gradient(90deg, rgba(30, 30, 40, 0.75) 0 46%, transparent 46%) 30% 4% / 100% 4px no-repeat,
+          repeating-linear-gradient(180deg, transparent 0 11px, rgba(30, 30, 40, 0.45) 11px 12.4px) 0 22% / 100% 78% no-repeat,
+          linear-gradient(90deg, transparent 0 22%, rgba(30, 30, 40, 0.45) 22% 23.6%, transparent 23.6% 70%, rgba(30, 30, 40, 0.45) 70% 71.6%, transparent 71.6%) 0 22% / 100% 78% no-repeat;
+      }
+      .ph.v3 .pg { --p0: #f3e7b8; --p1: #e6d79e; --p2: #cdbb7f; --rl: 0.22; }
+      .ph.v3::before { /* the phone's own shadow across the page */
+        content: ""; position: absolute; inset: 0; z-index: 1;
+        background: linear-gradient(120deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 52%, rgba(10, 8, 6, 0.42) 60%, rgba(10, 8, 6, 0.32) 100%);
+        filter: blur(3px);
+      }
+      .ph.v4 .pg { --p0: #e9e6df; --p1: #d6d1c6; --p2: #bdb6a8; }
       .ph.more::after { content: ""; position: absolute; inset: 0; background: rgba(11, 20, 26, 0.58); }
       .ph .plus { position: absolute; inset: 0; display: grid; place-items: center; z-index: 2; font: 600 30px/1 var(--font-ui); color: #ffffff; }
       .cap { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: 6px; }
@@ -177,6 +196,7 @@
     <div id="stage" data-composition-id="main" data-start="0" data-duration="3.733" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="3.733" data-track-index="0">
         <div id="world">
+          <div id="flight">
           <div id="sils"></div>
           <div id="card" data-layout-allow-overflow data-layout-allow-occlusion>
             <div id="halo"></div>
@@ -190,7 +210,7 @@
                   <div class="bub out tail" style="width: 214px; height: 60px">
                     <svg class="tl" viewBox="0 0 11 17"><path d="M0 0h8.6c1.9 0 2.9 2.3 1.6 3.7L0 16.2z" fill="#005c4b" /></svg>
                     <div class="tx">where are the unit 3 notes??</div>
-                    <div class="tm br"><span>11:52 PM</span><svg class="ticks" id="ticks" viewBox="0 0 17 11"><path id="tk1" d="M1.2 6.1l3 3L11 2.2" fill="none" stroke="#8696a0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /><path id="tk2" d="M6.2 9.1L13 2.2" fill="none" stroke="#8696a0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></div>
+                    <div class="tm br"><span>11:52 PM</span><svg class="ticks" id="ticks" viewBox="0 0 18 11"><path id="tk1" d="M1.1 5.9l3.1 3.1 6.2-7.2" fill="none" stroke="#8696a0" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" /><path id="tk2" d="M7.6 7.7l1.3 1.3 6.2-7.2" fill="none" stroke="#8696a0" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" /></svg></div>
                   </div>
                 </div>
                 <!-- 2. typing -->
@@ -222,10 +242,10 @@
                   <div class="bub in" style="width: 246px">
                     <div class="src"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.2" fill="#fa6533" fill-opacity=".18" /><circle cx="6.3" cy="6.6" r="2" fill="#fa6533" /><circle cx="10.2" cy="7.2" r="1.6" fill="#fa6533" fill-opacity=".75" /><path d="M2.9 11.8c.5-2 1.8-3 3.4-3s2.9 1 3.4 3z" fill="#fa6533" /><path d="M9.6 9.1c1.3 0 2.5.9 2.9 2.7H10.3" fill="#fa6533" fill-opacity=".75" /></svg>from <b style="color: #fa6533">Boys Group</b></div>
                     <div class="grid">
-                      <div class="ph"><div class="pg" style="--r: -7deg"></div></div>
-                      <div class="ph"><div class="pg" style="--r: 5deg"></div></div>
-                      <div class="ph"><div class="pg" style="--r: 3deg"></div></div>
-                      <div class="ph more"><div class="pg" style="--r: -4deg"></div><div class="plus">+8</div></div>
+                      <div class="ph"><div class="pg" style="--r: -8deg"></div></div>
+                      <div class="ph v2"><div class="pg" style="--r: 4deg"></div></div>
+                      <div class="ph v3"><div class="pg" style="--r: 2.5deg"></div></div>
+                      <div class="ph v4 more"><div class="pg" style="--r: -5deg"></div><div class="plus">+8</div></div>
                     </div>
                     <div class="cap"><span class="tx">Solved PYQs 2019-24</span><span class="tm">11:52 PM</span></div>
                   </div>
@@ -260,6 +280,7 @@
               <div id="sweep" data-layout-allow-overflow></div>
             </div>
             <div id="ring"></div>
+          </div>
           </div>
         </div>
       </div>
@@ -297,7 +318,7 @@
         };
 
         /* ---------------- card geometry ---------------- */
-        var CX = 64, CY = 376;            // top-left of the card (layout); the tilt keeps its right edge clear of his face
+        var CX = 64, CY = 334;            // top-left of the card (layout); the tilt keeps its right edge clear of his face
         var RY = 15, RX = 3.2, PERSP = 1500;
         var HDR = 70, INP = 60;
         var AREA0 = 46;                    // empty chat: the date chip
@@ -313,6 +334,7 @@
         var GAP_RUN = 5, AREA_PAD = 10;
 
         var card = document.getElementById("card");
+        var flight = document.getElementById("flight");
         var area = document.getElementById("area");
         var inp = document.getElementById("inp");
         Object.keys(M).forEach(function (k) { M[k].node = document.getElementById(M[k].el); });
@@ -335,29 +357,29 @@
         function areaH(t) {
           var h = AREA0;
           for (var i = 0; i < GROW.length; i++) {
-            if (t < GROW[i][0]) break;
+            if (t < GROW[i][0] - 0.026) break;
             var target = GROW[i][1];
-            var u = EO(prog(t, GROW[i][0], 0.3));
+            var u = EO(prog(t, GROW[i][0] - 0.026, 0.2));
             h = lerp(h, target, u);
           }
           return h;
         }
 
         /* ---------------- fly-in + landing ---------------- */
-        var FROM = { x: -560, y: 1130, ry: 62, rz: -16, s: 0.84 };
+        var FROM = { x: -470, y: 700, ry: 64, rz: -14, s: 0.86 };
         function cardPose(t) {
           var P = { x: CX, y: CY, ry: RY, rx: RX, rz: 0, s: 1, blur: 0, a: 1 };
           if (t < T.land) {
-            var u = clamp(t / T.land, 0, 1), e = u * u * u;          // accelerates into the slam
-            var arc = Math.sin(Math.PI * e) * 120;                     // a slight upward arc
+            var u = clamp(t / T.land, 0, 1), e = u * u;              // accelerates into the slam
+            var arc = Math.sin(Math.PI * e) * 70;                      // a slight upward arc
             P.x = lerp(FROM.x, CX, e) + arc * 0.35;
             P.y = lerp(FROM.y, CY, e) - arc;
             P.ry = lerp(FROM.ry, RY, e);
             P.rz = lerp(FROM.rz, 0, e);
             P.s = lerp(FROM.s, 1, e);
-            var sp = 3 * u * u;                                        // d(e)/du: speed
-            P.blur = clamp(2 + sp * 7, 0, 18);
-            P.a = 0.42;                                                // ghosted in flight: only the landing frame counts as a new card
+            var sp = 2 * u;                                            // d(e)/du: speed
+            P.blur = clamp(3 + sp * 6, 0, 16);
+            P.a = 0.47;                                                // ghosted in flight (group alpha < .5): only the landing frame counts as a new card
             return P;
           }
           // landing: overshoot + settle (a damped bounce on the beat)
@@ -373,12 +395,13 @@
 
         /* ---------------- silhouettes from the problem section ---------------- */
         var SILS = [
-          { c: "#53bdeb", from: [-260, 520], via: [-40, 560], to: [130, 470], t0: 0.0, t1: F(11), o: false },
-          { c: "#f06292", from: [-240, 980], via: [40, 820], to: [210, 520], t0: 0.03, t1: F(11), o: false },
-          { c: "#fa6533", from: [120, 1620], via: [40, 1120], to: [160, 560], t0: 0.0, t1: F(12), o: false },
-          { c: "#ffb74d", from: [-200, 220], via: [60, 300], to: [250, 460], t0: 0.06, t1: F(12), o: false },
-          { c: "#25d366", from: [260, -120], via: [200, 220], to: [270, 500], t0: 0.08, t1: F(12), o: true },
-          { c: "#ce93d8", from: [-300, 1330], via: [-60, 1000], to: [110, 540], t0: 0.05, t1: F(11), o: false }
+          { c: "#53bdeb", from: [-240, 420], via: [20, 360], to: [150, 430], t0: 0.0, t1: F(10), o: false },
+          { c: "#f06292", from: [-260, 1160], via: [40, 1000], to: [200, 470], t0: 0.02, t1: F(11), o: false },
+          { c: "#fa6533", from: [-220, 860], via: [-10, 700], to: [120, 470], t0: 0.05, t1: F(11), o: false },
+          { c: "#ffb74d", from: [-230, 330], via: [80, 310], to: [250, 440], t0: 0.07, t1: F(12), o: false },
+          { c: "#25d366", from: [-250, 600], via: [60, 520], to: [270, 450], t0: 0.04, t1: F(12), o: true },
+          { c: "#ce93d8", from: [-250, 1250], via: [-20, 1120], to: [160, 500], t0: 0.0, t1: F(12), o: false },
+          { c: "#a5d6a7", from: [-240, 980], via: [30, 760], to: [230, 480], t0: 0.08, t1: F(12), o: false }
         ];
         var silLayer = document.getElementById("sils");
         SILS.forEach(function (s, i) {
@@ -400,10 +423,10 @@
             var ang = Math.atan2(dy, dx) * 180 / Math.PI;
             var sp = Math.hypot(dx, dy);
             var absorb = prog(t, s.t1, 0.07);                          // docks: shrinks into the chat
-            var sc = (1 - absorb) * 0.9;
+            var sc = (1 - absorb) * 1.05;
             s.el.style.visibility = sc > 0.02 ? "visible" : "hidden";
             s.el.style.transform = "translate(" + (x - 48).toFixed(1) + "px," + (y - 16).toFixed(1) + "px) rotate(" + ang.toFixed(1) + "deg) scale(" + (sc * (1 + clamp(sp / 60, 0, 1.6))).toFixed(3) + "," + sc.toFixed(3) + ")";
-            s.el.style.opacity = (0.4 * (1 - absorb)).toFixed(3);
+            s.el.style.opacity = (0.9 * (1 - absorb)).toFixed(3);
             s.el.style.filter = "blur(" + clamp(1.5 + sp / 9, 0, 9).toFixed(2) + "px)";
           });
         }
@@ -438,7 +461,7 @@
           area.style.height = ah.toFixed(2) + "px";
           inp.style.top = (HDR + ah).toFixed(2) + "px";
           card.style.transform = "translate(" + P.x.toFixed(2) + "px," + P.y.toFixed(2) + "px) perspective(" + PERSP + "px) rotateY(" + P.ry.toFixed(2) + "deg) rotateX(" + P.rx.toFixed(2) + "deg) rotateZ(" + P.rz.toFixed(2) + "deg) scale(" + P.s.toFixed(4) + ")";
-          card.style.opacity = P.a.toFixed(3);
+          flight.style.opacity = P.a.toFixed(3);
           card.style.filter = P.blur > 0.2 ? "blur(" + P.blur.toFixed(2) + "px)" : "none";
 
           // messages
@@ -476,8 +499,9 @@
           var g = sstep(T.place - 0.02, T.place + 0.22, t);
           var flash = t >= T.place ? Math.exp(-(t - T.place) / 0.16) : 0;
           halo.style.opacity = (1 + 0.55 * g).toFixed(3);
-          halo.style.boxShadow = "0 0 " + (38 + 18 * g).toFixed(1) + "px " + (4 + 4 * g).toFixed(1) + "px rgba(79,157,255," + (0.34 + 0.1 * g + 0.04 * flash).toFixed(3) + "), 0 0 " + (90 + 40 * g).toFixed(1) + "px " + (10 + 8 * g).toFixed(1) + "px rgba(79,157,255," + (0.12 + 0.1 * g).toFixed(3) + ")";
-          ring.style.opacity = (0.35 * g + 0.6 * flash).toFixed(3);
+          halo.style.boxShadow = "0 0 " + (34 + 14 * g).toFixed(1) + "px " + (3 + 3 * g).toFixed(1) + "px rgba(79,157,255," + (0.34 + 0.1 * g + 0.04 * flash).toFixed(3) + "), 0 0 " + (60 + 16 * g).toFixed(1) + "px " + (6 + 4 * g).toFixed(1) + "px rgba(79,157,255," + (0.1 + 0.08 * g).toFixed(3) + ")";
+          var landFlash = t >= T.land ? Math.exp(-(t - T.land) / 0.12) : 0;
+          ring.style.opacity = Math.min(1, 0.35 * g + 0.6 * flash + 0.7 * landFlash).toFixed(3);
           var su = prog(t, T.place, 0.5);
           sweep.style.opacity = su > 0 && su < 1 ? "1" : "0";
           sweep.style.transform = "translate(" + lerp(-220, 520, P2IO(su)).toFixed(1) + "px,0) rotate(18deg)";

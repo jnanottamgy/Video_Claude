@@ -164,15 +164,15 @@
   WA.CHATS = {
     unofficial: { name: "Unofficial Group", av: grad("#7d7bff", "#4f4dd8"), glyph: "group", group: true },
     official: { name: "Official Class Group", av: grad("#3fa0ff", "#0a6fe0"), glyph: "cap", group: true },
-    boys: { name: "Boys Group", av: grad("#ffb340", "#f08a00"), ini: "BG", group: true },
-    ishaan: { name: "Ishaan", av: grad("#c77dff", "#7b3fe4"), ini: "I" },
-    cse: { name: "CSE 2nd Year", av: grad("#4cc9e0", "#1f97b0"), ini: "CSE", group: true },
+    boys: { name: "Boys Group", av: grad("#e87400", "#c75a00"), ini: "BG", group: true },
+    ishaan: { name: "Ishaan", av: grad("#a35cf0", "#6a2fd6"), ini: "I" },
+    cse: { name: "CSE 2nd Year", av: grad("#1f9fbd", "#137a94"), ini: "CSE", group: true },
     lab: { name: "Lab Batch B", av: grad("#52d97a", "#25a84d"), glyph: "flask", group: true },
     hostel: { name: "Hostel Wing C", av: grad("#c2a27a", "#94744f"), glyph: "building", group: true },
     project: { name: "Project Team", av: grad("#ff6b8a", "#e0365a"), glyph: "folder", group: true },
     reps: { name: "Class Reps", av: grad("#3ad6cc", "#12a49b"), glyph: "megaphone", group: true },
-    zaid: { name: "Zaid", av: grad("#ff9a76", "#e2553a"), ini: "Z" },
-    mom: { name: "Mom", av: grad("#ff8cc0", "#d94d8a"), ini: "M" },
+    zaid: { name: "Zaid", av: grad("#e8603f", "#c2412a"), ini: "Z" },
+    mom: { name: "Mom", av: grad("#d94d8a", "#b0336c"), ini: "M" },
     wa: { name: "WhatsApp", app: true },
   };
 
@@ -198,7 +198,7 @@
     var w = o.w || 940;
     var h = o.h || (o.two ? 196 : 156);
 
-    var el = div("wa-card");
+    var el = div("wa-card" + (o.tight ? " tight" : ""));
     if (o.id) el.id = o.id;
     el.setAttribute("data-layout-allow-overflow", "");
     // storm banners are deliberate, overlapping set dressing: skip the text-layout audit

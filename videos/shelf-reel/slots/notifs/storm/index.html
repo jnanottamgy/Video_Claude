@@ -7,27 +7,31 @@
     <script src="./vendor/gsap.min.js"></script>
     <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
-    <!-- shared notification card + storm engine (master: slots/notifs/_shared) -->
-    <link rel="stylesheet" href="./lib/notif-kit.css" />
-    <script src="./lib/notif-kit.js"></script>
-    <script src="./lib/notif-storm.js"></script>
+    <!-- v2 WhatsApp kit + storm engine (master: slots/notifs/_shared, run _shared/sync.sh after edits) -->
+    <link rel="stylesheet" href="./lib/wa-kit.css" />
+    <script src="./lib/wa-kit.js"></script>
+    <script src="./lib/wa-storm.js"></script>
     <style>
       #stage { position: relative; width: 100%; height: 100%; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
-      #world { position: absolute; inset: 0; transform-origin: 540px 760px; }
+      #world { position: absolute; inset: 0; }
     </style>
   </head>
   <body>
     <!--
-      notifs/storm — output window 44.600 -> 51.833 s (7.2333 s = 217 frames), layer FRONT.
-      "What the f*ck — why are my notes scattered in so many groups?" then head in hand.
-        44.65 What: burst of 7 from the centre · 45.20 f*ck · 45.58 why are my notes
-        46.36 scattered: everything flung to the corners (rot -14..14, scale 0.55-1.0)
-        47.20 many groups?: fast pileup of small cards
-        48.03-51.40 head in hand: arrivals ACCELERATE (to 2 per frame), badges count up,
-                    whole storm drifts/rotates (vertigo), density peaks ~51.3
-        51.45-51.80 everything spirals into the centre and vanishes. Empty after 51.80.
-      The cold open (notifs/storm_hook) is this same storm's first beats, shifted +0.2 s.
+      notifs/storm v2 — output window 44.600 -> 51.833 s (7.2333 s = 217 frames), layer FRONT.
+      "What the f*ck, why are my notes scattered in so many groups?" then head in hand — on the song:
+        44.667       "What": 7 WhatsApp banners burst out of the centre (staggered over 3 frames)
+        44.9 45.1 45.3*                    8ths (a big one on the downbeat after "f*ck")
+        45.5 45.7 45.9 46.133s             "why are my notes" (the notes file on the snare)
+        46.333       "scattered": the whole pile is flung to every corner (rot +-5..14, scale .55-1)
+        46.533 46.733 46.933*  47.133 "many groups?" wave from both sides, 47.333 47.533 47.767s
+        47.967 48.167 48.367               8ths (cut to head in hand at 48.033)
+        48.567 -> 51.333  the bass drops out: one banner per 16th (0.102 s), accelerating; doubles
+                          from 50.2; summary banners on 49.385 / 50.609 / 51.221; slow vertigo
+        50.600 51.233    808 pickups: 3-frame scale punch 1.05 + white edge glow on every banner
+        51.433 -> 51.767 everything is sucked into the centre and gone. Frames from 51.800 are empty.
+      Keep-clear: his face (x 665-990, y 765-1150) until the 48.033 cut; after it the storm may engulf him.
     -->
     <div id="stage" data-composition-id="main" data-start="0" data-duration="7.233333" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="7.233333" data-track-index="0">
@@ -38,18 +42,157 @@
       (function () {
         "use strict";
         var D = 7.233333;
-        var tl = gsap.timeline({ paused: true });
-        var storm = NK.buildStorm(tl, document.getElementById("world"), { off: 0, full: true, seed: 4465 });
+        var T0 = 44.6;
+        function L(t) {
+          return t - T0; // output seconds -> local
+        }
+        var CTR = [500, 760];
+        var S = new WA.Storm(document.getElementById("world"), {
+          seed: 4466,
+          W: 780,
+          cx: 540,
+          cy: 780,
+          peak: { s: 1.06, r: 3.6, dx: -8, dy: 0 }, // vertigo + the breath before the collapse
+        });
+        S.zones.push({ x0: 665, y0: 765, x1: 990, y1: 1150, t0: -1, t1: L(48.033) }); // his face, laptop shot
 
-        // badge counts are text: one state function driven by the timeline clock
+        function pile(t, key, s, type, r, extra) {
+          key = key || S.next();
+          var tp = typeof type === "string" ? type : type.type;
+          var o = { s: s, r: r || [2, 13], h: S.hOf(key), k: 3, es: WA.ENTRY_SCALE[tp] || 1 };
+          if (extra) for (var f in extra) o[f] = extra[f];
+          var p = S.pick(L(t), o);
+          if (!p) return null;
+          return S.add(key, L(t), p, typeof type === "string" ? { type: type } : type);
+        }
+
+        /* ---------- 44.653 "What": burst from the centre ---------- */
+        var T_WHAT = L(44.653);
+        var seeds = [CTR];
+        ["u_47", "o_syl", "b_pyq", "i_bro", "c_exam", "l_rec", "z_pls"].forEach(function (key, i) {
+          var p = S.pick(T_WHAT, {
+            s: i < 3 ? [0.8, 0.9] : [0.62, 0.76],
+            r: [2, 9],
+            h: S.hOf(key),
+            far: seeds,
+            k: 2,
+            bias: function (x, y) {
+              var d = Math.hypot(x - CTR[0], y - CTR[1]);
+              return d > 160 && d < 440 ? 1 : 0.35;
+            },
+          });
+          if (!p) return;
+          seeds.push([p.x, p.y]);
+          S.add(key, T_WHAT + Math.floor(i / 3) / 30, p, { type: "burst", from: CTR, dur: 0.6 });
+        });
+
+        /* ---------- 8ths ---------- */
+        pile(44.895, "b_u3", [0.62, 0.74], "slam");
+        pile(45.099, "h_chg", [0.6, 0.72], "pop");
+        pile(45.303, "o_128", [0.92, 1.0], "slam"); // the downbeat after "f*ck": a big one
+        pile(45.507, "i_mic", [0.6, 0.72], "pop");
+        pile(45.711, "m_eat", [0.58, 0.68], "pop");
+        pile(45.915, "r_13", [0.62, 0.74], "slam");
+        pile(46.119, "u_pdf", [0.84, 0.9], "slam"); // "notes", on the snare
+
+        /* ---------- 46.324 "scattered": flung to every corner ---------- */
+        var T_SC = WA.hit(L(46.324));
+        var sc = [[540, 760]];
+        S.items
+          .map(function (it) { return { it: it, s2: S.R(0.55, 1.0), cur: it.a.pose(T_SC) }; })
+          .sort(function (a, b) { return b.s2 - a.s2; })
+          .forEach(function (o) {
+            var p = S.pick(T_SC, {
+              s: [o.s2, o.s2],
+              r: [5, 14],
+              h: o.it.h,
+              far: sc,
+              k: 2,
+              until: L(48.033),
+              bias: function (x, y) {
+                var out = (x - o.cur.x) * (o.cur.x - 540) + (y - o.cur.y) * (o.cur.y - 760);
+                return out >= 0 ? 1.12 : 0.88;
+              },
+            });
+            if (!p) return;
+            sc.push([p.x, p.y]);
+            S.moveTo(o.it, T_SC, p, 0.6, "expo.out");
+          });
+        ["b_blur", "c_del", "p_fwd"].forEach(function (key) {
+          var p = S.pick(L(46.324), { s: [0.58, 0.72], r: [5, 14], h: S.hOf(key), far: sc, k: 2 });
+          if (!p) return;
+          sc.push([p.x, p.y]);
+          S.add(key, L(46.324), p, { type: "burst", from: [540, 760], dur: 0.55 });
+        });
+
+        pile(46.528, null, [0.58, 0.7], "pop");
+        pile(46.732, null, [0.58, 0.7], "pop");
+        pile(46.936, null, [0.8, 0.9], "slam"); // downbeat
+
+        /* ---------- 47.140 "many groups?": a wave from both sides ---------- */
+        ["c_exam", "l_rec", "h_chg", "r_13"].forEach(function (key, i) {
+          var side = i % 2 === 0 ? -1 : 1;
+          pile(47.14, key, [0.6, 0.74], { type: "fly", side: side, dist: 860 }, [3, 14], {
+            bias: function (x) {
+              return side < 0 ? (x < 540 ? 1.3 : 0.7) : x > 540 ? 1.3 : 0.7;
+            },
+          });
+        });
+        pile(47.344, "b_u3", [0.6, 0.72], "pop");
+        pile(47.548, "o_128", [0.6, 0.72], "pop");
+        pile(47.752, null, [0.66, 0.78], "slam"); // snare
+        pile(47.956, null, [0.6, 0.72], "pop");
+        pile(48.16, null, [0.62, 0.74], "drop"); // head in hand
+        pile(48.364, null, [0.62, 0.76], "pop");
+
+        /* ---------- 48.568 -> 51.323: the bass drops out, one banner per 16th ---------- */
+        var E8 = [48.568, 48.772, 48.976, 49.181, 49.385, 49.589, 49.793, 49.997, 50.201, 50.405, 50.609, 50.813, 51.017, 51.221, 51.425];
+        var SIX = [];
+        for (var i = 0; i < E8.length - 1; i++) SIX.push(E8[i], (E8[i] + E8[i + 1]) / 2);
+        var SUMMARY = { 49.385: "s_9", 50.609: "s_14", 51.221: "s_999" };
+        var KINDS = ["pop", "slam", "pop", "drop", "pop", "slam", "fly"];
+        SIX.forEach(function (t, n) {
+          var u = n / (SIX.length - 1); // 0 -> 1: bigger, denser, harder
+          var sum = SUMMARY[t.toFixed(3)];
+          if (sum) {
+            pile(t, sum, [0.94, 1.0], "slam", [1, 5], {
+              k: 2,
+              region: { x0: 300, y0: 520, x1: 780, y1: 1000 },
+            });
+          } else {
+            var kind = KINDS[n % KINDS.length];
+            var type = kind === "fly" ? { type: "fly", side: n % 2 ? 1 : -1, dist: 820 } : { type: kind };
+            pile(t, null, [0.58 + 0.16 * u, 0.76 + 0.2 * u], type);
+          }
+          if (t >= 50.2) pile(t, null, [0.5, 0.62], "pop"); // densify: doubles in the last bar
+        });
+
+        /* ---------- vertigo, 808 jolts, collapse ---------- */
+        var T_BASS = L(48.568);
+        var T_SUCK = WA.hit(L(51.425));
+        S.wt.r.add(T_BASS, T_SUCK - T_BASS, 3, "sine.in");
+        S.wt.s.add(T_BASS, T_SUCK - T_BASS, 1.04, "sine.in");
+        S.wt.x.add(T_BASS, T_SUCK - T_BASS, -8, "sine.in");
+        [50.609, 51.221].forEach(function (t) {
+          S.jolt(L(t), 1.05, 3);
+          S.flash(L(t));
+        });
+        // a breath out, then everything spirals into the centre and is gone before 51.80
+        S.wt.s.add(T_SUCK, 0.07, 1.06, "power2.out");
+        S.wt.s.add(T_SUCK + 0.07, 0.29, 0.82, "power3.in");
+        S.wt.r.add(T_SUCK, 0.36, 11, "power3.in");
+        S.collapse(T_SUCK + 0.03, L(51.79), 540, 780);
+
+        // pills race once the bass drops out
+        S.countUp = function (t, it) {
+          var d = t - T_BASS;
+          return d > 0 ? Math.floor(it.rate * 6 * d * d) : 0;
+        };
+
+        var tl = gsap.timeline({ paused: true });
         var clock = { t: 0 };
-        tl.fromTo(
-          clock,
-          { t: 0 },
-          { t: D, duration: D, ease: "none", onUpdate: function () { storm.applyState(clock.t); } },
-          0
-        );
-        storm.applyState(0);
+        tl.fromTo(clock, { t: 0 }, { t: D, duration: D, ease: "none", onUpdate: function () { S.apply(clock.t); } }, 0);
+        S.apply(0);
 
         window.__timelines["main"] = tl;
         tl.seek(0);
