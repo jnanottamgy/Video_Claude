@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  @font-face { font-family: "Sora"; src: url("../../design/fonts/sora-latin-800-normal.woff2") format("woff2"); font-weight: 800; }
+  @font-face { font-family: "Inter"; src: url("../../design/fonts/inter-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+  .bg { position: absolute; inset: 0; background: url("../../renders/deliver_v2/SHELF_cover_base.jpg") center / cover no-repeat; }
+  /* calm the lower third so the brand sits on quiet ground */
+  .fade { position: absolute; left: 0; right: 0; top: 1230px; height: 690px;
+          background: linear-gradient(to bottom, rgba(5, 9, 18, 0) 0%, rgba(5, 9, 18, 0.55) 42%, rgba(5, 9, 18, 0.82) 100%); }
+  .lock { position: absolute; left: 50%; top: 1392px; transform: translateX(-50%);
+          display: flex; align-items: center; gap: 30px; padding: 26px 46px 26px 34px; white-space: nowrap;
+          background: linear-gradient(160deg, rgba(22, 36, 66, 0.9), rgba(10, 18, 36, 0.9));
+          border: 1.5px solid rgba(150, 195, 255, 0.42); border-radius: 42px;
+          box-shadow: 0 26px 64px rgba(0, 0, 0, 0.55), 0 0 70px rgba(79, 157, 255, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+  .lock img { height: 156px; filter: drop-shadow(0 0 24px rgba(90, 160, 255, 0.6)); }
+  .name { font: 800 106px/1 "Sora"; letter-spacing: 0.02em;
+          background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 55%, #a9b8cd 100%);
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+          filter: drop-shadow(0 0 18px rgba(90, 160, 255, 0.6)); }
+  .tag { font: 700 33px/1.2 "Inter"; color: #e3eaf4; margin-top: 14px; letter-spacing: 0.01em; }
+  .tag b { color: #25d366; font-weight: 700; }
+</style></head>
+<body>
+  <div class="bg"></div>
+  <div class="fade"></div>
+  <div class="lock">
+    <img src="../../design/shelf-mark.png" alt="">
+    <div><div class="name">S.H.E.L.F</div><div class="tag">launching soon on <b>WhatsApp</b></div></div>
+  </div>
+</body></html>

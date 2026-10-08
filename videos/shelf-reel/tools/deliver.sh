@@ -21,9 +21,10 @@ enc() {  # in out
 enc renders/SHELF_reel_v2_short.mp4 "$D/SHELF_reel_v2_main.mp4"
 enc renders/SHELF_reel_v2_short_nomusic.mp4 "$D/SHELF_reel_v2_main_nomusic.mp4"
 enc renders/SHELF_reel_v2_full.mp4 "$D/SHELF_reel_v2_full.mp4"
-# the cover: the hook frame after the drop, title punched in, storm exploding (inside the 3:4 grid crop),
-# rendered without the caption layer so it reads as a designed thumbnail, not a paused video
-python3 - "$D/SHELF_cover.jpg" <<'PY'
+# the cover: the hook frame after the drop, title punched in, storm exploding, rendered without the caption
+# layer (a designed thumbnail, not a paused video), then the S.H.E.L.F lockup; title and lockup sit inside the
+# 3:4 crop the profile grid shows
+python3 - "$D/SHELF_cover_base.jpg" <<'PY'
 import sys; sys.path.insert(0, "tools")
 import cv2, numpy as np
 import composite as C
@@ -31,6 +32,9 @@ c = C.Comp(); c.captions = []
 im = c.frame(39)
 cv2.imwrite(sys.argv[1], cv2.cvtColor((im * 255).clip(0, 255).astype(np.uint8), cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 93])
 PY
+node tools/cover/render.js "$D/SHELF_cover.png"                  # + the S.H.E.L.F lockup (tools/cover/cover.html)
+ffmpeg -y -v error -i "$D/SHELF_cover.png" -q:v 2 "$D/SHELF_cover.jpg" && rm "$D/SHELF_cover.png"
+ffmpeg -y -v error -i "$D/SHELF_cover.jpg" -vf "crop=1080:1440:0:240" -q:v 2 "$D/SHELF_cover_grid_preview.jpg"
 if [ $# -ge 1 ]; then
   ffmpeg -y -v error -ss 1.30 -i renders/SHELF_reel_v2_video.mp4 -frames:v 1 -vf scale=540:-2 -q:v 4 "$1/poster_short.jpg"
   ffmpeg -y -v error -ss 91.90 -i renders/SHELF_reel_v2_video.mp4 -frames:v 1 -vf scale=540:-2 -q:v 4 "$1/poster_full.jpg"
