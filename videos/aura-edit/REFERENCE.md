@@ -19,7 +19,7 @@ python3 tools/board.py renders/ref/reference.mp4 renders/analysis/effects_board.
 | --- | --- |
 | Frame | 720×1280 (IG download), 24 fps, 608 frames |
 | Picture | 16:9 (720×406) **letterboxed** in the 9:16 frame: 437 px black top and bottom, every frame |
-| Grade | warm golden-hour mids and highs (Lab b +10…+18) and teal-green landscapes (a −8…−12). Blacks are lifted (p1 ≈ 12–25), highlights roll off (p99 ≈ 210–230) and saturation is moderate. There is no grain overlay and no vignette. One B&W insert. |
+| Grade | warm golden-hour mids and highs (Lab b +10…+18) and teal-green landscapes (a −8…−12). Blacks are lifted (p1 ≈ 12–25), highlights roll off (p99 ≈ 210–230) and saturation is moderate. There is no grain overlay (still frames don't change at all) and no global vignette (the white double-exposure corners stay at 253). One B&W insert. |
 | Footage | about half the shots are **stills** or locked-off tripod frames (zero motion). Energy comes from cuts and flashes, not from camera moves. |
 
 ## The music and the sync system
@@ -47,7 +47,7 @@ python3 tools/board.py renders/ref/reference.mp4 renders/analysis/effects_board.
   - The whole double exposure bar (7.6–10.1) is **low-passed**: nothing above ~2 kHz, against ~16 kHz elsewhere.
   - The filter sweeps open over the last ~0.5 s, and the drop at 10.15 lands on the cut to the boardwalk.
   - Whether the song does this or the editor automated it, we reproduce it on the music track.
-- **Cut placement:** cuts sit 0–2 frames *before* the hit they belong to. The first full shot appears at 0.458, ahead of the 0.509 hit.
+- **Cut placement:** every cut sits within ±2 frames of its hit, and most within 1. The first full shot appears at 0.458, a frame ahead of the 0.509 hit.
 - **Ending:** the logo arrives on beat 2 of bar 9 (21.0). Picture and music then fade to black together over 24.2–25.2.
 
 ## Sound effects
@@ -74,7 +74,7 @@ Everything else (claps, hats, slides) is the song, and the visuals are cut to it
 | 10.17 | 244 | **The drop:** cut to the boardwalk walk-away shot | |
 | 10.83, 11.13, 11.46 | 260, 267, 275 | **Squad assembles 1:** a pose shot where the 2nd and 3rd friend appear (jump cuts on 8ths) | stills/locked shot |
 | 12.71 | 305 | Cut to a wide valley with a fence (still) | |
-| 13.25–13.71 | 318–329 | **"CRAZY"** in orange (#FFA500-ish) high-contrast serif caps (Times/Baskerville-bold style), centred. Hard pop in and out, 12 frames, on a vocal hit. | text layer |
+| 13.25–13.71 | 318–329 | **"CRAZY"** in orange (#FFA500-ish) high-contrast serif caps (Times/Baskerville-bold style), centred. Hard pop in and out, 12 frames, on the hit at 13.3 (probably the lyric). | text layer |
 | 13.92, 14.25, 14.50, 15.0 | 334, 342, 348, 360 | **Squad assembles 2:** tripod stop-motion, friends appear one by one on the fence | locked-off stills |
 | 15.21 | 365 | Cut to a waterfall (still) | |
 | 15.63, 15.79 | 375, 379 | **White mask flashes:** the background region, then the falls, flash pure white for 1 frame each, with shutter-click SFX | region masks |
