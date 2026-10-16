@@ -51,7 +51,7 @@ def main():
             need.discard(i)
         i += 1
     tw = a.w
-    th = int(round((y1 - y0) * tw / 720))
+    th = int(round((y1 - y0) * tw / cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
     rows = (len(want) + a.cols - 1) // a.cols
     sheet = np.full((rows * (th + 22) + 4, a.cols * (tw + 4) + 4, 3), 24, np.uint8)
     for k, f in enumerate(want):
