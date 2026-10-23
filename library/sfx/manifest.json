@@ -1,0 +1,568 @@
+{
+ "description": "Sound-effect library for edits. 'nikovax' = 28 effects cut from the NIKOVAX showcase video the user sent (2026-10-23). Audio is gitignored (third-party pack, public repo); restore it from the private artifact named in README.md or re-run library/tools/extract_nikovax.py on the showcase video.",
+ "sample_rate": 48000,
+ "format": "wav pcm_s24le stereo, peak-normalised to -1 dBFS",
+ "usage": "Place an effect so its hit_s lands on the event: start = event_time - hit_s. align=start (attack on the event), peak (loudest point on the event), end (the swell ends on the event), transient (the sharpest onset, the heard hit, on the event).",
+ "sfx": [
+  {
+   "id": "build-up-1",
+   "file": "nikovax/build-up-1.wav",
+   "name": "#1 build up",
+   "category": "riser",
+   "align": "end",
+   "hit_s": 2.991,
+   "description": "Short tension build that swells into a cut.",
+   "source_window_s": [
+    0.732,
+    3.723
+   ],
+   "original_peak_dbfs": -16.1,
+   "duration": 2.991,
+   "attack_s": 0.175,
+   "peak_s": 1.666,
+   "transient_s": 0.775,
+   "centroid_hz": 4243,
+   "low_energy": 0.258
+  },
+  {
+   "id": "radio-beep",
+   "file": "nikovax/radio-beep.wav",
+   "name": "#2 radio beep",
+   "category": "ui",
+   "align": "start",
+   "hit_s": 0.02,
+   "description": "Radio / walkie-talkie beep: an on-air cue, a message in, a cut to a new scene.",
+   "source_window_s": [
+    4.195,
+    6.2
+   ],
+   "original_peak_dbfs": -2.8,
+   "duration": 2.005,
+   "attack_s": 0.02,
+   "peak_s": 0.051,
+   "transient_s": 0.01,
+   "centroid_hz": 1784,
+   "low_energy": 0.0
+  },
+  {
+   "id": "build-up-2",
+   "file": "nikovax/build-up-2.wav",
+   "name": "#3 build up (2)",
+   "category": "riser",
+   "align": "end",
+   "hit_s": 4.465,
+   "description": "Longer build-up swelling into a drop.",
+   "source_window_s": [
+    6.2,
+    10.665
+   ],
+   "original_peak_dbfs": -17.8,
+   "duration": 4.465,
+   "attack_s": 0.362,
+   "peak_s": 2.598,
+   "transient_s": 2.895,
+   "centroid_hz": 2383,
+   "low_energy": 0.0
+  },
+  {
+   "id": "radio-switch",
+   "file": "nikovax/radio-switch.wav",
+   "name": "#4 radio switch",
+   "category": "ui",
+   "align": "start",
+   "hit_s": 0.113,
+   "description": "Radio switch-over click and static: hard cut, channel change, POV change.",
+   "source_window_s": [
+    11.285,
+    12.219
+   ],
+   "original_peak_dbfs": -0.2,
+   "duration": 0.935,
+   "attack_s": 0.113,
+   "peak_s": 0.392,
+   "transient_s": 0.115,
+   "centroid_hz": 1583,
+   "low_energy": 0.349
+  },
+  {
+   "id": "build-up-3",
+   "file": "nikovax/build-up-3.wav",
+   "name": "#5 build up (3)",
+   "category": "riser",
+   "align": "peak",
+   "hit_s": 4.628,
+   "description": "Long build (~4.6 s of pulses accelerating) that climaxes then drops away: put its peak on the drop.",
+   "source_window_s": [
+    12.759,
+    18.8
+   ],
+   "original_peak_dbfs": -4.3,
+   "duration": 6.041,
+   "attack_s": 0.233,
+   "peak_s": 4.628,
+   "transient_s": 4.125,
+   "centroid_hz": 3964,
+   "low_energy": 0.023
+  },
+  {
+   "id": "alien-digital-glitch",
+   "file": "nikovax/alien-digital-glitch.wav",
+   "name": "#6 alien digital glitch",
+   "category": "glitch",
+   "align": "start",
+   "hit_s": 0.221,
+   "description": "Warbling alien/digital glitch texture: strobes, cut-outs, glitch frames.",
+   "source_window_s": [
+    18.8,
+    22.3
+   ],
+   "original_peak_dbfs": -18.8,
+   "duration": 3.5,
+   "attack_s": 0.221,
+   "peak_s": 1.314,
+   "transient_s": 2.7,
+   "centroid_hz": 668,
+   "low_energy": 0.001
+  },
+  {
+   "id": "beat-slowing",
+   "file": "nikovax/beat-slowing.wav",
+   "name": "#7 beat slowing",
+   "category": "transition",
+   "align": "start",
+   "hit_s": 0.412,
+   "description": "Tape-stop / beat slowing down: freezes, speed ramps into slow-mo, the music stopping.",
+   "source_window_s": [
+    22.3,
+    26.1
+   ],
+   "original_peak_dbfs": -2.7,
+   "duration": 3.8,
+   "attack_s": 0.412,
+   "peak_s": 0.422,
+   "transient_s": 0.415,
+   "centroid_hz": 375,
+   "low_energy": 0.392
+  },
+  {
+   "id": "slow-motion",
+   "file": "nikovax/slow-motion.wav",
+   "name": "#8 slow motion",
+   "category": "transition",
+   "align": "start",
+   "hit_s": 0.3,
+   "description": "Slow-motion swell: the moment time slows (speed ramp down), aura moments.",
+   "source_window_s": [
+    26.1,
+    28.86
+   ],
+   "original_peak_dbfs": -14.0,
+   "duration": 2.76,
+   "attack_s": 0.3,
+   "peak_s": 1.258,
+   "transient_s": 0.3,
+   "centroid_hz": 68,
+   "low_energy": 0.988
+  },
+  {
+   "id": "gun-reload",
+   "file": "nikovax/gun-reload.wav",
+   "name": "#9 gun reload",
+   "category": "foley",
+   "align": "start",
+   "hit_s": 0.016,
+   "description": "Gun reload / cocking: a 'loading up' beat before an action or reveal.",
+   "source_window_s": [
+    29.32,
+    31.3
+   ],
+   "original_peak_dbfs": -8.4,
+   "duration": 1.98,
+   "attack_s": 0.016,
+   "peak_s": 0.483,
+   "transient_s": 0.015,
+   "centroid_hz": 3923,
+   "low_energy": 0.001
+  },
+  {
+   "id": "woosh-1",
+   "file": "nikovax/woosh-1.wav",
+   "name": "#10 woosh (1)",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 1.068,
+   "description": "Big airy whoosh with a long tail: big transitions, camera moves.",
+   "source_window_s": [
+    31.3,
+    36.2
+   ],
+   "original_peak_dbfs": -0.3,
+   "duration": 4.9,
+   "attack_s": 0.47,
+   "peak_s": 1.068,
+   "transient_s": 0.965,
+   "centroid_hz": 136,
+   "low_energy": 0.792
+  },
+  {
+   "id": "woosh-2",
+   "file": "nikovax/woosh-2.wav",
+   "name": "#11 WOOSH (2)",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 0.48,
+   "description": "Heavy punchy whoosh: hard transitions and whip pans.",
+   "source_window_s": [
+    36.2,
+    39.296
+   ],
+   "original_peak_dbfs": -0.3,
+   "duration": 3.096,
+   "attack_s": 0.367,
+   "peak_s": 0.48,
+   "transient_s": 0.405,
+   "centroid_hz": 216,
+   "low_energy": 0.801
+  },
+  {
+   "id": "woosh-3",
+   "file": "nikovax/woosh-3.wav",
+   "name": "#12 woosh (3)",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 0.468,
+   "description": "Quick whoosh: whips, text flying in.",
+   "source_window_s": [
+    39.655,
+    41.48
+   ],
+   "original_peak_dbfs": -0.2,
+   "duration": 1.825,
+   "attack_s": 0.026,
+   "peak_s": 0.468,
+   "transient_s": 0.015,
+   "centroid_hz": 77,
+   "low_energy": 0.991
+  },
+  {
+   "id": "woosh-4",
+   "file": "nikovax/woosh-4.wav",
+   "name": "#13 woosh (4)",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 0.692,
+   "description": "Medium whoosh: zoom transitions.",
+   "source_window_s": [
+    41.83,
+    44.232
+   ],
+   "original_peak_dbfs": -0.4,
+   "duration": 2.403,
+   "attack_s": 0.37,
+   "peak_s": 0.692,
+   "transient_s": 0.1,
+   "centroid_hz": 327,
+   "low_energy": 0.405
+  },
+  {
+   "id": "fast-swoosh",
+   "file": "nikovax/fast-swoosh.wav",
+   "name": "#14 fast swoosh",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 0.461,
+   "description": "Very fast swish (~0.9 s): quick cuts, fast element moves.",
+   "source_window_s": [
+    44.63,
+    45.52
+   ],
+   "original_peak_dbfs": -3.6,
+   "duration": 0.89,
+   "attack_s": 0.072,
+   "peak_s": 0.461,
+   "transient_s": 0.27,
+   "centroid_hz": 142,
+   "low_energy": 0.896
+  },
+  {
+   "id": "slow-woosh",
+   "file": "nikovax/slow-woosh.wav",
+   "name": "#15 slow wosh",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 1.055,
+   "description": "Slow swelling whoosh: slow-mo moves, floating transitions.",
+   "source_window_s": [
+    45.549,
+    47.994
+   ],
+   "original_peak_dbfs": 0.1,
+   "duration": 2.445,
+   "attack_s": 0.371,
+   "peak_s": 1.055,
+   "transient_s": 1.13,
+   "centroid_hz": 97,
+   "low_energy": 0.943
+  },
+  {
+   "id": "glitchy-woosh",
+   "file": "nikovax/glitchy-woosh.wav",
+   "name": "#16 glitchy woosh",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 0.472,
+   "description": "Whoosh with digital glitch grit: glitch transitions, RGB splits.",
+   "source_window_s": [
+    48.146,
+    50.241
+   ],
+   "original_peak_dbfs": -1.9,
+   "duration": 2.095,
+   "attack_s": 0.218,
+   "peak_s": 0.472,
+   "transient_s": 0.975,
+   "centroid_hz": 122,
+   "low_energy": 0.901
+  },
+  {
+   "id": "lowpass-woosh",
+   "file": "nikovax/lowpass-woosh.wav",
+   "name": "#17 lowpass woosh",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 1.458,
+   "description": "Muffled (low-passed) whoosh: underwater or dream moments, muffled sections.",
+   "source_window_s": [
+    50.754,
+    53.933
+   ],
+   "original_peak_dbfs": -0.4,
+   "duration": 3.179,
+   "attack_s": 0.533,
+   "peak_s": 1.458,
+   "transient_s": 1.25,
+   "centroid_hz": 69,
+   "low_energy": 0.933
+  },
+  {
+   "id": "bass-woosh-1",
+   "file": "nikovax/bass-woosh-1.wav",
+   "name": "#18 Bass woosh (1)",
+   "category": "whoosh",
+   "align": "transient",
+   "hit_s": 0.82,
+   "description": "Rising bass sweep into a burst, then a sub tail: big reveals, drops, title slams (very loud).",
+   "source_window_s": [
+    53.997,
+    56.377
+   ],
+   "original_peak_dbfs": 0.0,
+   "duration": 2.38,
+   "attack_s": 0.139,
+   "peak_s": 1.498,
+   "transient_s": 0.82,
+   "centroid_hz": 62,
+   "low_energy": 0.921
+  },
+  {
+   "id": "bass-woosh-2",
+   "file": "nikovax/bass-woosh-2.wav",
+   "name": "#19 Bass woosh (2)",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 0.872,
+   "description": "Rising bass sweep into a punchy hit: transition into a drop.",
+   "source_window_s": [
+    56.625,
+    58.761
+   ],
+   "original_peak_dbfs": -0.5,
+   "duration": 2.136,
+   "attack_s": 0.25,
+   "peak_s": 0.872,
+   "transient_s": 2.09,
+   "centroid_hz": 87,
+   "low_energy": 0.778
+  },
+  {
+   "id": "sword-impact",
+   "file": "nikovax/sword-impact.wav",
+   "name": "#20 sword impact",
+   "category": "impact",
+   "align": "transient",
+   "hit_s": 0.3,
+   "description": "Metallic sword clash with a ringing tail: hero hits, title slams, freeze frames.",
+   "source_window_s": [
+    58.822,
+    63.388
+   ],
+   "original_peak_dbfs": 0.1,
+   "duration": 4.566,
+   "attack_s": 0.164,
+   "peak_s": 0.306,
+   "transient_s": 0.3,
+   "centroid_hz": 62,
+   "low_energy": 0.991
+  },
+  {
+   "id": "sword-slash-1",
+   "file": "nikovax/sword-slash-1.wav",
+   "name": "#21 sword slash (1)",
+   "category": "slash",
+   "align": "peak",
+   "hit_s": 0.352,
+   "description": "Sword slash / swipe: fast cuts, wipes, text slicing in.",
+   "source_window_s": [
+    63.646,
+    64.784
+   ],
+   "original_peak_dbfs": -2.3,
+   "duration": 1.138,
+   "attack_s": 0.103,
+   "peak_s": 0.352,
+   "transient_s": 0.015,
+   "centroid_hz": 3411,
+   "low_energy": 0.0
+  },
+  {
+   "id": "sword-slash-2",
+   "file": "nikovax/sword-slash-2.wav",
+   "name": "#22 sword slash (2)",
+   "category": "slash",
+   "align": "start",
+   "hit_s": 0.029,
+   "description": "Sword slash flurry (four quick slashes): rapid cuts, a combo.",
+   "source_window_s": [
+    65.099,
+    66.124
+   ],
+   "original_peak_dbfs": -1.4,
+   "duration": 1.025,
+   "attack_s": 0.029,
+   "peak_s": 0.257,
+   "transient_s": 0.03,
+   "centroid_hz": 4800,
+   "low_energy": 0.002
+  },
+  {
+   "id": "sword-slash-3",
+   "file": "nikovax/sword-slash-3.wav",
+   "name": "#23 sword slash (3)",
+   "category": "slash",
+   "align": "transient",
+   "hit_s": 0.155,
+   "description": "Sword slash variant three.",
+   "source_window_s": [
+    66.659,
+    68.1
+   ],
+   "original_peak_dbfs": -1.3,
+   "duration": 1.441,
+   "attack_s": 0.14,
+   "peak_s": 0.246,
+   "transient_s": 0.155,
+   "centroid_hz": 3984,
+   "low_energy": 0.029
+  },
+  {
+   "id": "cinematic-electric-hit",
+   "file": "nikovax/cinematic-electric-hit.wav",
+   "name": "#24 cinematic electric hit",
+   "category": "impact",
+   "align": "transient",
+   "hit_s": 1.245,
+   "description": "Cinematic hit with electric crackle and a long tail: drops, big reveals, aura moments.",
+   "source_window_s": [
+    68.1,
+    74.324
+   ],
+   "original_peak_dbfs": -4.7,
+   "duration": 6.224,
+   "attack_s": 0.293,
+   "peak_s": 1.338,
+   "transient_s": 1.245,
+   "centroid_hz": 1671,
+   "low_energy": 0.495
+  },
+  {
+   "id": "wind-impact",
+   "file": "nikovax/wind-impact.wav",
+   "name": "#25 wind impact",
+   "category": "impact",
+   "align": "transient",
+   "hit_s": 3.625,
+   "description": "Wind gust into an impact: dramatic entrances, dust and smoke moments.",
+   "source_window_s": [
+    74.646,
+    80.2
+   ],
+   "original_peak_dbfs": -0.5,
+   "duration": 5.554,
+   "attack_s": 1.687,
+   "peak_s": 3.44,
+   "transient_s": 3.625,
+   "centroid_hz": 229,
+   "low_energy": 0.853
+  },
+  {
+   "id": "lightning-strike",
+   "file": "nikovax/lightning-strike.wav",
+   "name": "#26 lightning strike",
+   "category": "impact",
+   "align": "transient",
+   "hit_s": 1.085,
+   "description": "Thunder crack and rumble: white flashes, power moments.",
+   "source_window_s": [
+    80.2,
+    86.45
+   ],
+   "original_peak_dbfs": -2.2,
+   "duration": 6.25,
+   "attack_s": 1.085,
+   "peak_s": 1.219,
+   "transient_s": 1.085,
+   "centroid_hz": 666,
+   "low_energy": 0.152
+  },
+  {
+   "id": "fire",
+   "file": "nikovax/fire.wav",
+   "name": "#27 fire sfx",
+   "category": "ambience",
+   "align": "start",
+   "hit_s": 0.212,
+   "description": "Fire crackle bed (~13 s): flames, heat, slow-burn shots. Loopable bed.",
+   "source_window_s": [
+    88.369,
+    101.947
+   ],
+   "original_peak_dbfs": -15.3,
+   "duration": 13.578,
+   "attack_s": 0.212,
+   "peak_s": 8.217,
+   "transient_s": 7.655,
+   "centroid_hz": 445,
+   "low_energy": 0.629
+  },
+  {
+   "id": "rain",
+   "file": "nikovax/rain.wav",
+   "name": "#28 rain sfx",
+   "category": "ambience",
+   "align": "start",
+   "hit_s": 0.21,
+   "description": "Rain bed (~13 s): moody, sad or atmospheric shots. Loopable bed.",
+   "source_window_s": [
+    104.771,
+    118.983
+   ],
+   "original_peak_dbfs": -17.4,
+   "duration": 14.211,
+   "attack_s": 0.21,
+   "peak_s": 8.626,
+   "transient_s": 5.02,
+   "centroid_hz": 1090,
+   "low_energy": 0.447
+  }
+ ]
+}

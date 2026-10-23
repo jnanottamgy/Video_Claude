@@ -34,6 +34,15 @@ HyperFrames composition without reading it first.
   (`setup.sh` runs it). **Gitignored: upstream has no licence and this repo is public.**
   Never commit it, or a template copied from it; copies go to the gitignored `edit/nullmotion/`.
 
+## Sound effects: use the library, and use plenty
+
+The user found the media-use skill's minimal 19-file Pixabay set boring. For every edit, reach first for
+`library/sfx/`:
+- 28 effects with exact hit points (`library/README.md`): build-ups, bass whooshes, sword impacts and slashes, electric hits, lightning, glitches, tape-stop, slow-mo swell, radio and foley, fire and rain beds.
+- Place them with `library/tools/sfx.py`, which lines up each effect's hit point with the cut or beat.
+
+The audio is gitignored (third-party pack, public repo). After a fresh container, run `python3 library/tools/sfx.py check` and restore the files from the private backup artifact it names before mixing.
+
 ## Transcription: two backends, different costs
 
 - **ElevenLabs Scribe** (`ELEVENLABS_API_KEY`) — paid. Word-level timestamps,

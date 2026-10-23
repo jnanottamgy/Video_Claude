@@ -46,3 +46,10 @@ videos/shelf-wall-reveal/assets/reel-snapshot.png
 !.agents/skills/**/*.mp3
 !.agents/skills/**/*.wav
 !videos/*/assets/sfx/*.mp3
+
+# The SFX library: manifest and tools are committed, the audio is not (third-party pack, public
+# repo; the backup is a private artifact, see library/README.md). The import workspace holds the
+# showcase video and analysis dumps.
+/library/sfx/**/*.wav
+/library/sfx/**/*.mp3
+/library/sfx-import/
