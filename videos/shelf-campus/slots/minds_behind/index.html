@@ -3,33 +3,257 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>founders / minds_behind</title>
     <script src="./vendor/gsap.min.js"></script>
-    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
+      /* BEHIND layer (under the person cut-out), on the navy wall. Output 18.100 -> 21.100 (90 frames), t = out - 18.1.
+         "We got tired of watching students lose their minds."  Jnanottam's head: top ~780, x ~560-925.
+           19.67 "students": four stressed WhatsApp group messages pop in the upper left, 4 frames apart, stacking
+                 (each push nudges the stack up).
+           20.167 "lose": a classic error dialog SLAMS in over them: "brain.exe" / "brain.exe has stopped responding"
+                 / [Wait] [Close the program], red error icon. The bubbles dim and shake.
+           20.633 "minds": it glitches (RGB split + slice tears), then cascades: one new copy per frame trailing
+                 down-right (the classic hung-window trail) until the cut at 21.1, ending just above his head. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+
+      /* ---------- WhatsApp group bubbles (dark mode) ---------- */
+      #chat { position: absolute; left: 76px; top: 0; width: 600px; height: 1920px; perspective: 1400px; }
+      #stack { position: absolute; left: 0; top: 0; width: 600px; height: 1920px; transform-origin: 0px 560px; }
+      .bub {
+        position: absolute;
+        left: 0;
+        display: inline-block;
+        padding: 13px 22px 11px 22px;
+        border-radius: 0 22px 22px 22px;
+        background: #202c33;
+        box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13), 0 14px 30px rgba(0, 0, 0, 0.45), 0 3px 8px rgba(0, 0, 0, 0.3);
+        font-family: var(--font-ui);
+        color: #e9edef;
+        transform-origin: 0px 0px;
+        opacity: 0;
+      }
+      .bub .tail { position: absolute; left: -14px; top: 0; width: 15px; height: 21px; }
+      .bub .nm { font: 600 30px/1.25 var(--font-ui); letter-spacing: -0.005em; white-space: nowrap; }
+      .bub .row { display: flex; align-items: flex-end; gap: 18px; }
+      .bub .tx { font: 400 40px/1.3 var(--font-ui); letter-spacing: -0.012em; white-space: nowrap; }
+      .bub .tm { flex: none; font: 400 25px/1 var(--font-ui); color: #8696a0; padding-bottom: 8px; white-space: nowrap; }
+
+      /* ---------- the error dialog (generic retro desktop) ---------- */
+      .dlg {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 660px;
+        background: #d4d0c8;
+        border: 2px solid;
+        border-color: #ffffff #404040 #404040 #ffffff;
+        box-shadow: inset -2px -2px 0 #808080, inset 2px 2px 0 #eeeae2, 0 22px 48px rgba(0, 0, 0, 0.55), 0 6px 14px rgba(0, 0, 0, 0.4);
+        font-family: var(--font-ui);
+        color: #000;
+        transform-origin: 50% 50%;
+      }
+      .dlg .tb {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 52px;
+        margin: 3px 3px 0;
+        padding: 0 6px 0 14px;
+        background: linear-gradient(90deg, #0a246a 0%, #3a6ea5 62%, #a6caf0 100%);
+        color: #ffffff;
+        font: 700 29px/1 var(--font-ui);
+        letter-spacing: 0.01em;
+      }
+      .dlg .tb .ti { flex: 1; white-space: nowrap; }
+      .dlg .tb .xb {
+        width: 40px;
+        height: 36px;
+        background: #d4d0c8;
+        border: 2px solid;
+        border-color: #ffffff #404040 #404040 #ffffff;
+        display: grid;
+        place-items: center;
+      }
+      .dlg .tb .xb svg { width: 18px; height: 18px; display: block; }
+      .dlg .bd { display: flex; align-items: center; gap: 24px; padding: 24px 28px 8px 26px; }
+      .dlg .ic { flex: none; width: 80px; height: 80px; }
+      .dlg .msg { font: 500 35px/1.28 var(--font-ui); letter-spacing: -0.008em; color: #000; }
+      .dlg .bt { display: flex; justify-content: flex-end; gap: 18px; padding: 16px 26px 24px; }
+      .dlg .btn {
+        position: relative;
+        height: 58px;
+        padding: 0 28px;
+        min-width: 140px;
+        display: grid;
+        place-items: center;
+        background: #d4d0c8;
+        border: 2px solid;
+        border-color: #ffffff #404040 #404040 #ffffff;
+        box-shadow: inset -1px -1px 0 #808080;
+        font: 500 30px/1 var(--font-ui);
+        color: #000;
+        white-space: nowrap;
+      }
+      .dlg .btn.def { outline: 2px solid #000; outline-offset: 0; }
+      .dlg .btn.def::after { content: ""; position: absolute; inset: 5px; border: 1.5px dotted #000; }
+      /* glitch layers on the live dialog */
+      .ghost { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
+      #flash {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 660px;
+        height: 100%;
+        background: #ffffff;
+        opacity: 0;
+        pointer-events: none;
+      }
+      #cascade { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      #live { position: absolute; left: 0; top: 0; opacity: 0; }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
-          </div>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="3" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="3" data-track-index="0">
+        <div id="chat" data-layout-allow-overflow>
+          <div id="stack" data-layout-allow-overflow></div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
+        <div id="cascade" data-layout-allow-overflow></div>
+        <div id="live" data-layout-allow-overflow></div>
       </div>
     </div>
     <script>
+      // ---------- deterministic PRNG ----------
+      function mulberry32(a) {
+        return function () {
+          a = (a + 0x6d2b79f5) >>> 0;
+          var t = a;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+      var rnd = mulberry32(4207);
+      function el(tag, cls, html) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (html != null) e.innerHTML = html;
+        return e;
+      }
+
+      // ---------- bubbles ----------
+      var TAIL = '<svg class="tail" viewBox="0 0 13 18" aria-hidden="true"><path d="M13 0H3.2C1.1 0 0.2 2.3 1.6 3.8L13 17.5Z" fill="#202c33"/></svg>';
+      var MSGS = [
+        { nm: "Aarav", col: "#53bdeb", tx: "exam tomorrow??", tm: "11:52 PM", x: 0, rot: -1.6 },
+        { nm: "Priya", col: "#ff72a1", tx: "which unit is in syllabus", tm: "11:52 PM", x: 34, rot: 1.2 },
+        { nm: "Rohan", col: "#f5a142", tx: "send notes", tm: "11:53 PM", x: 10, rot: -0.8 },
+        { nm: "Sneha", col: "#06cf9c", tx: "I'm cooked", tm: "11:53 PM", x: 44, rot: 1.8 },
+      ];
+      var BUB_H = 128, GAP = 14, TOP0 = 400;          // bubble pitch; first bubble's top (the stack then rises 90 px)
+      var stack = document.getElementById("stack");
+      var bubs = MSGS.map(function (m, i) {
+        var b = el("div", "bub", TAIL + '<div class="nm" data-layout-allow-overlap data-layout-allow-occlusion style="color:' + m.col + '">' + m.nm + '</div><div class="row"><div class="tx" data-layout-allow-overlap data-layout-allow-occlusion>' + m.tx + '</div><div class="tm" data-layout-allow-overlap data-layout-allow-occlusion>' + m.tm + "</div></div>");
+        b.style.top = TOP0 + i * (BUB_H + GAP) + "px";
+        stack.appendChild(b);
+        return b;
+      });
+
+      // ---------- dialog ----------
+      var XICON =
+        '<svg class="ic" viewBox="0 0 72 72" aria-hidden="true"><defs><radialGradient id="rg" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#ff6b5e"/><stop offset=".55" stop-color="#e0201a"/><stop offset="1" stop-color="#a50e0a"/></radialGradient></defs>' +
+        '<circle cx="36" cy="36" r="31" fill="url(#rg)" stroke="#7a0805" stroke-width="2.5"/>' +
+        '<path d="M24 24 48 48M48 24 24 48" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/></svg>';
+      var XBTN = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3 13 13M13 3 3 13" stroke="#000" stroke-width="2.6"/></svg>';
+      function dialog() {
+        var d = el("div", "dlg",
+          '<div class="tb"><div class="ti" data-layout-allow-overlap>brain.exe</div><div class="xb">' + XBTN + "</div></div>" +
+          '<div class="bd">' + XICON + '<div class="msg" data-layout-allow-overlap>brain.exe has stopped responding</div></div>' +
+          '<div class="bt"><div class="btn" data-layout-allow-overlap>Wait</div><div class="btn def" data-layout-allow-overlap>Close the program</div></div>');
+        d.setAttribute("data-layout-allow-occlusion", "");
+        return d;
+      }
+      var DX0 = 64, DY0 = 318;                        // live dialog position
+      var live = document.getElementById("live");
+      live.style.left = DX0 + "px";
+      live.style.top = DY0 + "px";
+      // RGB ghosts for the glitch: tinted copies BEHIND the dialog, offset so only their edges fringe out
+      var gR = dialog(), gC = dialog();
+      gR.classList.add("ghost");
+      gC.classList.add("ghost");
+      gR.style.filter = "sepia(1) saturate(9) hue-rotate(-50deg) brightness(0.95)";
+      gC.style.filter = "sepia(1) saturate(9) hue-rotate(150deg) brightness(0.95)";
+      live.appendChild(gR);
+      live.appendChild(gC);
+      var dlg = dialog();
+      live.appendChild(dlg);
+      var flash = el("div", "", "");
+      flash.id = "flash";
+      dlg.appendChild(flash);
+
+      // cascade copies (the hung-window trail): copy i sits at i * (CDX, CDY) from the live start
+      var NC = 13, CDX = 18, CDY = 13;
+      var cascade = document.getElementById("cascade");
+      var copies = [];
+      for (var c = 0; c < NC; c++) {
+        var cp = dialog();
+        cp.style.left = DX0 + c * CDX + "px";
+        cp.style.top = DY0 + c * CDY + "px";
+        cp.style.opacity = "0";
+        cp.setAttribute("data-layout-allow-overlap", "");
+        cascade.appendChild(cp);
+        copies.push(cp);
+      }
+
+      // ---------- timeline ----------
+      var T0 = 18.1;
+      function at(out) { return Math.round(out * 30) / 30 - T0 - 0.004; } // first frame shows the pose
       var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
+
+      // "students" 19.67: bubbles pop, 4 frames apart; each arrival pushes the stack up
+      var TB = at(19.67);
+      bubs.forEach(function (b, i) {
+        var t = TB + (i * 4) / 30, m = MSGS[i];
+        tl.set(b, { opacity: 1 }, t);
+        tl.fromTo(b, { scale: 0.55, x: m.x - 18, y: 26, rotation: m.rot - 6 }, { scale: 1, x: m.x, y: 0, rotation: m.rot, duration: 0.34, ease: "back.out(1.9)" }, t);
+        tl.fromTo(b, { filter: "brightness(1.6)" }, { filter: "brightness(1)", duration: 0.25, ease: "power2.out" }, t);
+        if (i > 0) tl.to(stack, { y: -i * 30, duration: 0.22, ease: "power3.out" }, t);
+      });
+      tl.fromTo(stack, { rotationY: 10, rotationX: 3 }, { rotationY: 5, rotationX: 1, duration: 3 - TB, ease: "sine.out" }, TB);
+
+      // "lose" 20.15: the dialog slams in; the chat dims and shakes
+      var TL = at(20.15);
+      tl.set(live, { opacity: 1 }, TL);
+      tl.fromTo(dlg, { scale: 1.32, rotation: -4 }, { scale: 0.97, rotation: 0, duration: 0.14, ease: "expo.out" }, TL);
+      tl.to(dlg, { scale: 1, duration: 0.2, ease: "sine.out" }, TL + 0.14);
+      tl.fromTo(dlg, { filter: "blur(10px)" }, { filter: "blur(0px)", duration: 0.12, ease: "power2.out" }, TL);
+      tl.fromTo(flash, { opacity: 0.95 }, { opacity: 0, duration: 0.16, ease: "power2.out" }, TL);
+      tl.fromTo("#chat", { opacity: 1, filter: "blur(0px) brightness(1)" }, { opacity: 0.72, filter: "blur(2.5px) brightness(0.7)", duration: 0.2, ease: "power2.out", immediateRender: false }, TL);
+      // impact shake on the chat stack (decaying, deterministic)
+      var shk = [14, -11, 8, -6, 4, -2, 0];
+      shk.forEach(function (v, i) { tl.set("#chat", { x: v, y: -v * 0.4 }, TL + i / 30); });
+
+      // "minds" 20.63: glitch, then the cascade (one new copy per frame) until the cut
+      var TM = at(20.63);
+      var gl = mulberry32(99);
+      for (var f = 0; f < 14; f++) {
+        var t = TM + f / 30;
+        var amp = f < 3 ? 1 : 0.45;                 // hardest on the first 3 frames
+        var ox = (gl() * 2 - 1) * 14 * amp, oy = (gl() * 2 - 1) * 6 * amp;
+        tl.set(gR, { opacity: 0.9, x: ox + 16 * amp, y: oy }, t);
+        tl.set(gC, { opacity: 0.9, x: -ox - 16 * amp, y: -oy }, t);
+        // slice tear: clip a band of the dialog and shove it sideways
+        var y0 = Math.floor(gl() * 230), h = 22 + Math.floor(gl() * 56);
+        tl.set(dlg, { clipPath: "polygon(0 0,100% 0,100% " + y0 + "px," + (100 - 6 * amp) + "% " + y0 + "px," + (100 - 6 * amp) + "% " + (y0 + h) + "px,100% " + (y0 + h) + "px,100% 100%,0 100%)", x: (gl() * 2 - 1) * 10 * amp }, t);
+      }
+      // the live window rides the leading edge of the cascade, leaving a copy behind every frame
+      for (var j = 0; j < NC; j++) {
+        var tj = TM + (j + 1) / 30;
+        tl.set(copies[j], { opacity: 1 }, tj);
+        tl.set(live, { x: (j + 1) * CDX, y: (j + 1) * CDY }, tj);
+      }
+
       window.__timelines["main"] = tl;
       tl.seek(0);
     </script>

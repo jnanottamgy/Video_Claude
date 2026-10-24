@@ -3,35 +3,308 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>stamps</title>
     <script src="./vendor/gsap.min.js"></script>
-    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
+      /* stamps: FRONT layer, output 9.933 -> 11.233 s (39 frames), over the desaturated freeze of
+         Kartik mid-"assignment!". Silence; the compositor puts a big hit on each slam.
+           9.933  stamp 1 in the air (scale 1.6, blur); 9.967 SLAM "ACADEMIC WEAPON." (-8 deg), ink puff
+           10.100 the case tag drops in and types "CASE #0047 · SUBJECT: KARTIK" (to 10.400)
+           10.467 stamp 2 in the air; 10.533 SLAM "ORGANISATIONAL DISASTER." (+5 deg), ink puff
+           holds to the hard cut at 11.233. His face (x 700-1060, y 830-1260) stays clear. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+      .full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      .st-pos { position: absolute; }
+      .st-drop { position: absolute; inset: 0; transform-origin: 50% 50%; }
+      #s2-drop { opacity: 0; }
+      .st-air {
+        position: absolute;
+        inset: 10px;
+        border-radius: 26px;
+        background: rgba(0, 0, 0, 0.55);
+        filter: blur(26px);
+        opacity: 0;
+      }
+      .st-svg { position: absolute; left: 0; top: 0; overflow: visible; }
+      .st-fx { position: absolute; inset: 0; pointer-events: none; }
+      .puff {
+        position: absolute;
+        inset: -6px;
+        border-radius: 30px;
+        box-shadow: 0 0 0 10px rgba(215, 38, 47, 0.55), 0 0 30px 14px rgba(215, 38, 47, 0.35);
+        filter: blur(7px);
+        opacity: 0;
+      }
+      .drop { position: absolute; left: 0; top: 0; border-radius: 50%; background: #d7262f; opacity: 0; }
+
+      /* case tag: a typed paper label */
+      .tag-pos { position: absolute; left: 72px; top: 270px; width: 526px; height: 60px; transform: rotate(1.8deg); }
+      .tag-drop { position: absolute; inset: 0; transform-origin: 30% 50%; opacity: 0; }
+      .tag {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 30%, rgba(120, 100, 60, 0) 70%, rgba(120, 100, 60, 0.12) 100%),
+          var(--paper);
+        box-shadow: 0 10px 18px rgba(0, 0, 0, 0.38), 0 2px 3px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        padding-left: 20px;
+        font: 700 28px/1 var(--font-mono);
+        color: #1f1b16;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+      }
+      .tag .ch { opacity: 0; }
+      .tag .cur { display: inline-block; flex: none; width: 15px; height: 30px; background: #1f1b16; margin-left: 2px; opacity: 0; }
+      .tag .ch { flex: none; }
+      .tag-tape {
+        position: absolute;
+        top: -14px;
+        left: -18px;
+        width: 86px;
+        height: 30px;
+        transform: rotate(-24deg);
+        background: rgba(240, 232, 205, 0.62);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+      }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <!-- worn rubber-stamp ink: sparse voids + uneven density + slightly rough edges (seeded, static) -->
+        <filter id="ink1" x="-4%" y="-6%" width="108%" height="112%" color-interpolation-filters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="11" result="fine" />
+          <feColorMatrix in="fine" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -8 6.4" result="fineA" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.022 0.05" numOctaves="3" seed="4" result="coarse" />
+          <feColorMatrix in="coarse" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -2.6 2.25" result="coarseA" />
+          <feComposite in="fineA" in2="coarseA" operator="arithmetic" k1="1" k2="0" k3="0" k4="0" result="mask" />
+          <feTurbulence type="turbulence" baseFrequency="0.09" numOctaves="2" seed="7" result="warp" />
+          <feDisplacementMap in="SourceGraphic" in2="warp" scale="4.5" xChannelSelector="R" yChannelSelector="G" result="rough" />
+          <feComposite in="rough" in2="mask" operator="in" />
+        </filter>
+        <filter id="ink2" x="-4%" y="-6%" width="108%" height="112%" color-interpolation-filters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="23" result="fine" />
+          <feColorMatrix in="fine" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -8 6.4" result="fineA" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.02 0.045" numOctaves="3" seed="17" result="coarse" />
+          <feColorMatrix in="coarse" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -2.6 2.25" result="coarseA" />
+          <feComposite in="fineA" in2="coarseA" operator="arithmetic" k1="1" k2="0" k3="0" k4="0" result="mask" />
+          <feTurbulence type="turbulence" baseFrequency="0.09" numOctaves="2" seed="31" result="warp" />
+          <feDisplacementMap in="SourceGraphic" in2="warp" scale="4.5" xChannelSelector="R" yChannelSelector="G" result="rough" />
+          <feComposite in="rough" in2="mask" operator="in" />
+        </filter>
+      </defs>
+    </svg>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="1.3" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.3" data-track-index="0">
+        <div class="full" id="shake" data-layout-allow-overflow>
+          <div id="stamps" data-layout-allow-overflow style="position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; clip-path: polygon(0px 0px, 1080px 0px, 1080px 828px, 700px 828px, 700px 1920px, 0px 1920px)"></div>
+          <div class="tag-pos" id="tagpos">
+            <div class="tag-drop" id="tagdrop">
+              <div class="tag" id="tag"></div>
+              <div class="tag-tape"></div>
+            </div>
           </div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
       </div>
     </div>
     <script>
-      var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
-      window.__timelines["main"] = tl;
-      tl.seek(0);
+      (function () {
+        "use strict";
+        var D = 1.3;
+        var T0 = 9.933333; // window start (output s)
+        var F = 1 / 30;
+        var EPS = 0.0005;
+
+        function rng(seed) {
+          var a = seed >>> 0;
+          return function () {
+            a = (a + 0x6d2b79f5) >>> 0;
+            var t = a;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+
+        /* ---------- the two stamps ---------- */
+        var INK = "#d7262f";
+        var STAMPS = [
+          {
+            id: "s1",
+            filter: "ink1",
+            cx: 368,
+            cy: 470,
+            rot: -8,
+            w: 504,
+            h: 224,
+            lines: [
+              { text: "ACADEMIC", size: 88, y: 112, len: 430 },
+              { text: "WEAPON.", size: 104, y: 197, len: 430 },
+            ],
+            hit: 1, // local frame of the impact (9.967)
+            seed: 101,
+            from: { x: -54, y: -64, s: 1.62 },
+            shadow: { x: 26, y: 38 },
+            puff: 1.16,
+          },
+          {
+            id: "s2",
+            filter: "ink2",
+            cx: 452,
+            cy: 698,
+            rot: 5,
+            w: 616,
+            h: 214,
+            lines: [
+              { text: "ORGANISATIONAL", size: 64, y: 92, len: 540 },
+              { text: "DISASTER.", size: 112, y: 188, len: 540 },
+            ],
+            hit: 18, // 10.533
+            seed: 202,
+            from: { x: -92, y: -118, s: 1.42 },
+            shadow: { x: 4, y: 8 },
+            puff: 1.1,
+          },
+        ];
+        var host = document.getElementById("stamps");
+        var refs = {};
+        STAMPS.forEach(function (S) {
+          var pos = document.createElement("div");
+          pos.className = "st-pos";
+          pos.style.left = S.cx - S.w / 2 + "px";
+          pos.style.top = S.cy - S.h / 2 + "px";
+          pos.style.width = S.w + "px";
+          pos.style.height = S.h + "px";
+          pos.style.transform = "rotate(" + S.rot + "deg)";
+          pos.setAttribute("data-layout-allow-overflow", "");
+          pos.setAttribute("data-layout-allow-overlap", ""); // stamped over each other on purpose
+          var svg =
+            '<svg class="st-svg" width="' + S.w + '" height="' + S.h + '" viewBox="0 0 ' + S.w + " " + S.h + '" aria-hidden="true">' +
+            '<g filter="url(#' + S.filter + ')" fill="none" stroke="' + INK + '">' +
+            '<rect x="8" y="8" width="' + (S.w - 16) + '" height="' + (S.h - 16) + '" rx="22" stroke-width="9"/>' +
+            '<rect x="23" y="23" width="' + (S.w - 46) + '" height="' + (S.h - 46) + '" rx="11" stroke-width="3.5"/>' +
+            S.lines
+              .map(function (l) {
+                return (
+                  '<text x="' + S.w / 2 + '" y="' + l.y + '" text-anchor="middle" font-family="Sora" font-weight="800" font-size="' + l.size +
+                  '" textLength="' + l.len + '" lengthAdjust="spacingAndGlyphs" fill="' + INK + '" stroke="none">' + l.text + "</text>"
+                );
+              })
+              .join("") +
+            "</g></svg>";
+          pos.innerHTML =
+            '<div class="st-drop" id="' + S.id + '-drop"><div class="st-air" id="' + S.id + '-air"></div>' + svg + "</div>" +
+            '<div class="st-fx" id="' + S.id + '-fx"><div class="puff" id="' + S.id + '-puff"></div></div>';
+          host.appendChild(pos);
+          // ink spatter: droplets thrown off the rim on impact; a few stay as specks
+          var r = rng(S.seed);
+          var fx = pos.querySelector("#" + S.id + "-fx");
+          var drops = [];
+          for (var i = 0; i < 22; i++) {
+            // a point on the rim (local), thrown outward from the centre
+            var side = Math.floor(r() * 4);
+            var u = r();
+            var px = side === 0 ? u * S.w : side === 1 ? S.w : side === 2 ? (1 - u) * S.w : 0;
+            var py = side === 0 ? 0 : side === 1 ? u * S.h : side === 2 ? S.h : (1 - u) * S.h;
+            var dx = px - S.w / 2;
+            var dy = (py - S.h / 2) * 1.8;
+            var len = Math.hypot(dx, dy) || 1;
+            var dist = 18 + r() * 70;
+            var rad = 2.2 + Math.pow(r(), 2.2) * 7.5;
+            var d = document.createElement("div");
+            d.className = "drop";
+            d.style.width = d.style.height = (rad * 2).toFixed(1) + "px";
+            d.style.borderRadius = 40 + r() * 20 + "% " + (40 + r() * 20) + "% " + (40 + r() * 20) + "% " + (40 + r() * 20) + "%";
+            fx.appendChild(d);
+            var ex = px + (dx / len) * dist;
+            var ey = py + (dy / len) * dist * 0.6;
+            // landing point on screen (the stamp box is rotated about its centre)
+            var ra = (S.rot * Math.PI) / 180;
+            var lx = ex - S.w / 2;
+            var ly = ey - S.h / 2;
+            var sx = S.cx + lx * Math.cos(ra) - ly * Math.sin(ra);
+            var sy = S.cy + lx * Math.sin(ra) + ly * Math.cos(ra);
+            if (sx > 670 && sy > 800) dist *= 0.2; // never spatter onto his face
+            drops.push({ el: d, x0: px - rad, y0: py - rad, x1: px - rad + (dx / len) * dist, y1: py - rad + (dy / len) * dist * 0.6, stay: r() < 0.32, sq: 0.6 + r() * 0.8 });
+          }
+          refs[S.id] = { pos: pos, drops: drops };
+        });
+
+        /* ---------- case tag ---------- */
+        var TAG = "CASE #0047 · SUBJECT: KARTIK";
+        var tag = document.getElementById("tag");
+        var chars = [];
+        for (var c = 0; c < TAG.length; c++) {
+          var sp = document.createElement("span");
+          sp.className = "ch";
+          sp.textContent = TAG[c] === " " ? " " : TAG[c];
+          tag.appendChild(sp);
+          chars.push(sp);
+        }
+        var cur = document.createElement("span");
+        cur.className = "cur";
+        tag.appendChild(cur);
+
+        /* ---------- timeline ---------- */
+        var tl = gsap.timeline({ paused: true });
+
+        function slam(S) {
+          var R = refs[S.id];
+          var tHit = S.hit * F - EPS; // impact frame
+          var air = S.hit >= 2 ? 2 : S.hit; // frames in the air (stamp 1: one, the window opens on it)
+          var tAir = Math.max(0, tHit - air * F);
+          var dAir = tHit - tAir;
+          var drop = "#" + S.id + "-drop";
+          // in the air: big, blurred, a soft shadow below it; lands on tHit with a squash
+          if (tAir > 0) tl.fromTo(drop, { opacity: 0 }, { opacity: 1, duration: 0.0002, ease: "none" }, tAir);
+          tl.fromTo(drop, { scale: S.from.s, rotation: S.rot < 0 ? -6 : 6, x: S.from.x, y: S.from.y }, { scale: 0.965, rotation: 0, x: 0, y: 0, duration: dAir, ease: "power2.in" }, tAir);
+          tl.fromTo(drop, { filter: "blur(11px)" }, { filter: "blur(1.5px)", duration: dAir, ease: "power1.in" }, tAir);
+          tl.to(drop, { filter: "blur(0px)", duration: F, ease: "none" }, tHit);
+          tl.fromTo("#" + S.id + "-air", { opacity: S.hit > 2 ? 0.6 : 0.8, scale: 1.12, x: S.shadow.x, y: S.shadow.y }, { opacity: 0.2, scale: 1, x: 4, y: 6, duration: dAir, ease: "power2.in" }, tAir);
+          tl.set("#" + S.id + "-air", { opacity: 0 }, tHit);
+          // a tiny bounce, then settle
+          tl.to(drop, { scale: 1.028, duration: 2 * F, ease: "power2.out" }, tHit);
+          tl.to(drop, { scale: 1, duration: 0.18, ease: "power2.inOut" }, tHit + 2 * F);
+          // ink puff: a red ring of air pushed out from under the stamp
+          tl.fromTo("#" + S.id + "-puff", { opacity: 0.85, scale: 0.98 }, { opacity: 0, scale: S.puff, duration: 0.32, ease: "power2.out", immediateRender: false }, tHit);
+          // spatter
+          R.drops.forEach(function (d, k) {
+            var dur = 0.16 + 0.1 * ((k * 7) % 5) / 4;
+            tl.fromTo(d.el, { x: d.x0, y: d.y0, scale: 1.3, opacity: 0.95 }, { x: d.x1, y: d.y1, scale: d.stay ? d.sq * 0.7 : 0.25, opacity: d.stay ? 0.9 : 0, duration: dur, ease: "expo.out", immediateRender: false }, tHit);
+          });
+        }
+        STAMPS.forEach(slam);
+
+        // stamp 2's impact jolts everything already on the page (a hand slamming the desk)
+        var tH2 = STAMPS[1].hit * F - EPS;
+        [[0, 7], [-3, -4], [2, 2], [0, 0]].forEach(function (p, k) {
+          tl.set("#shake", { x: p[0], y: p[1] }, tH2 + k * F);
+        });
+        // stamp 1's impact: a smaller jolt of the page
+        [[0, 5], [0, -2], [0, 0]].forEach(function (p, k) {
+          tl.set("#shake", { x: p[0], y: p[1] }, STAMPS[0].hit * F - EPS + k * F);
+        });
+
+        // 10.100: the case tag is slapped down, then typed (3 characters a frame)
+        var tTag = 5 * F - EPS; // 10.100
+        tl.fromTo("#tagdrop", { opacity: 0 }, { opacity: 1, duration: 0.0002, ease: "none" }, tTag);
+        tl.fromTo("#tagdrop", { scale: 1.12, y: -14, rotation: -3 }, { scale: 1, y: 0, rotation: 0, duration: 0.2, ease: "back.out(2)" }, tTag - 0.5 * F);
+        var tType = tTag + F;
+        for (var k = 0; k < chars.length; k++) {
+          tl.set(chars[k], { opacity: 1 }, tType + Math.floor(k / 3) * F);
+        }
+        var tDone = tType + Math.ceil(chars.length / 3) * F;
+        tl.set(cur, { opacity: 1 }, tType);
+        for (var b = 0; b < 6; b++) tl.set(cur, { opacity: b % 2 ? 1 : 0 }, tDone + b * 0.13);
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
     </script>
   </body>
 </html>

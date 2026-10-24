@@ -3,35 +3,361 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>end_card</title>
     <script src="./vendor/gsap.min.js"></script>
-    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
-      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      /* FULL-FRAME scene, output 56.967 -> 60.667 (111 frames). Local t = output - 56.967, frame k = t * 30.
+         The reel's last picture (it loops into frame 1): deep navy SHELF world, blue bloom, sparse particles,
+         a slow push that decelerates to a dead stop by k 93; from k 94 only a glow fades; from k 103 nothing moves.
+           k   0  56.967  lockup slam: flash, mark + SHELF, shockwave, light streak
+           k   6  57.167  CAMPUS snaps out from tight to wide tracking
+           k  24  57.767  YOUR BRAIN HAS A BACKUP NOW. rises word by word
+           k  41  58.333  COMING SOON. slams (bar downbeat)
+           k  59  58.933  WhatsApp outgoing bubble pops: "Tag the friend who asks for notes..."
+           k  76  59.500  glow pulse + light sweep over the mark; the bubble's ticks turn blue (read)
+           k  94  60.100  last soft glow pulse, then a stable hold to the end
+         Layout (Instagram-safe): mark y 400-674, SHELF ~y 700-860, CAMPUS ~y 876-930, tagline y 982-1122,
+         pill y 1160-1252, bubble x 122-938 y 1300-1452. */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #040a18; }
       .scene { position: absolute; inset: 0; }
+      .bg {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(70% 40% at 50% 34%, rgba(31, 95, 214, 0.32) 0%, rgba(31, 95, 214, 0) 70%),
+          linear-gradient(180deg, #030814 0%, #06112b 34%, #071634 55%, #050d22 78%, #030711 100%);
+      }
+      .world { position: absolute; inset: 0; transform-origin: 50% 46%; }
+      .bloom {
+        position: absolute;
+        left: -60px;
+        top: -40px;
+        width: 1200px;
+        height: 1200px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(110, 175, 255, 0.62) 0%, rgba(79, 157, 255, 0.34) 18%, rgba(50, 120, 240, 0.16) 36%, rgba(31, 95, 214, 0.05) 52%, rgba(31, 95, 214, 0) 66%);
+      }
+      .bloom.pulse { background: radial-gradient(circle, rgba(170, 210, 255, 0.55) 0%, rgba(79, 157, 255, 0.3) 20%, rgba(79, 157, 255, 0) 52%); opacity: 0; }
+      .floorglow {
+        position: absolute;
+        left: 90px;
+        top: 1180px;
+        width: 900px;
+        height: 420px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(79, 157, 255, 0.16), rgba(79, 157, 255, 0));
+      }
+      .vignette { position: absolute; inset: 0; background: radial-gradient(120% 85% at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%); pointer-events: none; }
+      .particles { position: absolute; inset: 0; }
+      .pt { position: absolute; left: 0; top: 0; border-radius: 50%; background: #cfe3ff; }
+
+      /* ---------- lockup ---------- */
+      .markbox { position: absolute; left: 420px; top: 400px; width: 240px; height: 274px; }
+      .markbox img { position: absolute; inset: 0; width: 240px; height: 274px; display: block; filter: drop-shadow(0 0 26px rgba(90, 160, 255, 0.55)) drop-shadow(0 18px 30px rgba(0, 0, 0, 0.45)); }
+      .mark-sheen {
+        position: absolute;
+        inset: 0;
+        --p: -40%;
+        background: linear-gradient(115deg, rgba(255, 255, 255, 0) calc(var(--p) - 14%), rgba(255, 255, 255, 0.85) var(--p), rgba(255, 255, 255, 0) calc(var(--p) + 14%));
+        -webkit-mask: url("./assets/shelf-mark.png") center / 240px 274px no-repeat;
+        mask: url("./assets/shelf-mark.png") center / 240px 274px no-repeat;
+        opacity: 0;
+      }
+      .shelf {
+        position: absolute;
+        left: 0;
+        top: 684px;
+        width: 1080px;
+        height: 180px;
+        display: flex;
+        justify-content: center;
+        font: 800 172px/180px var(--font-brand);
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        filter: drop-shadow(0 0 26px rgba(79, 157, 255, 0.5)) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5));
+      }
+      .shelf .ch {
+        display: inline-block;
+        background: linear-gradient(180deg, #ffffff 0%, #f1f5fb 38%, #c9d6ea 62%, #a9b8cd 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        transform-origin: 50% 65%;
+      }
+      .campus {
+        position: absolute;
+        left: 0;
+        top: 872px;
+        width: 1080px;
+        height: 64px;
+        display: flex;
+        justify-content: center;
+        padding-left: 0.32em;
+        font: 600 54px/64px var(--font-brand);
+        color: #d6e5ff;
+        text-shadow: 0 0 18px rgba(79, 157, 255, 0.65);
+        white-space: nowrap;
+      }
+      .campus .ch { display: inline-block; margin-right: 0.32em; }
+      .campus .ch:last-child { margin-right: 0; }
+      .shock { position: absolute; left: 540px; top: 560px; width: 0; height: 0; display: flex; align-items: center; justify-content: center; }
+      .shock i { flex: none; display: block; width: 420px; height: 420px; border-radius: 50%; border: 5px solid rgba(170, 215, 255, 0.95); box-shadow: 0 0 30px rgba(79, 157, 255, 0.9), inset 0 0 24px rgba(79, 157, 255, 0.6); opacity: 0; }
+      .streak { position: absolute; left: 0; top: 556px; width: 1080px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, rgba(79, 157, 255, 0) 0%, rgba(150, 200, 255, 0.7) 30%, #ffffff 50%, rgba(150, 200, 255, 0.7) 70%, rgba(79, 157, 255, 0) 100%); box-shadow: 0 0 24px rgba(120, 180, 255, 0.9); opacity: 0; }
+      .flash { position: absolute; inset: 0; background: radial-gradient(70% 50% at 50% 33%, #ffffff 0%, rgba(200, 225, 255, 0.9) 40%, rgba(120, 170, 255, 0.6) 100%); opacity: 0; pointer-events: none; }
+
+      /* ---------- tagline ---------- */
+      .tag { position: absolute; left: 0; top: 982px; width: 1080px; display: flex; flex-direction: column; align-items: center; font: 700 60px/70px var(--font-brand); letter-spacing: 0.005em; color: #ffffff; text-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); }
+      .tag .line { display: flex; gap: 0.27em; white-space: nowrap; }
+      .tag .w { display: inline-block; }
+      .tag .acc {
+        background: linear-gradient(180deg, #b8dcff 0%, #6fb0ff 55%, #4f9dff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: none;
+        filter: drop-shadow(0 0 14px rgba(79, 157, 255, 0.55));
+      }
+
+      /* ---------- COMING SOON. ---------- */
+      .soonbox { position: absolute; left: 0; top: 1160px; width: 1080px; height: 92px; display: flex; justify-content: center; }
+      .soon {
+        position: relative;
+        height: 92px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 54px 0 42px;
+        border-radius: 46px;
+        background: linear-gradient(180deg, rgba(79, 157, 255, 0.34) 0%, rgba(31, 95, 214, 0.26) 100%);
+        box-shadow:
+          inset 0 0 0 2.5px rgba(160, 205, 255, 0.85),
+          inset 0 2px 0 rgba(255, 255, 255, 0.35),
+          0 0 30px rgba(79, 157, 255, 0.55),
+          0 0 90px rgba(79, 157, 255, 0.28);
+        font: 800 46px/1 var(--font-brand);
+        letter-spacing: 0.08em;
+        color: #ffffff;
+        text-shadow: 0 0 16px rgba(150, 200, 255, 0.95);
+        white-space: nowrap;
+        transform-origin: 50% 50%;
+      }
+      .soon .dot { position: relative; width: 18px; height: 18px; border-radius: 50%; background: #a8d2ff; box-shadow: 0 0 10px #4f9dff, 0 0 22px #4f9dff; }
+      .soon .dot i { position: absolute; inset: -7px; border-radius: 50%; border: 3px solid rgba(150, 200, 255, 0.9); opacity: 0; }
+      .soon-glow { position: absolute; left: 240px; top: 1110px; width: 600px; height: 192px; border-radius: 96px; background: radial-gradient(closest-side, rgba(110, 175, 255, 0.75), rgba(79, 157, 255, 0)); opacity: 0; }
+
+      /* ---------- WhatsApp outgoing bubble ---------- */
+      .bub-pos { position: absolute; left: 122px; top: 1300px; width: 800px; height: 152px; transform-origin: 100% 0%; }
+      .bubble {
+        position: absolute;
+        inset: 0;
+        border-radius: 28px 0 28px 28px;
+        background: linear-gradient(180deg, #036a57 0%, #005c4b 60%, #00554a 100%);
+        box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5), 0 0 46px rgba(37, 211, 102, 0.16), inset 0 1.5px 0 rgba(255, 255, 255, 0.1);
+      }
+      .bub-tail { position: absolute; right: -16px; top: 0; width: 22px; height: 26px; }
+      .btxt { position: absolute; left: 32px; top: 21px; width: 740px; font: 600 42px/54px var(--font-ui); letter-spacing: -0.008em; color: #e9edef; }
+      .bmeta { position: absolute; right: 22px; bottom: 14px; display: flex; align-items: center; gap: 8px; font: 400 24px/30px var(--font-ui); color: rgba(233, 237, 239, 0.62); }
+      .bmeta .ticks { position: relative; width: 34px; height: 22px; }
+      .bmeta .ticks svg { position: absolute; inset: 0; width: 34px; height: 22px; display: block; }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="3.7" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="3.7" data-track-index="0">
+        <div class="bg"></div>
+        <div class="world" id="world">
+          <div class="bloom" id="bloom"></div>
+          <div class="bloom pulse" id="pulse"></div>
+          <div class="floorglow"></div>
+          <div class="particles" id="particles" data-layout-ignore></div>
+          <div class="streak" id="streak" data-layout-allow-overflow></div>
+          <div class="shock" data-layout-allow-overflow><i id="shock"></i></div>
+
+          <div class="markbox" id="markbox">
+            <img src="./assets/shelf-mark.png" alt="" />
+            <div class="mark-sheen" id="mark-sheen"></div>
+          </div>
+          <div class="shelf" id="shelf" aria-label="SHELF"></div>
+          <div class="campus" id="campus" aria-label="CAMPUS"></div>
+
+          <div class="tag" id="tag">
+            <div class="line"><span class="w">YOUR</span><span class="w">BRAIN</span><span class="w">HAS</span></div>
+            <div class="line"><span class="w">A</span><span class="w acc">BACKUP</span><span class="w">NOW.</span></div>
+          </div>
+
+          <div class="soon-glow" id="soon-glow"></div>
+          <div class="soonbox">
+            <div class="soon" id="soon"><span class="dot" id="soon-dot"><i id="soon-ring"></i></span><span>COMING SOON.</span></div>
+          </div>
+
+          <div class="bub-pos" id="bub">
+            <div class="bubble"></div>
+            <svg class="bub-tail" viewBox="0 0 22 26" aria-hidden="true"><path d="M0 0 H17.5 C21.6 0 23.4 4.9 20.4 7.8 L0 26 Z" fill="#036a57" /></svg>
+            <div class="btxt">Tag the friend who asks for notes 3&nbsp;minutes before the exam.</div>
+            <div class="bmeta">
+              <span>9:41 PM</span>
+              <span class="ticks">
+                <svg id="ticks-grey" viewBox="0 0 34 22" aria-hidden="true">
+                  <path d="M2.5 11.8 L8.2 17.4 L19.6 4.6 M13.8 15.6 L15.6 17.4 L27 4.6" fill="none" stroke="#9aa9b2" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <svg id="ticks-blue" viewBox="0 0 34 22" aria-hidden="true" style="opacity: 0">
+                  <path d="M2.5 11.8 L8.2 17.4 L19.6 4.6 M13.8 15.6 L15.6 17.4 L27 4.6" fill="none" stroke="#53bdeb" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+            </div>
           </div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
+        <div class="vignette"></div>
+        <div class="flash" id="flash"></div>
       </div>
     </div>
     <script>
-      var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
-      window.__timelines["main"] = tl;
-      tl.seek(0);
+      (function () {
+        var DUR = 3.7;
+        var F = 1 / 30;
+        var E = 0.004;
+        function K(k) { return k * F - E; }
+        function hash(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+        function $(id) { return document.getElementById(id); }
+        var SLAM = 0, CAMPUS = 6, TAG = 24, SOON = 41, BUB = 59, P1 = 76, P2 = 94, STILL = 93;
+
+        // letters
+        function letters(id, text) {
+          var box = $(id);
+          return text.split("").map(function (c) {
+            var s = document.createElement("span");
+            s.className = "ch";
+            s.textContent = c;
+            box.appendChild(s);
+            return s;
+          });
+        }
+        var shelfCh = letters("shelf", "SHELF");
+        var campusCh = letters("campus", "CAMPUS");
+
+        // particles: sparse dust + a few soft bokeh; every value seeded
+        var field = $("particles");
+        var pts = [];
+        for (var i = 0; i < 34; i++) {
+          var el = document.createElement("div");
+          el.className = "pt";
+          var bokeh = i % 6 === 0;
+          var size = bokeh ? 10 + hash(i * 1.7) * 12 : 2.5 + hash(i * 2.3) * 3.5;
+          el.style.width = size.toFixed(1) + "px";
+          el.style.height = size.toFixed(1) + "px";
+          if (bokeh) el.style.filter = "blur(" + (3 + hash(i * 5.1) * 3).toFixed(1) + "px)";
+          el.style.boxShadow = "0 0 " + (bokeh ? 0 : 8) + "px rgba(120,180,255,0.9)";
+          field.appendChild(el);
+          // keep dust off the type: bias positions to the margins and the gaps
+          var x = 40 + hash(i * 3.9) * 1000;
+          var y = 300 + hash(i * 7.3) * 1300;
+          pts.push({
+            el: el,
+            x: x,
+            y: y,
+            vy: 28 + hash(i * 4.1) * 46,
+            vx: (hash(i * 6.7) - 0.5) * 18,
+            base: (bokeh ? 0.16 : 0.32) + hash(i * 8.9) * (bokeh ? 0.14 : 0.4),
+            w: 2.2 + hash(i * 9.7) * 3.4,
+            ph: hash(i * 11.3) * 6.28,
+            last: "",
+          });
+        }
+        // motion clock: decelerates to a dead stop at STILL (power2.out), so the last ~0.6 s is a still frame
+        var TS = STILL * F;
+        // eased "motion seconds": runs 0 -> TS with power2.out, i.e. zero velocity at TS
+        function mclock(t) {
+          var p = Math.min(1, Math.max(0, t / TS));
+          return TS * (1 - (1 - p) * (1 - p));
+        }
+        function render(t) {
+          var m = mclock(t);
+          for (var j = 0; j < pts.length; j++) {
+            var p = pts[j];
+            var x = p.x + p.vx * m;
+            var y = p.y - p.vy * m;
+            var o = p.base * (0.62 + 0.38 * Math.sin(p.ph + p.w * m));
+            var s = x.toFixed(1) + "|" + y.toFixed(1) + "|" + o.toFixed(3);
+            if (s !== p.last) {
+              p.last = s;
+              p.el.style.transform = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px)";
+              p.el.style.opacity = o.toFixed(3);
+            }
+          }
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        function show(sel, t0) { tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, t0); }
+        function flash(sel, t0, peak, dur, s0, s1) {
+          tl.fromTo(sel, { opacity: 0 }, { opacity: peak, duration: 0.001, ease: "none" }, t0);
+          tl.fromTo(sel, { opacity: peak }, { opacity: 0, duration: dur, ease: "power2.out", immediateRender: false }, t0 + 0.001);
+          if (s0 !== undefined) tl.fromTo(sel, { scale: s0 }, { scale: s1, duration: dur, ease: "power2.out" }, t0);
+        }
+        var D = { t: 0 };
+        tl.fromTo(D, { t: 0 }, { t: DUR, duration: DUR, ease: "none", onUpdate: function () { render(D.t); } }, 0);
+
+        // slow push (camera), dead stop at STILL
+        tl.fromTo("#world", { scale: 1 }, { scale: 1.04, duration: STILL * F, ease: "power2.out" }, 0);
+
+        // ===== k0 56.967: the lockup slams in =====
+        tl.fromTo("#flash", { opacity: 0.72 }, { opacity: 0, duration: 0.24, ease: "power2.out" }, 0);
+        tl.fromTo("#bloom", { opacity: 0.2, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, 0);
+        tl.fromTo("#markbox", { scale: 1.42, y: -16 }, { scale: 1, y: 0, duration: 0.55, ease: "expo.out" }, 0);
+        tl.fromTo("#markbox", { filter: "blur(16px) brightness(2.2)" }, { filter: "blur(0px) brightness(1)", duration: 0.32, ease: "power2.out" }, 0);
+        shelfCh.forEach(function (c, j) {
+          var t0 = j === 0 ? 0 : K(1) + j * 0.022;
+          tl.fromTo(c, { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, t0);
+          tl.fromTo(c, { scale: 1.7, y: -26, filter: "blur(14px)" }, { scale: 1, y: 0, filter: "blur(0px)", duration: 0.42, ease: "power4.out" }, t0);
+        });
+        flash("#shock", 0, 1, 0.65, 0.35, 2.6);
+        tl.fromTo("#streak", { opacity: 1, scaleX: 0.2 }, { opacity: 0, scaleX: 1.2, duration: 0.5, ease: "power2.out" }, 0);
+        tl.fromTo("#mark-sheen", { opacity: 1, "--p": "-30%" }, { "--p": "130%", duration: 0.55, ease: "power2.inOut" }, K(4));
+        tl.set("#mark-sheen", { opacity: 0 }, K(4) + 0.55);
+
+        // ===== k6 57.167: CAMPUS snaps out from tight to wide =====
+        campusCh.forEach(function (c, j) {
+          var off = (2.5 - j) * 30; // all letters start bunched at the centre
+          tl.fromTo(c, { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, K(CAMPUS));
+          tl.fromTo(c, { x: off, filter: "blur(8px)" }, { x: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, K(CAMPUS));
+        });
+
+        // ===== k24 57.767: tagline, word by word =====
+        gsap.utils.toArray("#tag .w").forEach(function (w, j) {
+          var t0 = K(TAG) + j * 0.045;
+          tl.fromTo(w, { opacity: 0, y: 44, filter: "blur(10px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "power3.out" }, t0);
+        });
+
+        // ===== k41 58.333 (bar): COMING SOON. slams =====
+        show("#soon", K(SOON));
+        tl.fromTo("#soon", { scale: 1.75, filter: "blur(12px)" }, { scale: 1, filter: "blur(0px)", duration: 0.4, ease: "power4.out" }, K(SOON));
+        flash("#soon-glow", K(SOON + 1), 1, 0.6, 0.6, 1.25);
+        flash("#soon-ring", K(SOON + 2), 1, 0.5, 1, 2.4);
+
+        // ===== k59 58.922: the outgoing bubble pops from its corner =====
+        show("#bub", K(BUB));
+        tl.fromTo("#bub", { scale: 0.62, y: 34, rotation: 2.5 }, { scale: 1, y: 0, rotation: 0, duration: 0.42, ease: "back.out(1.5)" }, K(BUB));
+        tl.fromTo("#bub", { filter: "blur(8px)" }, { filter: "blur(0px)", duration: 0.14, ease: "power2.out" }, K(BUB));
+
+        // ===== k76 59.505: glow pulse, light sweep over the mark, ticks read =====
+        tl.fromTo("#bloom", { scale: 1 }, { scale: 1.07, duration: 0.18, ease: "power2.out", immediateRender: false }, K(P1));
+        tl.fromTo("#bloom", { scale: 1.07 }, { scale: 1, duration: 0.42, ease: "power2.inOut", immediateRender: false }, K(P1) + 0.18);
+        tl.fromTo("#mark-sheen", { opacity: 1, "--p": "-30%" }, { "--p": "130%", duration: 0.5, ease: "power2.inOut", immediateRender: false }, K(P1));
+        tl.set("#mark-sheen", { opacity: 0 }, K(P1) + 0.5);
+        flash("#soon-ring", K(P1), 0.9, 0.45, 1, 2.2);
+        flash("#pulse", K(P1), 0.9, 0.55);
+        tl.fromTo("#ticks-blue", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "power1.out" }, K(P1));
+
+        // ===== k94 60.100: last soft pulse (glow only), done by k 103 =====
+        tl.fromTo("#bloom", { scale: 1 }, { scale: 1.04, duration: 0.12, ease: "power2.out", immediateRender: false }, K(P2));
+        tl.fromTo("#bloom", { scale: 1.04 }, { scale: 1, duration: 0.18, ease: "power2.inOut", immediateRender: false }, K(P2) + 0.12);
+        flash("#soon-glow", K(P2), 0.45, 0.28);
+        flash("#pulse", K(P2), 0.55, 0.28);
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
     </script>
   </body>
 </html>

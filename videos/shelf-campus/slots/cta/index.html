@@ -16,7 +16,7 @@
            k  50  54.167 "students"  STUDENTS. punches again + light sweep
            k  58-63 54.433-54.600    the card swings out (gone by 54.60)
            k  77  55.067 "semester"  update dialog pops: Semester 2.0 / Update available / [Update now]
-           k  80  55.167             the button is tapped; it collapses into the progress track
+           k  83  55.267             "Update now" collapses into the progress track
            k  84-110 55.300-56.167   Installing... fill 0 -> 100 %
            k 111  56.200 "upgrade"   Upgrade complete: check badge, light burst; calm hold to the cut */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
@@ -142,8 +142,6 @@
         color: #ffffff;
         transform-origin: 50% 50%;
       }
-      .ripple { position: absolute; left: 430px; top: 270px; width: 0; height: 0; display: flex; align-items: center; justify-content: center; }
-      .ripple i { flex: none; display: block; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0)); opacity: 0; }
       .track {
         position: absolute;
         left: 40px;
@@ -269,7 +267,6 @@
                 </div>
                 <div class="pct" id="pct">0%</div>
                 <div class="btn" id="btn">Update now</div>
-                <div class="ripple"><i id="ripple"></i></div>
                 <div class="sheen" id="dlg-sheen"></div>
               </div>
               <div class="tick-badge" id="tick">
@@ -293,7 +290,7 @@
         function $(id) { return document.getElementById(id); }
 
         var BUILT = 3, BY = 14, STUD1 = 21, FOR = 38, STUD2 = 50, ID_OUT = 58;
-        var DLG = 77, TAP = 80, FILL0 = 84, FILL1 = 110, DONE = 111;
+        var DLG = 77, MORPH = 83, FILL0 = 84, FILL1 = 110, DONE = 111;
 
         // STUDENTS. as per-letter spans
         var l2 = $("l2");
@@ -358,7 +355,11 @@
         var idFloat = $("id-float"), dlgFloat = $("dlg-float");
         var last = {};
         function put(key, el, prop, val) {
-          if (last[key] !== val) { last[key] = val; el.style[prop] = val; }
+          if (last[key] !== val) {
+            last[key] = val;
+            if (prop === "text") el.textContent = val;
+            else el.style[prop] = val;
+          }
         }
         function render(t) {
           put("idf", idFloat, "transform", floatTf(t, 0.6, 1));
@@ -368,9 +369,9 @@
           var sh = ((t * 1.6) % 1) * 900 - 180;
           put("shine", shine, "transform", "translateX(" + sh.toFixed(1) + "px)");
           var pc = Math.round(p * 100);
-          put("pct", pct, "textContent", t >= DONE * F - 0.001 ? "100%" : pc + "%");
+          put("pct", pct, "text", t >= DONE * F - 0.001 ? "100%" : pc + "%");
           var nd = Math.floor(t * 7) % 4;
-          put("dots", dots, "textContent", ["", ".", "..", "..."][nd]);
+          put("dots", dots, "text", ["", ".", "..", "..."][nd]);
         }
 
         var tl = gsap.timeline({ paused: true });
@@ -401,8 +402,8 @@
         tl.fromTo("#id-jolt", { y: 0 }, { y: 8, duration: 0.05, ease: "power2.out" }, K(STUD1 + 1));
         tl.fromTo("#id-jolt", { y: 8 }, { y: 0, duration: 0.3, ease: "back.out(2.6)", immediateRender: false }, K(STUD1 + 1) + 0.05);
         // "for": BUILT BY whips out the top of the mask, FOR rises in
-        tl.fromTo(["#w-built", "#w-by"], { yPercent: 0 }, { yPercent: -110, duration: 0.14, ease: "power4.in", immediateRender: false }, K(FOR - 2));
-        tl.fromTo("#w-for", { yPercent: 105 }, { yPercent: 0, duration: 0.32, ease: "back.out(1.7)", immediateRender: false }, K(FOR));
+        tl.fromTo(["#w-built", "#w-by"], { yPercent: 0 }, { yPercent: -110, duration: 0.11, ease: "power3.in", immediateRender: false }, K(FOR - 4));
+        tl.fromTo("#w-for", { yPercent: 105 }, { yPercent: 0, duration: 0.3, ease: "back.out(1.7)", immediateRender: false }, K(FOR - 1));
         // "students" again: a punch + a light sweep
         tl.fromTo("#l2", { scale: 1 }, { scale: 1.1, duration: 0.06, ease: "power2.out" }, K(STUD2));
         tl.fromTo("#l2", { scale: 1.1 }, { scale: 1, duration: 0.34, ease: "back.out(2.2)", immediateRender: false }, K(STUD2) + 0.06);
@@ -414,27 +415,25 @@
         tl.fromTo("#id-move", { filter: "blur(0px)" }, { filter: "blur(14px)", duration: 0.17, ease: "power2.in", immediateRender: false }, K(ID_OUT));
 
         // ================= update dialog =================
+        // 55.067 "semester": the dialog pops with its "Update available" state already laid out
         show("#dlg-move", DLG);
-        tl.fromTo("#dlg-move", { y: 60, scale: 0.82, rotationX: 24 }, { y: 0, scale: 1, rotationX: 0, duration: 0.55, ease: "back.out(1.4)" }, K(DLG));
-        tl.fromTo("#dlg-move", { filter: "blur(14px)" }, { filter: "blur(0px)", duration: 0.18, ease: "power2.out" }, K(DLG));
-        tl.fromTo("#tile", { scale: 0.4, rotation: -12 }, { scale: 1, rotation: 0, duration: 0.5, ease: "back.out(2)" }, K(DLG + 2));
-        tl.fromTo("#d-title", { opacity: 0, x: -36 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out" }, K(DLG + 3));
-        tl.fromTo("#s-avail", { yPercent: 100 }, { yPercent: 0, duration: 0.32, ease: "power4.out" }, K(DLG + 5));
+        tl.fromTo("#dlg-move", { y: 70, scale: 0.8, rotationX: 26 }, { y: 0, scale: 1, rotationX: 0, duration: 0.42, ease: "expo.out" }, K(DLG));
+        tl.fromTo("#dlg-move", { filter: "blur(14px)" }, { filter: "blur(0px)", duration: 0.16, ease: "power2.out" }, K(DLG));
+        tl.fromTo("#tile", { scale: 0.5, rotation: -12 }, { scale: 1, rotation: 0, duration: 0.42, ease: "back.out(2)" }, K(DLG + 1));
+        tl.fromTo("#d-title", { x: -40 }, { x: 0, duration: 0.36, ease: "expo.out" }, K(DLG + 1));
         tl.set(["#s-inst", "#s-done"], { yPercent: 100 }, 0);
-        tl.fromTo("#btn", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, K(DLG + 4));
-        // the tap: press, ripple, release, then the button collapses into the progress track
-        tl.fromTo("#btn", { scale: 1 }, { scale: 0.95, duration: 0.07, ease: "power2.out", immediateRender: false }, K(TAP));
-        flash("#ripple", K(TAP + 1), 1, 0.4, 0.4, 4.2);
-        tl.fromTo("#btn", { scale: 0.95, scaleY: 0.95, opacity: 1 }, { scale: 1, scaleY: 0.22, opacity: 0, duration: 0.16, ease: "power3.in", immediateRender: false }, K(TAP) + 0.07);
-        tl.fromTo("#track", { opacity: 0, scaleY: 3.2 }, { opacity: 1, scaleY: 1, duration: 0.22, ease: "power3.out" }, K(TAP + 3));
-        tl.fromTo("#pct", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.25, ease: "power3.out" }, K(FILL0));
-        tl.fromTo("#s-avail", { yPercent: 0 }, { yPercent: -100, duration: 0.16, ease: "power3.in", immediateRender: false }, K(FILL0 - 2));
-        tl.fromTo("#s-inst", { yPercent: 100 }, { yPercent: 0, duration: 0.3, ease: "power4.out", immediateRender: false }, K(FILL0));
+        tl.fromTo("#btn", { y: 26 }, { y: 0, duration: 0.3, ease: "expo.out" }, K(DLG + 2));
+        // 55.300: "Update now" collapses into the progress track; the subtitle rolls to Installing...
+        tl.fromTo("#btn", { scaleY: 1, scaleX: 1, opacity: 1 }, { scaleY: 0.24, scaleX: 0.84, opacity: 0, duration: 0.14, ease: "power3.in", immediateRender: false }, K(MORPH));
+        tl.fromTo("#track", { opacity: 0, scaleY: 3.4, scaleX: 1.2 }, { opacity: 1, scaleY: 1, scaleX: 1, duration: 0.24, ease: "power3.out" }, K(MORPH + 2));
+        tl.fromTo("#pct", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.24, ease: "power3.out" }, K(FILL0));
+        tl.fromTo("#s-avail", { yPercent: 0 }, { yPercent: -100, duration: 0.12, ease: "power3.in" }, K(MORPH));
+        tl.fromTo("#s-inst", { yPercent: 100 }, { yPercent: 0, duration: 0.28, ease: "power4.out", immediateRender: false }, K(FILL0));
 
         // ================= "upgrade" (56.200): complete =================
         tl.fromTo("#fill-ok", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "power1.out" }, K(DONE));
-        tl.fromTo("#s-inst", { yPercent: 0 }, { yPercent: -100, duration: 0.12, ease: "power3.in", immediateRender: false }, K(DONE - 2));
-        tl.fromTo("#s-done", { yPercent: 100 }, { yPercent: 0, duration: 0.36, ease: "back.out(1.8)", immediateRender: false }, K(DONE));
+        tl.fromTo("#s-inst", { yPercent: 0 }, { yPercent: -100, duration: 0.06, ease: "power3.in", immediateRender: false }, K(DONE - 3));
+        tl.fromTo("#s-done", { yPercent: 100 }, { yPercent: 0, duration: 0.22, ease: "expo.out", immediateRender: false }, K(DONE - 1));
         show("#tick", DONE);
         tl.fromTo("#tick", { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: 0.45, ease: "back.out(3)" }, K(DONE));
         tl.fromTo("#tile", { scale: 1 }, { scale: 1.1, duration: 0.08, ease: "power2.out", immediateRender: false }, K(DONE));

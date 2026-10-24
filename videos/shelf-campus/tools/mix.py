@@ -569,33 +569,54 @@ def design():
     lib("sword-impact", 44.926, -12.0, hp=100, length=0.6)
     lib("woosh-4", 45.48, -14.0)
 
-    # ---- PAYOFF ----
-    syn(wa_receive(), 45.74, -9.0)
-    syn(chime((1568.0, 2093.0), 0.06, 0.2, 0.5), 46.54, -9.0)     # FOUND
-    syn(chime((1318.5, 1568.0), 0.06, 0.2, 0.5), 47.98, -10.0)    # on track
+    # ---- PAYOFF (times from the payoff builder's report) ----
+    lib("woosh-3", 45.70, -17.0)
+    syn(wa_receive(), 45.733, -10.0)                               # the found-file card
+    syn(thunk(80, 0.2), 46.533, -11.0)                             # FOUND stamps on
+    syn(chime((1568.0, 2093.0), 0.06, 0.2, 0.5), 46.533, -9.0)
+    lib("fast-swoosh", 47.133, -17.0, pan=-0.3)                    # file card out, calendar in
+    lib("woosh-3", 47.20, -16.0, pan=0.3)
+    syn(bell_alarm(0.62), 47.33, -18.0, 0.3)                       # the deadline alarm rings...
+    syn(chime((1318.5, 1568.0), 0.06, 0.2, 0.5), 47.967, -10.0)   # ...goes quiet: on track
+    lib("fast-swoosh", 49.20, -16.0, pan=-0.5)                     # calendar whips out
+    lib("woosh-3", 49.30, -15.0)                                   # the WhatsApp icon bounces in
+    syn(thunk(95, 0.15), 49.66, -15.0)
     for k in range(9):                                             # 999+ chaos
-        syn(wa_receive(), 49.30 + k * 0.045, -14.0 - k * 0.5, rng.uniform(-0.6, 0.6))
-    for tt, x in ticks(50.07, 51.30, 12, 40, 1900):               # the badge counts down
+        syn(wa_receive(), 49.433 + k * 0.045, -14.0 - k * 0.5, rng.uniform(-0.6, 0.6))
+    for t in (49.733, 50.000):
+        syn(error_ding(700), t, -16.0, rng.uniform(-0.4, 0.4))
+    for tt, x in ticks(50.067, 51.30, 12, 40, 1900):               # the badge counts down
         syn(x, tt, -19.0)
-    syn(chime((1568.0, 2093.0, 2637.0), 0.05, 0.3, 0.5), 51.33, -8.0)
+    syn(chime((1568.0, 2093.0, 2637.0), 0.05, 0.3, 0.5), 51.333, -8.0)
+    syn(chime((2093.0, 2637.0), 0.05, 0.25, 0.4), 51.533, -16.0)
     f0 = S("E4f")["out0"]
     lib("cinematic-electric-hit", f0, -8.0, hp=50, length=1.0, pre=0.02)    # the bass hit on the freeze
     syn(sub_boom(0.8, 80, 30), f0, -5.0)
+    syn(thunk(55, 0.35), f0, -8.0)                                 # FINALLY USEFUL. slams
     lib("alien-digital-glitch", f0 + 0.02, -14.0, length=0.6)
     lib("glitchy-woosh", S("F1")["out0"], -12.0)                  # glitch transition back
-    # ---- CTA ----
-    lib("sword-slash-3", 53.21, -13.0)
-    lib("sword-slash-3", 54.17, -13.0)
-    syn(wa_receive(), 55.08, -11.0)
-    syn(data_sweep(0.85, 300, 3000), 55.30, -16.0)                # installing...
+    # ---- CTA (times from the cta builder's report) ----
+    lib("woosh-2", 52.60, -16.0, length=0.6)                       # the student ID card swings in
+    lib("sword-slash-3", 53.20, -12.0)                             # STUDENTS.
+    syn(thunk(90, 0.2), 53.20, -14.0)
+    lib("fast-swoosh", 53.633, -18.0)                              # BUILT BY whips out
+    lib("sword-slash-3", 54.167, -13.0)                            # STUDENTS. again
+    lib("woosh-3", 54.433, -17.0)                                  # card out
+    syn(wa_receive(), 55.067, -11.0)                               # Semester 2.0: update available
+    syn(tone(1500, 0.05, 0.012), 55.267, -16.0)                    # the button folds into the bar
+    syn(data_sweep(0.87, 300, 3000), 55.30, -16.0)                 # installing...
     syn(chime((1318.5, 1760.0, 2093.0, 2637.0), 0.06, 0.35, 0.5), 56.20, -6.0)    # upgrade complete
-    lib("bass-woosh-2", 56.20, -15.0, hp=90, length=0.7)
-    # ---- END CARD ----
+    lib("bass-woosh-2", 56.20, -15.0, hp=90, length=0.7, pre=0.2)
+    syn(chime((3135.9, 3951.1), 0.09, 0.15, 0.3), 56.27, -20.0)   # sparkles
+    # ---- END CARD (times from the end-card builder's report) ----
     lib("cinematic-electric-hit", 56.967, -9.0, hp=60, length=2.2, pre=0.02)
     lib("bass-woosh-1", 56.967, -11.0, hp=70, pre=0.25)
-    lib("woosh-2", 57.756, -15.0, length=0.6)
-    lib("sword-impact", 58.339, -11.0, hp=90, length=1.0)           # COMING SOON.
-    syn(wa_send(), 58.922, -6.0)
+    lib("woosh-3", 57.10, -19.0)                                   # light sweep over the mark
+    lib("sword-slash-1", 57.167, -16.0)                            # CAMPUS
+    lib("woosh-2", 57.767, -16.0, length=0.6)                      # YOUR BRAIN HAS A BACKUP NOW.
+    lib("sword-impact", 58.333, -11.0, hp=90, length=1.0)          # COMING SOON.
+    syn(wa_send(), 58.933, -6.0)                                   # the tag-a-friend bubble
+    syn(tone(2600, 0.04, 0.01), 59.50, -22.0)                      # its ticks turn blue
 
     # ---- overlay-driven pops (from the builders' reports, renders/cues.json) ----
     for c in load_cues().get("pops", []):

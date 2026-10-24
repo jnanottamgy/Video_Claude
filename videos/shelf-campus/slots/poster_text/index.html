@@ -3,33 +3,240 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>founders / poster_text</title>
     <script src="./vendor/gsap.min.js"></script>
-    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
+      /* FRONT layer (transparent), over poster_bg + the two founders' cut-outs. Output 15.200 -> 18.100 (87 frames).
+         A justified three-line stack (each line set to 944 px), every line SLAMS on a beat, white-hot for 3 frames,
+         then chrome silver with a blue glow:
+           15.199 TWO FOUNDERS. (zoom slam)  15.782 ONE SHARED BRAIN CELL. (from the right)
+           16.366 QUESTIONABLE SLEEP SCHEDULE. (from the left)
+         16.949: the detail lands: a thin rule with EST. 2026, leaders dropping to each founder's head with name tags.
+         17.532: gentle beat pulse. 17.975-18.075: fast zoom-blur exit (the next shot hard-cuts in at 18.1). */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+
+      #group { position: absolute; inset: 0; transform-origin: 540px 640px; }
+      .pl {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        text-align: center;
+        font-family: var(--font-brand);
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+        opacity: 0;
+      }
+      .pl .in { position: relative; display: inline-block; }
+      .pl .in > span { display: block; }
+      .pl .b {
+        position: relative;
+        background: linear-gradient(180deg, #ffffff 0%, #f3f7fc 30%, #d2dcea 47%, #8fa3bf 53%, #dfe7f2 66%, #b7c5d8 84%, #8396b3 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .pl .x {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #1a2c50;
+        text-shadow: 0 1px 0 #2f4c80, 0 2px 0 #2a4473, 0 3px 0 #243c67, 0 4px 0 #1f345b, 0 5px 0 #152545,
+          0 10px 16px rgba(0, 0, 0, 0.6), 0 22px 36px rgba(0, 0, 0, 0.35);
+      }
+      .pl .hl { position: absolute; left: 0; top: -2px; color: rgba(200, 225, 255, 0.85); }
+      .pl .g { position: absolute; left: 0; top: 0; color: rgb(var(--glow)); filter: blur(22px); opacity: 0.35; }
+      .pl .w {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #ffffff;
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.95), 0 0 34px rgba(170, 210, 255, 0.95), 0 0 70px rgba(var(--glow), 0.8);
+        opacity: 0;
+      }
+      .streak {
+        position: absolute;
+        left: -100px;
+        width: 1280px;
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, rgba(79, 157, 255, 0) 0%, rgba(79, 157, 255, 0.75) 22%, #ffffff 50%, rgba(79, 157, 255, 0.75) 78%, rgba(79, 157, 255, 0) 100%);
+        box-shadow: 0 0 22px rgba(var(--glow), 0.95), 0 0 60px rgba(var(--glow), 0.55);
+        opacity: 0;
+      }
+
+      /* ---- the detail ---- */
+      .rule {
+        position: absolute;
+        top: 745px;
+        height: 2px;
+        border-radius: 1px;
+        box-shadow: 0 0 10px rgba(var(--glow), 0.7);
+      }
+      #ruleL { left: 64px; width: 330px; transform-origin: 100% 50%; background: linear-gradient(90deg, rgba(190, 215, 250, 0), rgba(220, 235, 255, 0.95)); }
+      #ruleR { left: 686px; width: 330px; transform-origin: 0% 50%; background: linear-gradient(90deg, rgba(220, 235, 255, 0.95), rgba(190, 215, 250, 0)); }
+      #est {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        top: 731px;
+        text-align: center;
+        font: 700 28px/1 var(--font-mono);
+        letter-spacing: 0.22em;
+        color: #cfe2ff;
+        text-shadow: 0 0 14px rgba(var(--glow), 0.8);
+        white-space: nowrap;
+      }
+      .lead {
+        position: absolute;
+        top: 746px;
+        width: 2px;
+        border-radius: 1px;
+        background: linear-gradient(180deg, rgba(220, 235, 255, 0.95), rgba(140, 190, 255, 0.55));
+        box-shadow: 0 0 8px rgba(var(--glow), 0.7);
+        transform-origin: 50% 0%;
+      }
+      .dot {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid #dbeaff;
+        background: rgba(79, 157, 255, 0.55);
+        box-shadow: 0 0 12px rgba(var(--glow), 0.95), 0 0 26px rgba(var(--glow), 0.6);
+      }
+      .tag {
+        position: absolute;
+        top: 768px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        white-space: nowrap;
+      }
+      .tag .ix { font: 700 24px/1 var(--font-mono); color: #8fc0ff; text-shadow: 0 0 10px rgba(var(--glow), 0.8); }
+      .tag .nm {
+        font: 700 30px/1 var(--font-brand);
+        letter-spacing: 0.1em;
+        background: linear-gradient(180deg, #ffffff 0%, #e3eaf4 55%, #b4c3d8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 0 8px rgba(var(--glow), 0.5)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+      }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="2.9" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="2.9" data-track-index="0">
+        <div id="group" data-layout-allow-overflow>
+          <div class="pl" id="p1" data-text="TWO FOUNDERS."></div>
+          <div class="pl" id="p2" data-text="ONE SHARED BRAIN CELL."></div>
+          <div class="pl" id="p3" data-text="QUESTIONABLE SLEEP SCHEDULE."></div>
+          <div class="streak" id="s1"></div>
+          <div class="streak" id="s2"></div>
+          <div class="streak" id="s3"></div>
+          <div id="detail">
+            <div class="rule" id="ruleL"></div>
+            <div class="rule" id="ruleR"></div>
+            <div id="est">EST. 2026</div>
+            <div class="lead" id="leadJ" style="left: 299px; height: 146px"></div>
+            <div class="lead" id="leadK" style="left: 879px; height: 214px"></div>
+            <div class="dot" id="dotJ" style="left: 293px; top: 885px"></div>
+            <div class="dot" id="dotK" style="left: 873px; top: 953px"></div>
+            <div class="tag" id="tagJ" style="left: 318px"><span class="ix" data-layout-ignore>01</span><span class="nm">JNANOTTAM</span></div>
+            <div class="tag" id="tagK" style="right: 222px"><span class="nm">KARTIK</span><span class="ix" data-layout-ignore>02</span></div>
           </div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
       </div>
     </div>
     <script>
+      // ---------- layout: each line justified to W px (Sora 800 widths in em, measured) ----------
+      var W = 944;
+      var LINES = [
+        { id: "p1", em: 8.8, capTop: 404 },
+        { id: "p2", em: 13.46, capTop: 534 },
+        { id: "p3", em: 17.44, capTop: 630 },
+      ];
+      function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text) e.textContent = text;
+        return e;
+      }
+      LINES.forEach(function (L, i) {
+        var line = document.getElementById(L.id);
+        var fs = W / L.em;
+        L.fs = fs;
+        L.top = L.capTop - 0.11 * fs;               // Sora caps start 0.11 em under the top of a line-height:1 box
+        L.mid = L.capTop + 0.36 * fs;
+        line.style.fontSize = fs.toFixed(2) + "px";
+        line.style.top = L.top.toFixed(1) + "px";
+        var text = line.getAttribute("data-text");
+        var inn = el("span", "in");
+        ["g", "x", "hl", "b", "w"].forEach(function (c) {
+          var s = el("span", c, text);
+          s.setAttribute("data-layout-allow-overlap", "");
+          s.setAttribute("data-layout-allow-occlusion", "");
+          inn.appendChild(s);
+        });
+        line.appendChild(inn);
+        line.style.transformOrigin = "540px " + (0.47 * fs).toFixed(1) + "px";
+        document.getElementById("s" + (i + 1)).style.top = (L.mid - 4).toFixed(1) + "px";
+      });
+
+      // ---------- timeline ----------
+      var T0 = 15.2;
+      function at(out) { return Math.max(0, Math.round(out * 30) / 30 - T0 - 0.004); } // first frame shows the pose
       var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
+      var T = [at(15.199), at(15.782), at(16.366)];
+      var FROM = [
+        { scale: 1.6, x: 0, skewX: 0 },
+        { scale: 1.35, x: 130, skewX: -14 },
+        { scale: 1.35, x: -130, skewX: 14 },
+      ];
+      LINES.forEach(function (L, i) {
+        var t = T[i], line = "#" + L.id, f = FROM[i];
+        tl.set(line, { opacity: 1 }, t);
+        tl.fromTo(line, { scale: f.scale, x: f.x, skewX: f.skewX }, { scale: 0.97, x: 0, skewX: 0, duration: 0.16, ease: "expo.out" }, t);
+        tl.to(line, { scale: 1, duration: 0.22, ease: "sine.out" }, t + 0.16);
+        tl.fromTo(line + " .in", { filter: "blur(16px)" }, { filter: "blur(0px)", duration: 0.18, ease: "power2.out" }, t);
+        tl.set(line + " .w", { opacity: 1 }, t);
+        tl.to(line + " .w", { opacity: 0, duration: 0.15, ease: "power2.out" }, t + 3 / 30);
+        tl.fromTo(line + " .g", { opacity: 1 }, { opacity: 0.35, duration: 0.5, ease: "power2.out" }, t);
+        // the light streak through the line
+        tl.fromTo("#s" + (i + 1), { opacity: 0, scaleX: 0.3 }, { opacity: 1, scaleX: 1, duration: 0.07, ease: "expo.out" }, t);
+        tl.to("#s" + (i + 1), { opacity: 0, scaleX: 1.12, scaleY: 0.4, duration: 0.18, ease: "power2.out" }, t + 0.07);
+        // the lines already up take the hit: a short nudge down and a glint
+        for (var j = 0; j < i; j++) {
+          tl.fromTo("#" + LINES[j].id + " .in", { y: 7 }, { y: 0, duration: 0.24, ease: "power3.out", immediateRender: false }, t);
+          tl.fromTo("#" + LINES[j].id + " .g", { opacity: 0.8 }, { opacity: 0.35, duration: 0.35, ease: "power2.out", immediateRender: false }, t);
+        }
+      });
+
+      // 16.949: the detail lands
+      var TD = at(16.949);
+      tl.fromTo(["#ruleL", "#ruleR"], { scaleX: 0 }, { scaleX: 1, duration: 0.36, ease: "expo.out" }, TD);
+      tl.fromTo("#est", { opacity: 0, y: 10, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "power3.out" }, TD);
+      tl.fromTo(["#leadJ", "#leadK"], { scaleY: 0 }, { scaleY: 1, duration: 0.26, ease: "power3.out" }, TD + 0.08);
+      tl.fromTo(["#dotJ", "#dotK"], { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.24, ease: "back.out(2.6)" }, TD + 0.26);
+      tl.fromTo("#tagJ", { opacity: 0, x: -16, filter: "blur(6px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.3, ease: "expo.out" }, TD + 0.12);
+      tl.fromTo("#tagK", { opacity: 0, x: 16, filter: "blur(6px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.3, ease: "expo.out" }, TD + 0.12);
+
+      // 17.532: gentle beat pulse
+      var TP = at(17.532);
+      tl.fromTo("#group", { scale: 1 }, { scale: 1.022, duration: 0.07, ease: "power2.out", immediateRender: false }, TP);
+      tl.to("#group", { scale: 1, duration: 0.4, ease: "sine.out" }, TP + 0.07);
+      LINES.forEach(function (L) {
+        tl.fromTo("#" + L.id + " .g", { opacity: 0.85 }, { opacity: 0.35, duration: 0.45, ease: "power2.out", immediateRender: false }, TP);
+      });
+      tl.fromTo(["#dotJ", "#dotK"], { scale: 1.35 }, { scale: 1, duration: 0.35, ease: "power2.out", immediateRender: false }, TP);
+
+      // 17.975: fast exit (zoom through + blur): ~85 % gone on the last frame (18.067), the next shot cuts in at 18.1
+      var TE = 17.975 - T0;
+      tl.fromTo("#group", { opacity: 1, filter: "blur(0px)" }, { scale: 1.18, opacity: 0, filter: "blur(16px)", duration: 0.1, ease: "power2.in", immediateRender: false }, TE);
+
       window.__timelines["main"] = tl;
       tl.seek(0);
     </script>

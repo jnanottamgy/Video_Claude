@@ -7,17 +7,18 @@
     <script src="./vendor/gsap.min.js"></script>
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
-      /* FULL-FRAME scene. Output 22.767 -> 27.433 (140 frames). Local t = output - 22.767; frame k shows t = k/30.
-           f4   22.900  ping: one green WhatsApp unread pill "1" pops in the dark with two ripples, fades
-           f17  23.350  emergence: a thin rim-light traces the mark's edges from its top corner (both ways)
-           f35  23.933  the trace closes; inner edges draw; the chrome fades up out of the dark
-           f52  24.516  a slow light sweep crosses the chrome (haze beam + dust motes in it)
-           f70  25.100  shimmer build: glints on the corners, motes pulled in, a ring contracts, the mark trembles
-           f87  25.667  DROP (25.683): white-hot mark, flash, shockwave, blue lightning, navy+blue bloom, SHELF slams
-           f97  26.033  CAMPUS snaps in, tracking out from tight to wide
-           f105 26.267  glow pulse 1
-           f122 26.833  glow pulse 2 + tagline "your academic memory"
-         Lockup (mark + SHELF + CAMPUS + tagline) sits inside y 540-1215, centred on x 540. */
+      /* FULL-FRAME scene. Output 22.767 -> 27.433 (140 frames). Local t = output - 22.767; index k (PNG frame k+1)
+         shows t = k/30 = output (683 + k) / 30.
+           k4   22.900  ping: one green WhatsApp unread pill "1" pops in the dark with two ripples, fades
+           k17  23.350  emergence: a thin rim-light traces the mark's edges from its top corner (both ways)
+           k35  23.933  the trace closes; inner edges draw; the chrome fades up out of the dark
+           k52  24.500  a slow light sweep crosses the chrome (haze beam + dust motes in it)
+           k70  25.100  shimmer build: glints on the corners, motes pulled in, a ring contracts, the mark trembles
+           k87  25.667  DROP (25.683): white-hot mark, flash, shockwave, blue lightning, navy+blue bloom, SHELF slams
+           k97  26.000  CAMPUS snaps in, tracking out from tight to wide
+           k105 26.267  glow pulse 1 (+ a lightning crackle)
+           k122 26.833  glow pulse 2 (+ crackle) + tagline "your academic memory"
+         Lockup (mark + SHELF + CAMPUS + tagline) sits inside y 530-1245 (with the hold push), centred on x 540. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #000; }
       .scene { position: absolute; inset: 0; overflow: hidden; background: #000; }
       .full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
@@ -657,17 +658,17 @@
         var R = [];
         function rig(sel, init, write) { var r = MO.rig(sel, init, write); R.push(r); return r; }
         function pulses(track, peak, rest) {
-          [K.p1, K.p2].forEach(function (k) { MO.pulse(track, H(k), peak, 0.06, 0.45, rest); });
+          [K.p1, K.p2].forEach(function (k) { MO.pulse(track, H(k) - 0.045, peak, 0.055, 0.45, rest); });
         }
 
         // ---- ping (frame 4 = 22.900): the green unread pill pops with two ripples, then fades ----
         var tPop = 3 * FR + 0.001; // frame 3 still black, frame 4 shows the pop at ~2/3 size
         var ping = rig("#pingCore", { o: 0, s: 0.35, b: 0 });
         ping.to("o", tPop, 0.02, 1, "none").to("s", tPop, 0.32, 1, "back.out(2.6)");
-        ping.to("o", 0.44, 0.26, 0, "power2.in").to("s", 0.44, 0.26, 0.55, "power2.in").to("b", 0.44, 0.26, 4, "power2.in");
+        ping.to("o", 0.36, 0.22, 0, "power2.in").to("s", 0.36, 0.22, 0.55, "power2.in").to("b", 0.36, 0.22, 4, "power2.in");
         var pglow = rig("#pingGlow", { o: 0, s: 0.5 });
         pglow.to("o", tPop, 0.12, 1, "power2.out").to("s", tPop, 0.12, 1, "power2.out");
-        pglow.to("o", 0.24, 0.5, 0, "power2.in").to("s", 0.24, 0.5, 1.25, "power2.in");
+        pglow.to("o", 0.22, 0.36, 0, "power2.in").to("s", 0.22, 0.36, 1.25, "power2.in");
         rig("#rip1", { o: 0, s: 1 }).to("o", H(K.ping), 0.8, 0, "power2.out", 0.95).to("s", H(K.ping), 0.8, 5.2, "power2.out", 1);
         rig("#rip2", { o: 0, s: 1 }).to("o", H(K.ping) + 0.13, 0.75, 0, "power2.out", 0.8).to("s", H(K.ping) + 0.13, 0.75, 4.2, "power2.out", 1);
 
@@ -715,7 +716,7 @@
         // ---- DROP (frame 87): flash, white-hot mark, shockwaves, anamorphic streak ----
         rig("#flash", { o: 0 }).to("o", TD, 0.26, 0, "expo.out", 0.9);
         rig("#markHot", { o: 0 }).set("o", TD, 1).to("o", TD + 2 * FR, 0.45, 0, "power1.out", 1);
-        rig("#shock1", { o: 0, s: 0.42 }).to("o", TD, 0.55, 0, "power1.in", 1).to("s", TD, 0.55, 4.4, "power3.out", 0.42);
+        rig("#shock1", { o: 0, s: 0.42 }).to("o", TD, 0.46, 0, "power1.in", 1).to("s", TD, 0.46, 4.2, "power3.out", 0.42);
         rig("#shock2", { o: 0, s: 0.35 }).to("o", TD, 0.7, 0, "power2.in", 0.95).to("s", TD, 0.7, 3.4, "power3.out", 0.35);
         rig("#streak", { o: 0, sx: 0.15 }).to("sx", TD, 0.3, 1, "expo.out").set("o", TD, 1).to("o", TD + 0.08, 0.55, 0, "power2.in");
         var pr = rig("#pulseRing", { o: 0, s: 0.95 });
@@ -740,7 +741,7 @@
           r.css("letterSpacing", v.ls.toFixed(4) + "em");
           r.css("paddingLeft", v.ls.toFixed(4) + "em");
           r.css("filter", v.b > 0.05 ? "blur(" + v.b.toFixed(2) + "px)" : "none");
-        }).to("o", TC, 0.1, 1, "power2.out").to("ls", TC, 0.55, 0.34, "expo.out").to("b", TC, 0.3, 0, "power2.out");
+        }).to("o", TC, 0.08, 1, "power2.out", 0.65).to("ls", TC, 0.55, 0.34, "expo.out").to("b", TC, 0.24, 0, "power2.out", 7);
         rig("#ruleL", { o: 0, sx: 0 }).to("sx", TC + 0.04, 0.55, 1, "expo.out").to("o", TC + 0.04, 0.15, 1, "none");
         rig("#ruleR", { o: 0, sx: 0 }).to("sx", TC + 0.04, 0.55, 1, "expo.out").to("o", TC + 0.04, 0.15, 1, "none");
 
@@ -751,7 +752,7 @@
           r.css("filter", v.b > 0.05 ? "blur(" + v.b.toFixed(2) + "px)" : "none");
           r.css("letterSpacing", v.ls.toFixed(4) + "em");
           r.css("paddingLeft", v.ls.toFixed(4) + "em");
-        }).to("o", H(K.p2), 0.22, 1, "power2.out").to("y", H(K.p2), 0.35, 0, "power3.out").to("b", H(K.p2), 0.22, 0, "power2.out").to("ls", H(K.p2), 0.4, 0.2, "power3.out");
+        }).to("o", H(K.p2), 0.2, 1, "power2.out", 0.35).to("y", H(K.p2), 0.35, 0, "power3.out").to("b", H(K.p2), 0.22, 0, "power2.out").to("ls", H(K.p2), 0.4, 0.2, "power3.out");
 
         function render(t) {
           var f = Math.round(t * 30 + 1e-6);

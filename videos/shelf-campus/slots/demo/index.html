@@ -3,35 +3,416 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>SHELF CAMPUS demo</title>
     <script src="./vendor/gsap.min.js"></script>
-    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
+    <link rel="stylesheet" href="./lib/wa-kit.css" />
     <style>
-      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
-      .scene { position: absolute; inset: 0; }
+      /* demo: full, opaque. 32.100 -> 45.500 (402 frames). NO NEW APP / JUST WHATSAPP, then SHELF Campus in a
+         WhatsApp chat on a generic 3D phone, kinetic words above it, and four closing hits. One paused timeline:
+         a single linear driver calls render(t) (lib/demo.js); every pixel is a pure function of time. */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #040a18; }
+      .scene { position: absolute; inset: 0; overflow: hidden; }
+      .L { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      /* ================= SHELF world background ================= */
+      #bg {
+        background:
+          radial-gradient(60% 34% at 50% 64%, rgba(36, 86, 184, 0.34) 0%, rgba(20, 52, 128, 0.14) 50%, rgba(0, 0, 0, 0) 78%),
+          radial-gradient(130% 85% at 50% 38%, #0d2149 0%, #091838 40%, #060f26 72%, #030814 100%);
+      }
+      #bloom {
+        position: absolute; left: -210px; top: 470px; width: 1500px; height: 1500px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(79, 157, 255, 0.36) 0%, rgba(79, 157, 255, 0.14) 32%, rgba(79, 157, 255, 0.04) 52%, rgba(79, 157, 255, 0) 68%);
+        will-change: transform, opacity;
+      }
+      #beam {
+        position: absolute; left: 140px; top: -260px; width: 800px; height: 1300px;
+        background: radial-gradient(50% 60% at 50% 0%, rgba(170, 205, 255, 0.16) 0%, rgba(120, 170, 255, 0.05) 45%, rgba(0, 0, 0, 0) 75%);
+        transform-origin: 50% 0;
+      }
+      #greenGlow {
+        position: absolute; left: 140px; top: 650px; width: 800px; height: 800px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(37, 211, 102, 0.42) 0%, rgba(37, 211, 102, 0.12) 38%, rgba(37, 211, 102, 0) 66%);
+        opacity: 0; will-change: transform, opacity;
+      }
+      .bok { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform, opacity; }
+      #vig { background: radial-gradient(115% 80% at 50% 48%, rgba(0, 0, 0, 0) 56%, rgba(0, 0, 0, 0.5) 100%); pointer-events: none; }
+
+      /* ================= app grid (NO NEW APP) ================= */
+      #grid { pointer-events: none; }
+      .app {
+        position: absolute; left: 0; top: 0; width: 140px; height: 140px; border-radius: 33px;
+        display: grid; place-items: center; visibility: hidden; will-change: transform, opacity, filter;
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), inset 0 -4px 10px rgba(0, 0, 0, 0.18), 0 14px 30px rgba(0, 0, 0, 0.45);
+      }
+      .app > svg { width: 76px; height: 76px; display: block; opacity: 0.86; }
+      .app.newapp {
+        background: linear-gradient(160deg, #2c5296 0%, #142a57 100%);
+        box-shadow: inset 0 0 0 2.5px rgba(150, 200, 255, 0.78), inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 0 34px rgba(79, 157, 255, 0.55), 0 14px 30px rgba(0, 0, 0, 0.45);
+      }
+      .app.newapp > svg.dl { width: 92px; height: 92px; opacity: 1; }
+      .app .lbl {
+        position: absolute; left: -40px; right: -40px; top: 150px; text-align: center;
+        font: 700 22px/26px var(--font-ui); letter-spacing: 0.08em; color: #d6e7ff; white-space: nowrap;
+      }
+      .app .strike { position: absolute; left: -14px; top: -14px; width: 168px; height: 168px; overflow: visible; filter: drop-shadow(0 0 10px rgba(255, 59, 48, 0.7)); }
+
+      /* ================= camera + 3D phone ================= */
+      #cam { transform-origin: 0 0; will-change: transform, filter; }
+      #stage3d { perspective: 2400px; }
+      #phone {
+        position: absolute; left: 210px; top: 600px; width: 660px; height: 1430px;
+        transform-style: preserve-3d; transform-origin: 330px 715px; will-change: transform;
+      }
+      .ph-edge { position: absolute; left: 0; top: 0; width: 660px; height: 1430px; border-radius: 94px; background: linear-gradient(150deg, #2a2f38, #0f1115 60%, #22262d); }
+      .ph-btn { position: absolute; width: 8px; border-radius: 4px; background: linear-gradient(90deg, #4a505b, #1d2026); }
+      .ph-body {
+        position: absolute; left: 0; top: 0; width: 660px; height: 1430px; border-radius: 94px;
+        background: linear-gradient(152deg, #6c7383 0%, #2c3039 14%, #16181d 42%, #1d2026 70%, #3b414d 90%, #59606e 100%);
+        box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.16), 0 0 70px rgba(79, 157, 255, 0.2), 0 50px 120px rgba(0, 0, 0, 0.55);
+      }
+      .ph-bezel { position: absolute; left: 5px; top: 5px; width: 650px; height: 1420px; border-radius: 89px; background: #040506; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05); }
+      #badgeGlow {
+        position: absolute; left: 30px; top: 415px; width: 600px; height: 600px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(37, 211, 102, 0.55) 0%, rgba(37, 211, 102, 0.18) 40%, rgba(37, 211, 102, 0) 68%);
+        opacity: 0; will-change: transform, opacity;
+      }
+      #screen {
+        position: absolute; left: 15px; top: 15px; width: 630px; height: 1400px; border-radius: 77px;
+        overflow: hidden; background: #0b141a; will-change: clip-path;
+      }
+      #ui { position: absolute; left: 0; top: 0; width: 630px; height: 1400px; font-family: var(--font-ui); color: #e9edef; }
+      #badgeOv {
+        position: absolute; left: 0; top: 0; width: 630px; height: 1400px;
+        background-image: linear-gradient(180deg, #5df58a 0%, #25d366 55%, #1cb653 100%);
+        background-repeat: no-repeat; background-color: #25d366;
+      }
+      #badgeOv::after { /* glossy top light of the app icon */
+        content: ""; position: absolute; inset: 0;
+        background: radial-gradient(120% 60% at 30% 0%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 60%);
+      }
+      #badgeGlyph { position: absolute; left: 265px; top: 650px; width: 100px; height: 100px; transform-origin: 50px 50px; }
+      #badgeGlyph svg { width: 100px; height: 100px; display: block; }
+      #island {
+        position: absolute; left: 220px; top: 18px; width: 190px; height: 56px; border-radius: 28px; background: #000;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+      }
+      #island::after { content: ""; position: absolute; right: 22px; top: 18px; width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #1d2a44 0%, #0a0e18 60%, #000 100%); }
+      #glare {
+        position: absolute; left: -300px; top: 0; width: 1230px; height: 1400px; pointer-events: none;
+        background: linear-gradient(112deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, 0.055) 46%, rgba(255, 255, 255, 0.11) 50%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0) 62%);
+        will-change: transform;
+      }
+
+      /* ---------- WhatsApp chat (dark) ---------- */
+      #wall { position: absolute; left: 0; top: 0; width: 630px; height: 1400px; background: #0b141a; }
+      #wall::before {
+        content: ""; position: absolute; inset: 0; opacity: 0.055;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 22l3.5 7 7.7 1.1-5.6 5.4 1.3 7.7-6.9-3.6-6.9 3.6 1.3-7.7-5.6-5.4 7.7-1.1z'/%3E%3Cpath d='M70 30c-3-5-11-4-11 3 0 6 11 12 11 12s11-6 11-12c0-7-8-8-11-3z'/%3E%3Ccircle cx='122' cy='24' r='9'/%3E%3Cpath d='M118 21h.1M126 21h.1M117.5 27c2.5 2.6 6.5 2.6 9 0'/%3E%3Cpath d='M22 78c6-8 14-8 20 0s14 8 20 0'/%3E%3Cpath d='M96 70h22v16H96zM100 70v-5h14v5'/%3E%3Cpath d='M134 66v18M125 75h18'/%3E%3Cpath d='M30 112a10 10 0 0 1 19-4 7 7 0 0 1 1 14H31a6 6 0 0 1-1-10z'/%3E%3Cpath d='M84 104l6 22 4-9 9 4z'/%3E%3Cpath d='M118 108c0-5 4-9 9-9s9 4 9 9-9 17-9 17-9-12-9-17z'/%3E%3Ccircle cx='127' cy='108' r='3'/%3E%3Cpath d='M64 136h8l3-6 4 12 3-6h8'/%3E%3C/g%3E%3C/svg%3E");
+        background-size: 200px 200px;
+      }
+      #chat { position: absolute; left: 0; top: 200px; width: 630px; height: 1200px; overflow: hidden; }
+      #chatContent { position: absolute; left: 0; top: 0; width: 630px; height: 1700px; will-change: transform; }
+      .chipday {
+        position: absolute; left: 50%; top: 18px; height: 46px; padding: 0 20px; border-radius: 12px; transform: translateX(-50%);
+        background: #182229; color: #8696a0; font: 600 22px/46px var(--font-ui); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+      }
+      .e2e {
+        position: absolute; left: 50%; top: 78px; width: 452px; height: 56px; margin-left: -226px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; gap: 9px;
+        background: #182229; color: #ffd279; font: 400 21px/56px var(--font-ui); white-space: nowrap;
+      }
+      .e2e svg { width: 20px; height: 22px; display: block; flex: none; }
+      .msg { position: absolute; visibility: hidden; will-change: transform, opacity; }
+      .msg.out { right: 22px; transform-origin: 100% 100%; }
+      .msg.in { left: 22px; transform-origin: 0 0; }
+      .bub { position: relative; border-radius: 20px; color: #e9edef; box-shadow: 0 2px 2px rgba(0, 0, 0, 0.22), 0 8px 18px rgba(0, 0, 0, 0.18); }
+      .bub.out { background: #005c4b; border-top-right-radius: 0; }
+      .bub.in { background: #202c33; border-top-left-radius: 0; }
+      .bub .tail { position: absolute; top: 0; width: 16px; height: 25px; display: block; }
+      .bub.out .tail { right: -15px; }
+      .bub.in .tail { left: -15px; }
+      .bub.txt { padding: 11px 20px 11px 20px; }
+      .ln { display: flex; align-items: flex-end; height: 40px; white-space: nowrap; }
+      .tx { font: 400 30px/40px var(--font-ui); letter-spacing: -0.006em; white-space: nowrap; }
+      .tx.b { font-weight: 600; }
+      .sp { flex: 1; min-width: 14px; }
+      .tm { display: flex; align-items: center; gap: 5px; height: 26px; font: 400 20px/26px var(--font-ui); color: rgba(233, 237, 239, 0.62); white-space: nowrap; flex: none; transform: translateY(5px); }
+      .bub.in .tm { color: #8696a0; }
+      .tk { width: 24px; height: 15px; display: block; }
+      .tk path { fill: none; stroke: #8696a0; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+      .tk.read path { stroke: #53bdeb; }
+      .tk .t2 { opacity: 0; }
+      .tk.dlv .t2 { opacity: 1; }
+      .gl { width: 32px; height: 32px; display: block; flex: none; margin-right: 10px; align-self: center; }
+      .sep { color: #8696a0; }
+      /* document bubble */
+      .bub.doc { padding: 6px 6px 0; }
+      .dprev { position: relative; width: 428px; height: 150px; border-radius: 14px 14px 0 0; overflow: hidden; background: #e9edf2; }
+      .page { position: absolute; left: 22px; top: 16px; width: 384px; height: 300px; background: #fbfcfe; border-radius: 4px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); padding: 18px 22px; }
+      .pg-tag { display: inline-block; height: 22px; padding: 0 10px; border-radius: 6px; background: #2b6bd6; color: #fff; font: 700 13px/22px var(--font-ui); letter-spacing: 0.08em; }
+      .pg-h { margin-top: 8px; font: 700 22px/26px var(--font-ui); color: #1b2333; white-space: nowrap; }
+      .pg-l { height: 7px; border-radius: 4px; background: #c9d1dd; margin-top: 10px; }
+      .pg-row { display: flex; gap: 10px; margin-top: 12px; }
+      .pg-box { height: 34px; flex: 1; border-radius: 6px; border: 2px solid #9fb6dd; background: #eef3fb; }
+      .drow { display: flex; align-items: center; gap: 14px; width: 428px; height: 92px; padding: 0 16px; background: rgba(0, 0, 0, 0.16); border-radius: 0 0 14px 14px; }
+      .bub.in .drow { background: rgba(0, 0, 0, 0.2); }
+      .drow svg.pdf { width: 46px; height: 56px; display: block; flex: none; }
+      .dn { min-width: 0; flex: 1; }
+      .fn { font: 600 27px/32px var(--font-ui); color: #e9edef; white-space: nowrap; }
+      .fm { font: 400 21px/26px var(--font-ui); color: #8696a0; white-space: nowrap; margin-top: 2px; }
+      .bub.out .fm { color: rgba(233, 237, 239, 0.6); }
+      .dfoot { display: flex; align-items: center; justify-content: flex-end; height: 34px; padding: 0 12px 2px; }
+      .dfoot .tm { transform: none; }
+      .dcap { display: flex; align-items: flex-end; height: 46px; padding: 0 14px 8px; }
+      /* SHELF reply */
+      .chip {
+        display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px 0 8px; border-radius: 22px;
+        background: linear-gradient(160deg, rgba(43, 76, 140, 0.55), rgba(16, 32, 66, 0.7)); color: #b9d8ff;
+        box-shadow: inset 0 0 0 1.5px rgba(120, 180, 255, 0.5), 0 0 16px rgba(79, 157, 255, 0.28);
+        font: 600 21px/44px var(--font-ui); white-space: nowrap; flex: none; transform-origin: 0 50%;
+      }
+      .chip img { width: 30px; height: 34px; object-fit: contain; display: block; filter: drop-shadow(0 0 4px rgba(140, 190, 255, 0.6)); }
+      .halo { position: absolute; inset: -3px; border-radius: 22px; border-top-left-radius: 2px; pointer-events: none; opacity: 0; box-shadow: 0 0 0 2px rgba(120, 180, 255, 0.75), 0 0 34px rgba(79, 157, 255, 0.55); }
+      /* deadline card */
+      .dcard { position: relative; display: flex; gap: 18px; align-items: center; width: 458px; height: 168px; padding: 0 18px; border-radius: 16px; background: #111b21; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+      .cal { position: relative; width: 96px; height: 100px; flex: none; border-radius: 18px; overflow: hidden; background: #f4f6f9; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); }
+      .cal-h { height: 30px; background: #e5534b; color: #fff; font: 800 17px/30px var(--font-ui); letter-spacing: 0.12em; text-align: center; }
+      .cal-d { font: 700 46px/66px var(--font-ui); color: #1b2333; text-align: center; letter-spacing: -0.02em; }
+      .dct { min-width: 0; flex: 1; }
+      .dc-t { font: 600 30px/36px var(--font-ui); color: #e9edef; white-space: nowrap; }
+      .dc-w { display: flex; align-items: center; gap: 8px; font: 400 25px/32px var(--font-ui); color: #8696a0; white-space: nowrap; margin-top: 2px; }
+      .dc-w svg { width: 22px; height: 22px; display: block; }
+      .tag {
+        display: inline-flex; align-items: center; gap: 7px; height: 36px; margin-top: 10px; padding: 0 14px 0 11px; border-radius: 18px;
+        background: rgba(229, 83, 75, 0.16); color: #ff8a80; box-shadow: inset 0 0 0 1.5px rgba(229, 83, 75, 0.62);
+        font: 600 21px/36px var(--font-ui); white-space: nowrap;
+      }
+      .tag i { width: 9px; height: 9px; border-radius: 50%; background: #ff5a4f; box-shadow: 0 0 8px rgba(255, 90, 79, 0.9); display: block; }
+      /* typing bubble */
+      .bub.typ { width: 112px; height: 64px; display: flex; align-items: center; justify-content: center; gap: 9px; }
+      .bub.typ i { width: 13px; height: 13px; border-radius: 50%; background: #8696a0; display: block; }
+
+      /* status bar + header */
+      #sbar { position: absolute; left: 0; top: 0; width: 630px; height: 88px; background: #202c33; }
+      #clk { position: absolute; left: 22px; top: 22px; width: 196px; height: 48px; text-align: center; font: 600 31px/48px var(--font-ui); color: #fff; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; }
+      #clkTx { display: inline-block; will-change: transform, filter; }
+      #sicons { position: absolute; left: 438px; top: 33px; display: flex; align-items: center; gap: 9px; }
+      #sicons svg { display: block; }
+      #hdr { position: absolute; left: 0; top: 88px; width: 630px; height: 112px; background: #202c33; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+      #hback { position: absolute; left: 16px; top: 36px; width: 26px; height: 40px; }
+      #ava {
+        position: absolute; left: 54px; top: 21px; width: 70px; height: 70px; border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #20396f 0%, #0d1a36 62%, #08112a 100%);
+        box-shadow: 0 0 0 1.5px rgba(140, 190, 255, 0.5), 0 0 14px rgba(79, 157, 255, 0.4);
+        display: grid; place-items: center;
+      }
+      #ava img { width: 44px; height: 50px; object-fit: contain; display: block; filter: drop-shadow(0 0 5px rgba(140, 190, 255, 0.6)); }
+      #nm { position: absolute; left: 140px; top: 22px; font: 600 30px/36px var(--font-ui); color: #e9edef; white-space: nowrap; letter-spacing: -0.005em; }
+      #stt { position: absolute; left: 140px; top: 60px; width: 200px; height: 30px; font: 400 23px/30px var(--font-ui); color: #25d366; white-space: nowrap; }
+      #stt span { position: absolute; left: 0; top: 0; }
+      #hicons { position: absolute; left: 462px; top: 34px; display: flex; gap: 32px; }
+      #hicons svg { width: 44px; height: 44px; display: block; }
+
+      /* input bar + keyboard */
+      #inp { position: absolute; left: 0; top: 0; width: 630px; height: 92px; background: #1f2c33; box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.05); will-change: transform; }
+      #iplus { position: absolute; left: 14px; top: 25px; width: 42px; height: 42px; }
+      #field { position: absolute; left: 68px; top: 15px; width: 404px; height: 62px; border-radius: 31px; background: #2a3942; overflow: hidden; }
+      #ftxt { position: absolute; left: 24px; top: 0; height: 62px; width: 330px; overflow: hidden; }
+      #ftrack { position: absolute; left: 0; top: 0; height: 62px; display: flex; align-items: center; white-space: nowrap; will-change: transform; }
+      #ftx { font: 400 29px/62px var(--font-ui); color: #e9edef; white-space: nowrap; }
+      #caret { width: 3px; height: 36px; border-radius: 2px; background: #00a884; margin-left: 2px; display: block; }
+      #fstick { position: absolute; right: 14px; top: 15px; width: 32px; height: 32px; }
+      #icam { position: absolute; left: 488px; top: 25px; width: 42px; height: 42px; }
+      #imic { position: absolute; left: 560px; top: 25px; width: 42px; height: 42px; }
+      #send { position: absolute; left: 494px; top: 13px; width: 66px; height: 66px; border-radius: 50%; background: #00a884; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35); opacity: 0; transform-origin: 50% 50%; }
+      #send svg { width: 32px; height: 32px; display: block; }
+      #kb { position: absolute; left: 0; top: 0; width: 630px; height: 560px; background: linear-gradient(180deg, #232326 0%, #1b1b1e 100%); box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.06); will-change: transform; }
+      #kbPred { position: absolute; left: 0; top: 0; width: 630px; height: 72px; display: flex; align-items: center; }
+      #kbPred div { flex: 1; text-align: center; font: 400 27px/72px var(--font-ui); color: #d8d8de; }
+      #kbPred b { width: 1px; height: 36px; background: #3d3d42; display: block; }
+      .key {
+        position: absolute; height: 74px; border-radius: 11px; background: #5c5c61; color: #fff;
+        font: 400 32px/74px var(--font-ui); text-align: center; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+      }
+      .key.fn { background: #3b3b3f; font-size: 22px; }
+      .key.hl { background: #9a9aa0; }
+      .key svg { width: 34px; height: 34px; display: block; margin: 20px auto 0; }
+      #kpop {
+        position: absolute; left: 0; top: 0; width: 82px; height: 118px; border-radius: 16px; background: #75757b; visibility: hidden;
+        font: 400 52px/90px var(--font-ui); color: #fff; text-align: center; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+      }
+      #kbBot svg { position: absolute; width: 44px; height: 44px; display: block; }
+      #home { position: absolute; left: 215px; top: 1380px; width: 200px; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.78); }
+
+      /* time-skip: lock-screen clock over the dimmed chat */
+      #dim { position: absolute; left: 0; top: 88px; width: 630px; height: 1312px; background: #050a14; opacity: 0; pointer-events: none; }
+      #lock { position: absolute; left: 0; top: 260px; width: 630px; height: 420px; opacity: 0; pointer-events: none; }
+      #lkDay { position: absolute; left: 0; top: 0; width: 630px; text-align: center; font: 600 44px/56px var(--font-brand); color: rgba(235, 242, 255, 0.92); letter-spacing: 0.01em; white-space: nowrap; }
+      #lkTime {
+        position: absolute; left: 0; top: 56px; width: 630px; text-align: center; font: 600 196px/220px var(--font-brand); letter-spacing: -0.02em; white-space: nowrap;
+        color: #fff; text-shadow: 0 0 40px rgba(79, 157, 255, 0.55);
+      }
+
+      /* ================= things that leave the screen (phone 3D space) ================= */
+      .pop3 { position: absolute; left: 0; top: 0; visibility: hidden; transform-style: flat; will-change: transform, opacity, filter; }
+      #fly { width: 214px; height: 277px; border-radius: 8px; background: #fbfcfe; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(79, 157, 255, 0.35); padding: 14px 16px; overflow: hidden; }
+      #fly .pg-h { font-size: 15px; line-height: 18px; margin-top: 6px; }
+      #fly .pg-tag { height: 16px; font-size: 10px; line-height: 16px; padding: 0 7px; }
+      #fly .pg-l { height: 5px; margin-top: 7px; }
+      #fly .pg-box { height: 24px; }
+      #fly .fbadge { position: absolute; right: 10px; bottom: 10px; width: 46px; height: 56px; }
+      #popCard { width: 458px; height: 168px; }
+      #popCard .dcard { box-shadow: inset 0 0 0 1.5px rgba(140, 190, 255, 0.45), 0 0 50px rgba(79, 157, 255, 0.45), 0 40px 70px rgba(0, 0, 0, 0.6); background: #142029; }
+      #banner { width: 860px; height: 156px; }
+      #banner .wa-card { position: absolute; left: 0; top: 0; }
+      .ring { position: absolute; left: 0; top: 0; width: 860px; height: 156px; border-radius: 48px; visibility: hidden; box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.85), 0 0 22px rgba(37, 211, 102, 0.55); }
+      #bav { background: radial-gradient(circle at 35% 30%, #20396f 0%, #0d1a36 62%, #08112a 100%) !important; }
+      #bav img { width: 58px; height: 66px; object-fit: contain; display: block; filter: drop-shadow(0 0 6px rgba(140, 190, 255, 0.6)); }
+
+      /* ================= kinetic words ================= */
+      #words { pointer-events: none; }
+      .wl { position: absolute; left: 0; top: 0; width: 1080px; text-align: center; white-space: nowrap; font-family: var(--font-brand); font-weight: 800; line-height: 1; visibility: hidden; will-change: transform, opacity, filter; }
+      .ww {
+        display: inline-block; will-change: transform, opacity, filter;
+        background: linear-gradient(180deg, #ffffff 0%, #eef3fa 42%, #b4c3d8 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .ww.green { background: linear-gradient(180deg, #c6ffda 0%, #52e384 44%, #1fbf5a 100%); -webkit-background-clip: text; background-clip: text; }
+      .ww.blue { background: linear-gradient(180deg, #ffffff 0%, #cfe6ff 34%, #6cb0ff 100%); -webkit-background-clip: text; background-clip: text; }
+
+      /* ================= the four hits ================= */
+      .hit { position: absolute; inset: 0; visibility: hidden; overflow: hidden; }
+      .hbg { position: absolute; inset: 0; }
+      .hgrp { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 900px; will-change: transform; }
+      .hburst { position: absolute; border-radius: 50%; will-change: transform, opacity; }
+      .hring { position: absolute; border-radius: 50%; will-change: transform, opacity; }
+      .hicon { position: absolute; display: grid; place-items: center; will-change: transform, opacity; }
+      .hicon.tile {
+        border-radius: 60px; background: linear-gradient(160deg, rgba(52, 86, 150, 0.92), rgba(12, 24, 52, 0.94) 62%);
+        box-shadow: inset 0 0 0 2.5px rgba(150, 200, 255, 0.55), inset 0 2px 0 rgba(255, 255, 255, 0.3), 0 0 60px rgba(79, 157, 255, 0.5), 0 30px 60px rgba(0, 0, 0, 0.5);
+      }
+      .hword {
+        position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap; font-family: var(--font-brand); font-weight: 800; line-height: 1;
+        color: #fff; letter-spacing: -0.01em; will-change: transform, opacity, filter;
+        text-shadow: 0 0 34px rgba(79, 157, 255, 0.85), 0 0 90px rgba(79, 157, 255, 0.45), 0 8px 24px rgba(0, 0, 0, 0.45);
+      }
+      .streak { position: absolute; height: 3px; border-radius: 2px; background: linear-gradient(90deg, rgba(160, 210, 255, 0), rgba(200, 230, 255, 0.85), rgba(160, 210, 255, 0)); transform-origin: 0 50%; }
+
+      #flash { background: #eaf3ff; opacity: 0; pointer-events: none; }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="13.4" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="13.4" data-track-index="0">
+        <!-- SHELF world -->
+        <div id="bg" class="L"></div>
+        <div id="bgfx" class="L" data-layout-ignore>
+          <div id="beam"></div>
+          <div id="bloom"></div>
+          <div id="greenGlow"></div>
+          <div id="bokeh"></div>
+        </div>
+
+        <!-- 0.0-1.2 s: the app grid -->
+        <div id="grid" class="L" data-layout-ignore></div>
+
+        <!-- camera -> perspective stage -> the phone -->
+        <div id="cam" class="L">
+          <div id="stage3d" class="L">
+            <div id="phone" data-layout-allow-overflow data-layout-allow-occlusion>
+              <div id="phEdges"></div>
+              <div id="phBody" class="ph-body"><div class="ph-bezel"></div></div>
+              <div id="badgeGlow"></div>
+              <div id="screen" data-layout-allow-occlusion>
+                <div id="ui">
+                  <div id="wall"></div>
+                  <div id="chat" data-layout-allow-occlusion><div id="chatContent" data-layout-allow-overflow data-layout-allow-occlusion></div></div>
+                  <div id="hdr">
+                    <svg id="hback" viewBox="0 0 26 40"><path d="M20 4 5 20l15 16" fill="none" stroke="#e9edef" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                    <div id="ava"><img src="./assets/shelf-mark.png" alt="" /></div>
+                    <div id="nm">SHELF Campus</div>
+                    <div id="stt"><span id="stOn">online</span><span id="stTy" style="opacity: 0">typing…</span></div>
+                    <div id="hicons">
+                      <svg viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="13" height="11" rx="2.6" fill="none" stroke="#e9edef" stroke-width="1.8" /><path d="M15.5 10.4l5.2-3v9.2l-5.2-3z" fill="none" stroke="#e9edef" stroke-width="1.8" stroke-linejoin="round" /></svg>
+                      <svg viewBox="0 0 24 24"><path d="M7.4 3.6l2.3 4.2c.3.6.2 1.3-.3 1.8l-1.5 1.4c1.1 2.2 2.9 4 5.1 5.1l1.4-1.5c.5-.5 1.2-.6 1.8-.3l4.2 2.3c.6.3.8 1 .6 1.6l-.7 2c-.4 1.1-1.5 1.7-2.6 1.5C10.9 20.6 3.4 13.1 2.3 6.3c-.2-1.1.4-2.2 1.5-2.6l2-.7c.6-.2 1.3 0 1.6.6z" fill="none" stroke="#e9edef" stroke-width="1.7" stroke-linejoin="round" /></svg>
+                    </div>
+                  </div>
+                  <div id="inp">
+                    <svg id="iplus" viewBox="0 0 24 24"><path d="M12 4.5v15M4.5 12h15" stroke="#aebac1" stroke-width="2.1" stroke-linecap="round" /></svg>
+                    <div id="field">
+                      <div id="ftxt" data-layout-allow-overflow><div id="ftrack"><span id="ftx"></span><i id="caret"></i></div></div>
+                      <svg id="fstick" viewBox="0 0 24 24"><path d="M15.5 3.5H8A4.5 4.5 0 0 0 3.5 8v8A4.5 4.5 0 0 0 8 20.5h5.2l7.3-7.3V8.5a5 5 0 0 0-5-5z" fill="none" stroke="#8696a0" stroke-width="1.7" stroke-linejoin="round" /><path d="M13 20.4V17a3.6 3.6 0 0 1 3.6-3.6h3.8" fill="none" stroke="#8696a0" stroke-width="1.7" /><circle cx="9" cy="10" r="1.2" fill="#8696a0" /><circle cx="14.5" cy="10" r="1.2" fill="#8696a0" /></svg>
+                    </div>
+                    <svg id="icam" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.7l1.5-2h4.6l1.5 2h1.7A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="#aebac1" stroke-width="1.8" stroke-linejoin="round" /><circle cx="12" cy="12.3" r="3.4" fill="none" stroke="#aebac1" stroke-width="1.8" /></svg>
+                    <svg id="imic" viewBox="0 0 24 24"><rect x="8.6" y="3" width="6.8" height="11.6" rx="3.4" fill="none" stroke="#aebac1" stroke-width="1.8" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" fill="none" stroke="#aebac1" stroke-width="1.8" stroke-linecap="round" /></svg>
+                    <div id="send"><svg viewBox="0 0 24 24"><path d="M3.4 20.6 21.2 12 3.4 3.4l.02 6.7L15.6 12 3.42 13.9z" fill="#fff" /></svg></div>
+                  </div>
+                  <div id="kb" data-layout-allow-occlusion>
+                    <div id="kbPred"><div>I</div><b></b><div>The</div><b></b><div>I'm</div></div>
+                    <div id="kbKeys"></div>
+                    <div id="kpop"></div>
+                    <div id="kbBot">
+                      <svg style="left: 34px; top: 452px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#c8c8ce" stroke-width="1.7" /><path d="M8.6 14.2c.9 1.3 2 1.9 3.4 1.9s2.5-.6 3.4-1.9" fill="none" stroke="#c8c8ce" stroke-width="1.7" stroke-linecap="round" /><circle cx="9.2" cy="9.8" r="1.1" fill="#c8c8ce" /><circle cx="14.8" cy="9.8" r="1.1" fill="#c8c8ce" /></svg>
+                      <svg style="left: 552px; top: 452px" viewBox="0 0 24 24"><rect x="8.8" y="3" width="6.4" height="11" rx="3.2" fill="none" stroke="#c8c8ce" stroke-width="1.7" /><path d="M5.8 11.4a6.2 6.2 0 0 0 12.4 0M12 17.6v3" fill="none" stroke="#c8c8ce" stroke-width="1.7" stroke-linecap="round" /></svg>
+                    </div>
+                  </div>
+                  <div id="dim"></div>
+                  <div id="lock"><div id="lkDay">Tuesday</div><div id="lkTime">9:41</div></div>
+                  <div id="sbar">
+                    <div id="clk"><span id="clkTx">9:41</span></div>
+                    <div id="sicons">
+                      <svg width="34" height="22" viewBox="0 0 34 22"><rect x="0" y="14" width="6" height="8" rx="1.6" fill="#fff" /><rect x="9" y="10" width="6" height="12" rx="1.6" fill="#fff" /><rect x="18" y="5.5" width="6" height="16.5" rx="1.6" fill="#fff" /><rect x="27" y="1" width="6" height="21" rx="1.6" fill="#fff" /></svg>
+                      <svg width="31" height="22" viewBox="0 0 31 22"><path d="M15.5 21.5 11.3 16.6a6.2 6.2 0 0 1 8.4 0z" fill="#fff" /><path d="M6.6 12.2a12.6 12.6 0 0 1 17.8 0l-2.4 2.8a9 9 0 0 0-13 0z" fill="#fff" /><path d="M1.8 7.4a19.4 19.4 0 0 1 27.4 0l-2.4 2.8a15.7 15.7 0 0 0-22.6 0z" fill="#fff" /></svg>
+                      <svg width="54" height="24" viewBox="0 0 54 24"><rect x="1" y="1" width="46" height="22" rx="7" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2" /><rect x="4.5" y="4.5" width="34" height="15" rx="4" fill="#fff" /><path d="M50 8.5v7a3.6 3.6 0 0 0 0-7z" fill="rgba(255,255,255,0.55)" /></svg>
+                    </div>
+                  </div>
+                  <div id="home"></div>
+                </div>
+                <div id="badgeOv"></div>
+                <div id="badgeGlyph"></div>
+                <div id="island"></div>
+                <div id="glare"></div>
+              </div>
+              <!-- in the phone's 3D space, outside the screen clip -->
+              <div id="fly" class="pop3" data-layout-ignore></div>
+              <div id="popCard" class="pop3" data-layout-ignore></div>
+              <div id="rings" data-layout-ignore></div>
+              <div id="banner" class="pop3" data-layout-ignore></div>
+            </div>
           </div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
+
+        <!-- kinetic words (the voice-over, on the beat) -->
+        <div id="words" class="L" data-layout-allow-overflow></div>
+
+        <!-- 43.177 -> 45.500: four hits -->
+        <div id="hits" class="L" data-layout-allow-overflow></div>
+
+        <div id="vig" class="L"></div>
+        <div id="flash" class="L"></div>
       </div>
     </div>
+    <script src="./lib/wa-kit.js"></script>
+    <script src="./lib/demo.js"></script>
     <script>
-      var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
-      window.__timelines["main"] = tl;
-      tl.seek(0);
+      /* one paused timeline; a single linear driver whose setter calls render(t) (lib/demo.js) */
+      (function () {
+        var render = window.__demo.render;
+        var DUR = 13.4;
+        var clockT = 0;
+        var clock = {};
+        Object.defineProperty(clock, "t", {
+          get: function () { return clockT; },
+          set: function (v) { clockT = v; render(v); }
+        });
+        var tl = gsap.timeline({ paused: true });
+        tl.to(clock, { t: DUR, duration: DUR, ease: "none", lazy: false, immediateRender: false }, 0);
+        render(0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
     </script>
   </body>
 </html>

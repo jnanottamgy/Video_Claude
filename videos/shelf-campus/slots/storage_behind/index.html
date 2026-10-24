@@ -55,19 +55,19 @@
       .hdr .ttl { font: 700 33px/46px var(--font-ui); letter-spacing: -0.01em; color: #fff; }
       .hdr .crumb { font: 500 27px/46px var(--font-ui); color: rgba(235, 235, 245, 0.45); margin-left: 4px; }
 
-      .pill-pos { position: absolute; left: 258px; top: 22px; height: 50px; }
+      .pill-pos { position: absolute; left: 250px; top: 21px; height: 52px; }
       .pill {
         display: flex;
         align-items: center;
         gap: 8px;
-        height: 50px;
-        padding: 0 20px 0 14px;
-        border-radius: 25px;
+        height: 52px;
+        padding: 0 19px 0 13px;
+        border-radius: 26px;
         background: linear-gradient(180deg, #ff5a4f 0%, #ff3b30 55%, #e5322a 100%);
         box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 8px 22px rgba(255, 59, 48, 0.5), 0 0 0 3px rgba(20, 20, 22, 0.9);
         color: #fff;
-        font: 800 22px/1 var(--font-ui);
-        letter-spacing: 0.08em;
+        font: 800 24px/1 var(--font-ui);
+        letter-spacing: 0.07em;
         white-space: nowrap;
         transform-origin: 50% 50%;
       }
@@ -156,6 +156,8 @@
           c.style.width = DIG_W + "px";
           var s = document.createElement("div");
           s.className = "strip";
+          s.setAttribute("data-layout-ignore", "");
+          s.setAttribute("data-layout-allow-occlusion", "");
           var h = "";
           for (var d = 0; d <= 10; d++) h += '<div class="dg">' + (d % 10) + "</div>";
           s.innerHTML = h;
@@ -200,8 +202,8 @@
           '<div id="redfill" style="position:absolute;left:0;top:0;width:' + BAR_W + "px;height:" + BAR_H + 'px;background:linear-gradient(180deg,#ff5f55 0%,#ff3b30 55%,#d92b22 100%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,0.35);opacity:0"></div>' +
           '<div id="hot" style="position:absolute;left:0;top:0;width:' + BAR_W + "px;height:" + BAR_H + 'px;background:#fff;opacity:0"></div>' +
           '<div id="edge" style="position:absolute;top:-6px;left:0;width:6px;height:' + (BAR_H + 12) + 'px;border-radius:3px;background:#fff;box-shadow:0 0 14px 4px rgba(255,255,255,0.8);opacity:0"></div>' +
-          '<div id="walbl" style="position:absolute;top:0;height:' + BAR_H + 'px;left:0;display:flex;align-items:center;gap:10px;font:800 26px/1 var(--font-ui);color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,0.35);opacity:0">' +
-          '<svg viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><path d="M21 63.4A33 33 0 1 1 34.6 77L14.6 85.4Z" fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="round"/><path transform="translate(26.6 24.4) scale(1.95)" fill="#fff" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>' +
+          '<div id="walbl" style="position:absolute;top:0;height:' + BAR_H + 'px;left:0;display:flex;align-items:center;gap:10px;font:800 28px/1 var(--font-ui);color:#0b141a;white-space:nowrap;opacity:0">' +
+          '<svg viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><path d="M21 63.4A33 33 0 1 1 34.6 77L14.6 85.4Z" fill="none" stroke="#0b141a" stroke-width="9" stroke-linejoin="round"/><path transform="translate(26.6 24.4) scale(1.95)" fill="#0b141a" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>' +
           "<span>WhatsApp &middot; 214 GB</span></div>" +
           "</div>";
         var segEls = SEGS.map(function (s, i) {
@@ -324,7 +326,7 @@
 
         // 0.133 "phone": the card rises from behind his head (first visible frame already 35 % up)
         var tIn = T_IN - EPS;
-        tl.fromTo("#enter", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, tIn);
+        tl.fromTo("#enter", { opacity: 0 }, { opacity: 1, duration: 0.0002, ease: "none" }, tIn);
         tl.fromTo("#enter", { y: 120, scale: 0.9, rotation: -2.5 }, { y: 0, scale: 1, rotation: 0, duration: 0.55, ease: "expo.out" }, tIn - 0.035);
         tl.fromTo("#card", { filter: "blur(9px)" }, { filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, tIn);
 
@@ -335,7 +337,7 @@
         var tF = T_FULL - EPS;
         tl.set(redfill, { opacity: 1 }, tF);
         tl.fromTo(hot, { opacity: 0.95 }, { opacity: 0, duration: 0.2, ease: "power2.out", immediateRender: false }, tF);
-        tl.fromTo("#pill", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, tF);
+        tl.fromTo("#pill", { opacity: 0 }, { opacity: 1, duration: 0.0002, ease: "none" }, tF);
         tl.fromTo("#pill", { scale: 0.45 }, { scale: 1, duration: 0.4, ease: "back.out(2.6)" }, tF - 0.6 * F);
         tl.fromTo("#alertEdge", { opacity: 0 }, { opacity: 1, duration: 0.08, ease: "power2.out" }, tF);
         tl.fromTo("#glow", { opacity: 0 }, { opacity: 0.85, duration: 0.1, ease: "power2.out" }, tF);

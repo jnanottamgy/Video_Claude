@@ -331,7 +331,7 @@
 
         // search card: two flight frames (3.767, 3.800) at speed, lands on 3.833 with a squash and settle
         var tIn = tSl - 2 * F - EPS;
-        tl.fromTo("#srig", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, tIn);
+        tl.fromTo("#srig", { opacity: 0 }, { opacity: 1, duration: 0.0002, ease: "none" }, tIn);
         tl.fromTo("#srig", { scale: 1.45, y: -60, rotation: -4.5 }, { scale: 0.965, y: 6, rotation: 0.6, duration: 2 * F, ease: "power2.in" }, tIn);
         tl.to("#srig", { scale: 1, y: 0, rotation: 0, duration: 0.32, ease: "back.out(2.4)" }, tH);
         tl.fromTo("#scard", { filter: "blur(12px)" }, { filter: "blur(0px)", duration: 2 * F, ease: "power1.in" }, tIn);
@@ -344,7 +344,7 @@
         tl.fromTo("#spin", { rotation: 0 }, { rotation: 300, duration: 0.17, ease: "none" }, tH);
         var tN = L(120 * F) - EPS; // 4.000
         tl.set("#spin", { opacity: 0 }, tN);
-        tl.fromTo("#none", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, tN);
+        tl.fromTo("#none", { opacity: 0 }, { opacity: 1, duration: 0.0002, ease: "none" }, tN);
         tl.fromTo("#none", { y: 12, scale: 0.88 }, { y: 0, scale: 1, duration: 0.24, ease: "back.out(2.2)" }, tN - 0.5 * F);
         [[-16, 0], [13, 0], [-9, 0], [5, 0], [-2, 0], [0, 0]].forEach(function (p, k) {
           tl.set("#sshake", { x: p[0] }, tN + k * F);

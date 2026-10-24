@@ -3,35 +3,471 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>reveal / memory_behind</title>
     <script src="./vendor/gsap.min.js"></script>
-    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
+      /* BEHIND layer (under Kartik's cut-out, on the navy wall). Output 27.433 -> 30.000 (77 frames).
+         Index k (PNG frame k+1) shows t = k/30 = output (823 + k) / 30.
+           k1-k15  27.467-27.933  the memory network builds: 14 nodes pop (6 glass icons + 8 light nodes), light-lines draw
+           k18     28.033  "AI-POWERED" slams (top band); a bright wavefront sweeps the whole network from the word
+           k35     28.600  beat: the network pulses
+           k45     28.933  "ACADEMIC" slams; AI-POWERED collapses into a small kicker above it; cross-links draw
+           k52     29.167  beat: the network pulses
+           k62     29.500  "MEMORY" slams; the network contracts: every node flies to a vertex of the SHELF mark
+           k70     29.767  glow pop: the constellation locks, the chrome mark flashes in inside it
+         Kartik: head x ~620-1040, top y ~660; the network lives on the wall left of / above him (x 60-1000, y 580-1240),
+         words in the top band y 280-570. Nothing in the caption band (y 1290-1460). Transparent canvas. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+      .full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      /* the constellation pop (centre 320, 900) */
+      #bloomPop {
+        position: absolute;
+        left: -80px;
+        top: 500px;
+        width: 800px;
+        height: 800px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(170, 210, 255, 0.55) 0%, rgba(79, 157, 255, 0.36) 18%, rgba(40, 105, 230, 0.16) 40%, rgba(30, 80, 200, 0.05) 58%, rgba(0, 0, 0, 0) 72%);
+        opacity: 0;
+      }
+      #ringPop {
+        position: absolute;
+        left: 170px;
+        top: 750px;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        border: 3px solid rgba(225, 240, 255, 0.95);
+        box-shadow: 0 0 20px 3px rgba(100, 170, 255, 0.85), inset 0 0 20px 2px rgba(100, 170, 255, 0.6);
+        opacity: 0;
+      }
+      /* the chrome mark inside the constellation: 446 x 510 art at 0.85, centred on (320, 900) */
+      #markWrap { position: absolute; left: 130.45px; top: 685.8px; width: 379.1px; height: 433.5px; opacity: 0; }
+      #markWrap img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+      .mk {
+        position: absolute;
+        inset: 0;
+        -webkit-mask-image: url(assets/mark.png);
+        mask-image: url(assets/mark.png);
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+      }
+      #markGlowWrap { position: absolute; inset: 0; filter: blur(26px); opacity: 0.6; }
+      #markGlow { background: #3f8fff; }
+      #markHot { background: #ffffff; opacity: 0; }
+
+      #net { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      /* glass icon nodes (positioned by the driver: translate to the node centre - 48) */
+      .tile {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 96px;
+        height: 96px;
+        border-radius: 26px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(160deg, rgba(54, 88, 146, 0.95) 0%, rgba(20, 36, 70, 0.94) 52%, rgba(10, 18, 38, 0.96) 100%);
+        box-shadow: inset 0 0 0 1.5px rgba(150, 195, 255, 0.55), inset 0 2px 0 rgba(255, 255, 255, 0.26), 0 0 26px rgba(79, 157, 255, 0.38), 0 12px 26px rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        visibility: hidden;
+      }
+      .tile svg { position: relative; width: 58px; height: 58px; display: block; filter: drop-shadow(0 0 5px rgba(130, 190, 255, 0.65)); }
+      .tile .sheen {
+        position: absolute;
+        inset: 0;
+        border-radius: 26px;
+        background: linear-gradient(155deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 34%, rgba(255, 255, 255, 0) 50%);
+      }
+      .tile .fl {
+        position: absolute;
+        inset: -2px;
+        border-radius: 28px;
+        box-shadow: 0 0 0 2px rgba(225, 240, 255, 0.95), 0 0 34px 8px rgba(110, 175, 255, 0.85);
+        opacity: 0;
+      }
+
+      /* ---- kinetic words, top band ---- */
+      .row { position: absolute; left: 0; width: 1080px; display: flex; justify-content: center; align-items: center; }
+      #kickRow { top: 276px; height: 52px; }
+      #aiRow { top: 330px; height: 140px; }
+      #acRow { top: 330px; height: 132px; }
+      #meRow { top: 448px; height: 140px; }
+      .wrap { position: relative; opacity: 0; visibility: hidden; }
+      .w { font-family: var(--font-brand); font-weight: 800; white-space: nowrap; letter-spacing: 0.006em; padding-left: 0.006em; }
+      .w.silver {
+        position: relative;
+        background: linear-gradient(180deg, #ffffff 0%, #f2f6fb 30%, #c9d6e8 49%, #8fa4c2 53%, #d8e3f1 72%, #aebfd6 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .w.glow { position: absolute; left: 0; top: 0; color: #3f8fff; filter: blur(24px); opacity: 0.55; }
+      .w.hot { position: absolute; left: 0; top: 0; color: #ffffff; text-shadow: 0 0 22px #a8d0ff, 0 0 54px #4f9dff; opacity: 0; }
+      #aiWrap .w { font-size: 124px; line-height: 140px; }
+      #acWrap .w { font-size: 122px; line-height: 132px; }
+      #meWrap .w { font-size: 146px; line-height: 140px; }
+      #kick {
+        font: 700 38px/52px var(--font-brand);
+        letter-spacing: 0.34em;
+        padding-left: 0.34em;
+        color: #9ccaff;
+        text-shadow: 0 0 16px rgba(79, 157, 255, 0.85);
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+      }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="2.566667" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="2.566667" data-track-index="0">
+        <div id="bloomPop" data-layout-ignore></div>
+        <div id="markWrap">
+          <div id="markGlowWrap"><div id="markGlow" class="mk"></div></div>
+          <img src="assets/mark.png" alt="" />
+          <div id="markHot" class="mk"></div>
+        </div>
+        <div id="ringPop" data-layout-ignore></div>
+        <canvas id="net" width="1080" height="1920"></canvas>
+        <div id="tiles" class="full" data-layout-ignore></div>
+        <div class="row" id="kickRow"><div id="kick" data-layout-allow-occlusion>AI-POWERED</div></div>
+        <div class="row" id="aiRow">
+          <div class="wrap" id="aiWrap" data-layout-allow-overlap data-layout-allow-occlusion>
+            <div class="w glow" aria-hidden="true" data-layout-allow-occlusion data-layout-allow-overlap>AI-POWERED</div>
+            <div class="w silver" data-layout-allow-occlusion data-layout-allow-overlap>AI-POWERED</div>
+            <div class="w hot" aria-hidden="true" data-layout-allow-occlusion data-layout-allow-overlap>AI-POWERED</div>
           </div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
+        <div class="row" id="acRow">
+          <div class="wrap" id="acWrap" data-layout-allow-overlap data-layout-allow-occlusion>
+            <div class="w glow" aria-hidden="true" data-layout-allow-occlusion data-layout-allow-overlap>ACADEMIC</div>
+            <div class="w silver" data-layout-allow-occlusion data-layout-allow-overlap>ACADEMIC</div>
+            <div class="w hot" aria-hidden="true" data-layout-allow-occlusion data-layout-allow-overlap>ACADEMIC</div>
+          </div>
+        </div>
+        <div class="row" id="meRow">
+          <div class="wrap" id="meWrap" data-layout-allow-overlap data-layout-allow-occlusion>
+            <div class="w glow" aria-hidden="true" data-layout-allow-occlusion data-layout-allow-overlap>MEMORY</div>
+            <div class="w silver" data-layout-allow-occlusion data-layout-allow-overlap>MEMORY</div>
+            <div class="w hot" aria-hidden="true" data-layout-allow-occlusion data-layout-allow-overlap>MEMORY</div>
+          </div>
+        </div>
       </div>
     </div>
+    <script src="./lib/motion.js"></script>
     <script>
-      var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
-      window.__timelines["main"] = tl;
-      tl.seek(0);
+      (function () {
+        "use strict";
+        var FR = 1 / 30;
+        var D = 77 / 30;
+        var H = MO.hit, seg = MO.seg, hash = MO.hash;
+        var K = { ai: 18, b1: 35, ac: 45, b2: 52, me: 62, pop: 70 };
+        var T_AI = H(K.ai), T_AC = H(K.ac), T_ME = H(K.me), T_POP = H(K.pop);
+        var BEATS = [H(K.b1) - 0.03, H(K.b2) - 0.03];
+        var eOut2 = MO.ease("power2.out"), eIO3 = MO.ease("power3.inOut"), eBack = MO.ease("back.out(2.2)");
+
+        // ---------- glyphs (white line icons, 48 x 48) ----------
+        var G = {
+          pdf:
+            '<path d="M14 6h14l10 10v24a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3z" fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round"/>' +
+            '<path d="M28 6v8a2 2 0 0 0 2 2h8" fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round"/>' +
+            '<rect x="7" y="25" width="25" height="11" rx="2.5" fill="#e5534b"/>' +
+            '<path d="M11.2 33.2v-5.6h2.1a1.7 1.7 0 0 1 0 3.4h-2.1M17.4 33.2v-5.6h1.6a2.8 2.8 0 0 1 0 5.6zM24.6 33.2v-5.6h3.4M24.6 30.4h2.8" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+          notes:
+            '<rect x="10" y="6" width="28" height="36" rx="4" fill="none" stroke="#fff" stroke-width="2.8"/>' +
+            '<path d="M16 16h16M16 23h16M16 30h10" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>',
+          cal:
+            '<rect x="7" y="10" width="34" height="31" rx="5" fill="none" stroke="#fff" stroke-width="2.8"/>' +
+            '<path d="M7 19h34" stroke="#fff" stroke-width="2.8"/><path d="M16 6v8M32 6v8" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>' +
+            '<circle cx="15.5" cy="26.5" r="2" fill="#fff"/><circle cx="24" cy="26.5" r="2" fill="#fff"/><circle cx="32.5" cy="26.5" r="2" fill="#fff"/>' +
+            '<circle cx="15.5" cy="34" r="2" fill="#fff"/><circle cx="24" cy="34" r="2" fill="#7fb6ff"/>',
+          clock:
+            '<circle cx="24" cy="24" r="16.5" fill="none" stroke="#fff" stroke-width="2.8"/>' +
+            '<path d="M24 14v10.5l7 4.5" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>',
+          check:
+            '<circle cx="24" cy="24" r="16.5" fill="none" stroke="#fff" stroke-width="2.8"/>' +
+            '<path d="M16 24.5l5.5 5.5L32.5 18.5" fill="none" stroke="#6ff0a0" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>',
+          chat:
+            '<path d="M24 8c9.4 0 17 6.2 17 14s-7.6 14-17 14c-1.9 0-3.8-.3-5.5-.8L10 39l2.3-7.4C9 29 7 25.7 7 22 7 14.2 14.6 8 24 8z" fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round"/>' +
+            '<circle cx="17" cy="22" r="2.2" fill="#fff"/><circle cx="24" cy="22" r="2.2" fill="#fff"/><circle cx="31" cy="22" r="2.2" fill="#fff"/>',
+        };
+
+        // ---------- the constellation: the SHELF mark's wireframe at 0.85, centred on (320, 900) ----------
+        var CS = 0.85, CX = 320, CY = 900;
+        function MV(x, y) { return [CX + (x - 223) * CS, CY + (y - 252) * CS]; }
+        var VX = {
+          T: MV(298, 17.5), R: MV(428, 75), R2: MV(428, 82), N: MV(213, 197), MR: MV(338, 254), BR: MV(427, 299),
+          BR2: MV(427, 347), BF: MV(163, 490), BL: MV(18, 421), L: MV(18, 170), F: MV(139, 230), P: MV(139, 359),
+          ML: MV(139, 279), MF: MV(220, 316),
+        };
+        var CEDGES = [["L", "T"], ["T", "R"], ["R2", "N"], ["N", "MR"], ["MR", "BR"], ["BR", "BR2"], ["BR2", "BF"], ["BF", "BL"], ["BL", "L"],
+          ["L", "F"], ["F", "ML"], ["ML", "P"], ["F", "N"], ["ML", "MF"], ["BL", "P"], ["P", "MF"], ["MF", "MR"], ["R", "R2"]];
+
+        // ---------- the network: 6 glass icons + 8 light nodes ----------
+        // [kind/glyph, x, y, appear time, constellation vertex]
+        var NODES = [
+          ["notes", 440, 640, 0.05, "T"],
+          ["pdf", 170, 690, 0.1, "L"],
+          ["dot", 330, 770, 0.14, "N"],
+          ["clock", 548, 862, 0.19, "BR"],
+          ["cal", 300, 912, 0.23, "F"],
+          ["dot", 604, 708, 0.27, "R"],
+          ["dot", 84, 884, 0.3, "ML"],
+          ["dot", 762, 612, 0.33, "R2"],
+          ["chat", 432, 1112, 0.37, "BR2"],
+          ["dot", 250, 1024, 0.4, "P"],
+          ["check", 150, 1132, 0.43, "BL"],
+          ["dot", 566, 1012, 0.46, "MF"],
+          ["dot", 992, 640, 0.49, "MR"],
+          ["dot", 300, 1226, 0.52, "BF"],
+        ];
+        var EDGES = [[0, 1], [0, 2], [1, 2], [0, 5], [5, 7], [7, 12], [1, 6], [6, 4], [2, 4], [2, 3], [4, 3], [3, 11], [4, 9],
+          [9, 10], [9, 8], [8, 11], [10, 8], [5, 3], [8, 13], [10, 13]];
+        var XLINKS = [[1, 4], [0, 3], [6, 10], [11, 12]]; // cross-links that draw on "ACADEMIC"
+        var N = NODES.length;
+        var O = [540, 400]; // the wavefront origin: the AI-POWERED word
+        var rng = MO.rng(31337);
+        var nodes = NODES.map(function (d, i) {
+          var dist = Math.hypot(d[1] - O[0], d[2] - O[1]);
+          return {
+            kind: d[0], x: d[1], y: d[2], at: d[3], tgt: VX[d[4]],
+            fx: 4 + rng() * 6, fy: 3 + rng() * 5, wx: 0.8 + rng() * 0.9, wy: 0.7 + rng() * 0.9, px: rng() * 6.28, py: rng() * 6.28,
+            tw: T_AI + dist / 2300, // when the AI-POWERED wavefront reaches it
+          };
+        });
+        function mkEdge(e, start, dur) {
+          var a = nodes[e[0]], b = nodes[e[1]];
+          var first = a.at <= b.at ? e[0] : e[1];
+          var second = first === e[0] ? e[1] : e[0];
+          return { a: first, b: second, t0: start === undefined ? Math.max(a.at, b.at) + 0.03 : start, dur: dur || 0.2,
+            period: 0.75 + rng() * 0.5, phase: rng(), dir: rng() < 0.5 ? 1 : -1 };
+        }
+        var edges = EDGES.map(function (e) { return mkEdge(e); });
+        XLINKS.forEach(function (e, i) { edges.push(mkEdge(e, T_AC + 0.02 + i * 0.04, 0.24)); });
+
+        // ---------- tiles ----------
+        var tilesEl = document.getElementById("tiles");
+        nodes.forEach(function (n) {
+          if (n.kind === "dot") return;
+          var t = document.createElement("div");
+          t.className = "tile";
+          t.innerHTML = '<div class="sheen"></div><svg viewBox="0 0 48 48" aria-hidden="true">' + G[n.kind] + '</svg><div class="fl"></div>';
+          tilesEl.appendChild(t);
+          n.el = t;
+          n.fl = t.querySelector(".fl");
+          n.svg = t.querySelector("svg");
+          n.last = {};
+        });
+
+        // ---------- node state as a pure function of t ----------
+        var FOLD = T_POP - T_ME;
+        function nodePos(n, t) {
+          var tt = Math.min(t, T_ME);
+          var x = n.x + n.fx * Math.sin(n.wx * tt + n.px);
+          var y = n.y + n.fy * Math.sin(n.wy * tt + n.py);
+          if (t <= T_ME) return [x, y];
+          var p = eIO3(seg(t, T_ME, FOLD));
+          return [x + (n.tgt[0] - x) * p, y + (n.tgt[1] - y) * p];
+        }
+        function nodeFlash(n, t) {
+          var f = 0;
+          if (t >= n.tw) f += Math.exp(-(t - n.tw) * 6.5);
+          for (var i = 0; i < BEATS.length; i++) if (t >= BEATS[i]) f += 0.45 * Math.exp(-(t - BEATS[i]) * 6);
+          if (t >= T_POP) f += 1.2 * Math.exp(-(t - T_POP) * 5);
+          return Math.min(1.4, f);
+        }
+        function appear(n, t) {
+          return t < n.at ? 0 : eBack(seg(t, n.at, 0.3));
+        }
+
+        // ---------- the canvas: lines, packets, light nodes, constellation ----------
+        var cx = document.getElementById("net").getContext("2d");
+        function line(a, b, w, col) {
+          cx.strokeStyle = col;
+          cx.lineWidth = w;
+          cx.beginPath();
+          cx.moveTo(a[0], a[1]);
+          cx.lineTo(b[0], b[1]);
+          cx.stroke();
+        }
+        function dot(p, r, a, core) {
+          var g = cx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 3.4);
+          g.addColorStop(0, "rgba(235,245,255," + a.toFixed(3) + ")");
+          g.addColorStop(0.28, "rgba(140,195,255," + (a * 0.6).toFixed(3) + ")");
+          g.addColorStop(1, "rgba(79,157,255,0)");
+          cx.fillStyle = g;
+          cx.beginPath();
+          cx.arc(p[0], p[1], r * 3.4, 0, 6.2832);
+          cx.fill();
+          if (core) {
+            cx.fillStyle = "rgba(255,255,255," + Math.min(1, a).toFixed(3) + ")";
+            cx.beginPath();
+            cx.arc(p[0], p[1], r * 0.55, 0, 6.2832);
+            cx.fill();
+          }
+        }
+        function drawNet(t) {
+          cx.clearRect(0, 0, 1080, 1920);
+          cx.globalCompositeOperation = "lighter";
+          cx.lineCap = "round";
+          var P = nodes.map(function (n) { return nodePos(n, t); });
+          var F = nodes.map(function (n) { return nodeFlash(n, t); });
+          var fadeNet = 1 - MO.ease("power1.in")(seg(t, T_ME, 0.2));
+          // network edges + packets
+          if (fadeNet > 0) {
+            for (var i = 0; i < edges.length; i++) {
+              var e = edges[i];
+              var p = eOut2(seg(t, e.t0, e.dur));
+              if (p <= 0) continue;
+              var A = P[e.a], B = P[e.b];
+              var E = [A[0] + (B[0] - A[0]) * p, A[1] + (B[1] - A[1]) * p];
+              var fl = Math.min(1, (F[e.a] + F[e.b]) * 0.5);
+              var al = fadeNet * (0.5 + 0.5 * fl);
+              line(A, E, 7, "rgba(60,130,255," + (al * 0.22).toFixed(3) + ")");
+              line(A, E, 2.2, "rgba(130,190,255," + (al * 0.85).toFixed(3) + ")");
+              if (fl > 0.05) line(A, E, 1.2, "rgba(240,248,255," + (fadeNet * fl * 0.9).toFixed(3) + ")");
+              // a packet of light travelling the line once it is drawn
+              if (p >= 1) {
+                var u = (t - (e.t0 + e.dur)) / e.period + e.phase;
+                u = u - Math.floor(u);
+                if (e.dir < 0) u = 1 - u;
+                var pa = Math.sin(Math.PI * u) * fadeNet;
+                var Q = [A[0] + (B[0] - A[0]) * u, A[1] + (B[1] - A[1]) * u];
+                var ub = Math.max(0, Math.min(1, u - e.dir * 0.09));
+                var Qb = [A[0] + (B[0] - A[0]) * ub, A[1] + (B[1] - A[1]) * ub];
+                line(Qb, Q, 3, "rgba(170,215,255," + (pa * 0.6).toFixed(3) + ")");
+                dot(Q, 3.2, pa * 0.95, true);
+              }
+            }
+          }
+          // the AI-POWERED wavefront: a ring of light from the word, 2300 px/s (the same speed the node flashes use)
+          if (t >= T_AI) {
+            var wr = (t - T_AI) * 2300;
+            if (wr < 1500) {
+              var wa = (1 - wr / 1500) * Math.min(1, (t - T_AI) / 0.04);
+              cx.strokeStyle = "rgba(60,130,255," + (wa * 0.16).toFixed(3) + ")";
+              cx.lineWidth = 46;
+              cx.beginPath(); cx.arc(O[0], O[1], wr, 0, 6.2832); cx.stroke();
+              cx.strokeStyle = "rgba(130,190,255," + (wa * 0.32).toFixed(3) + ")";
+              cx.lineWidth = 12;
+              cx.beginPath(); cx.arc(O[0], O[1], wr, 0, 6.2832); cx.stroke();
+              cx.strokeStyle = "rgba(235,245,255," + (wa * 0.55).toFixed(3) + ")";
+              cx.lineWidth = 2.5;
+              cx.beginPath(); cx.arc(O[0], O[1], wr, 0, 6.2832); cx.stroke();
+            }
+          }
+          // constellation edges (draw on as the nodes land)
+          var cp = eOut2(seg(t, T_POP - 0.07, 0.15));
+          if (cp > 0) {
+            var cfl = t >= T_POP ? Math.exp(-(t - T_POP) * 5) : 0;
+            for (var j = 0; j < CEDGES.length; j++) {
+              var a = VX[CEDGES[j][0]], b = VX[CEDGES[j][1]];
+              var Eb = [a[0] + (b[0] - a[0]) * cp, a[1] + (b[1] - a[1]) * cp];
+              line(a, Eb, 8, "rgba(60,130,255," + (0.25 + 0.3 * cfl).toFixed(3) + ")");
+              line(a, Eb, 2.2, "rgba(150,205,255," + (0.85).toFixed(3) + ")");
+              line(a, Eb, 1.1, "rgba(245,250,255," + (0.35 + 0.65 * cfl).toFixed(3) + ")");
+            }
+          }
+          // light nodes (and icon nodes once they shrink into points during the fold)
+          var foldP = seg(t, T_ME, FOLD);
+          for (var k = 0; k < N; k++) {
+            var n = nodes[k];
+            var ap = appear(n, t);
+            if (ap <= 0) continue;
+            var f = F[k];
+            if (n.kind === "dot") {
+              dot(P[k], 6.5 * Math.max(0.01, ap) * (1 + 0.35 * f), Math.min(1, 0.75 + 0.5 * f), true);
+            } else if (t > T_ME) {
+              dot(P[k], 6.5 * (1 + 0.35 * f), Math.min(1, foldP * 1.4) * Math.min(1, 0.75 + 0.5 * f), true);
+            }
+            // a short streak behind each node while it flies
+            if (t > T_ME && foldP < 1) {
+              var Pb = nodePos(n, t - 0.03);
+              line(Pb, P[k], 4, "rgba(160,205,255," + (0.5 * (1 - foldP)).toFixed(3) + ")");
+            }
+          }
+          return { P: P, F: F };
+        }
+
+        // ---------- icon tiles: pop in, flash with the network, shrink into points on the fold ----------
+        function drawTiles(t, S) {
+          for (var k = 0; k < N; k++) {
+            var n = nodes[k];
+            if (!n.el) continue;
+            var ap = appear(n, t);
+            var foldP = seg(t, T_ME, FOLD);
+            var o = t < n.at ? 0 : Math.min(1, seg(t, n.at, 0.05)) * (1 - MO.clamp01((foldP - 0.35) / 0.4));
+            var vis = o > 0.002;
+            var L = n.last;
+            if (L.vis !== vis) { n.el.style.visibility = vis ? "visible" : "hidden"; L.vis = vis; }
+            if (!vis) continue;
+            var sc = Math.max(0.01, ap) * (1 - 0.72 * eOut2(foldP)) * (1 + 0.06 * Math.min(1, S.F[k]));
+            var tf = "translate(" + (S.P[k][0] - 48).toFixed(2) + "px," + (S.P[k][1] - 48).toFixed(2) + "px) scale(" + sc.toFixed(4) + ")";
+            if (L.tf !== tf) { n.el.style.transform = tf; L.tf = tf; }
+            var os = o.toFixed(3);
+            if (L.o !== os) { n.el.style.opacity = os; L.o = os; }
+            var fl = Math.min(1, S.F[k] * 0.85 + (t < n.at + 0.25 ? 1 - seg(t, n.at, 0.25) : 0));
+            var fs = fl.toFixed(3);
+            if (L.fl !== fs) { n.fl.style.opacity = fs; L.fl = fs; }
+          }
+        }
+
+        // ================= rigs =================
+        var R = [];
+        function rig(sel, init, write) { var r = MO.rig(sel, init, write); R.push(r); return r; }
+        // words: AI-POWERED slams (28.033), collapses into the kicker on ACADEMIC (28.933); MEMORY (29.500)
+        function hotWord(sel, t0, s0, y0, b0) {
+          var w = rig(sel, { o: 0, s: s0, y: y0, b: b0 });
+          w.set("o", t0, 1).to("s", t0, 0.3, 1, "expo.out").to("y", t0, 0.3, 0, "expo.out").to("b", t0, 0.14, 0, "power2.out");
+          rig(sel + " .hot", { o: 0 }).set("o", t0, 1).to("o", t0 + 2 * FR, 0.3, 0, "power2.out", 1);
+          w.glow = rig(sel + " .glow", { o: 0.55 });
+          w.glow.to("o", t0, 0.6, 0.55, "power2.out", 1);
+          return w;
+        }
+        var ai = hotWord("#aiWrap", T_AI, 1.16, -10, 10);
+        // two frames before ACADEMIC lands, AI-POWERED shrinks up into the kicker slot and hands over to it
+        ai.to("s", T_AC - 0.1, 0.11, 0.3, "power2.in").to("y", T_AC - 0.1, 0.11, -94, "power2.in").to("o", T_AC - 0.05, 0.06, 0, "power1.in").to("b", T_AC - 0.1, 0.11, 4, "power1.in");
+        rig("#kick", { o: 0, ls: 0 }, function (r, v) {
+          r.css("opacity", v.o.toFixed(3));
+          r.css("visibility", v.o > 0.001 ? "visible" : "hidden");
+          r.css("letterSpacing", v.ls.toFixed(4) + "em");
+          r.css("paddingLeft", v.ls.toFixed(4) + "em");
+        }).to("o", T_AC + 0.02, 0.1, 1, "power2.out").to("ls", T_AC + 0.02, 0.45, 0.34, "expo.out");
+        var ac = hotWord("#acWrap", T_AC, 1.18, 50, 12);
+        var me = hotWord("#meWrap", T_ME, 1.3, 0, 14);
+        // the words glow up with the pop (29.767)
+        MO.pulse(me.glow.tr.o, T_POP - 0.04, 1, 0.05, 0.35, 0.55);
+        MO.pulse(ac.glow.tr.o, T_POP - 0.04, 0.9, 0.05, 0.35, 0.55);
+
+        // the pop (29.767): bloom, ring, the chrome mark flashing in inside the constellation
+        var bp = rig("#bloomPop", { o: 0, s: 0.6 });
+        bp.to("o", T_ME, 0.25, 0.22, "power2.in"); // a soft glow gathers while the nodes fly in
+        bp.to("o", T_POP - 0.04, 0.05, 1, "power2.out").to("o", T_POP + 0.01, 0.4, 0.5, "power2.inOut");
+        bp.to("s", T_ME, T_POP - T_ME - 0.04, 0.75, "power2.in").to("s", T_POP - 0.04, 0.3, 1, "power3.out");
+        rig("#ringPop", { o: 0, s: 0.5 }).to("o", T_POP, 0.4, 0, "power1.in", 0.95).to("s", T_POP, 0.4, 2.4, "power3.out", 0.5);
+        rig("#markWrap", { o: 0, s: 1.14 }).to("o", T_POP - 0.02, 0.05, 1, "none", 0).to("s", T_POP - 0.02, 0.3, 1, "expo.out");
+        rig("#markHot", { o: 0 }).set("o", T_POP - 0.02, 1).to("o", T_POP + FR, 0.26, 0, "power2.out", 1);
+
+        function render(t) {
+          for (var i = 0; i < R.length; i++) R[i].apply(t);
+          var S = drawNet(t);
+          drawTiles(t, S);
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        var drive = { t: 0 };
+        tl.fromTo(drive, { t: 0 }, { t: D, duration: D, ease: "none", onUpdate: function () { render(drive.t); } }, 0);
+        render(0);
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
     </script>
   </body>
 </html>

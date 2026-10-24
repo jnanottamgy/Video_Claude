@@ -3,35 +3,730 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>evidence_behind</title>
     <script src="./vendor/gsap.min.js"></script>
-    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
+    <!-- design/ links to the shared SHELF design system: fonts + tokens -->
     <link rel="stylesheet" href="./design/shelf.css" />
+    <!-- WhatsApp kit (copied from slots/_shared): seeded rng, eases, the drawn WhatsApp glyph -->
+    <script src="./lib/wa-kit.js"></script>
     <style>
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+      #board { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; }
+      .abs { position: absolute; left: 0; top: 0; }
+
+      /* ---------- case-file header: black label tape, typed ---------- */
+      #hdr { position: absolute; left: 0; top: 0; height: 50px; transform-origin: 0 50%; }
+      #hdr .strip {
+        position: absolute; inset: 0; border-radius: 3px;
+        background: linear-gradient(180deg, #262626 0%, #121212 48%, #0b0b0b 100%);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.34), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+      }
+      #hdr .txt {
+        position: relative; display: block; padding: 0 24px 0 22px; white-space: nowrap;
+        font: 700 25px/50px "JetBrains Mono", monospace; letter-spacing: 0.05em; color: #f2eee4;
+      }
+      #hdr .txt .y { color: var(--tape); }
+      #hdr .txt .g { color: rgba(242, 238, 228, 0.45); }
+      #hdr .cur { display: inline-block; width: 13px; height: 26px; margin-left: 2px; vertical-align: -5px; background: var(--tape); }
+      #hdr .tape {
+        position: absolute; top: -7px; width: 62px; height: 26px;
+        background: linear-gradient(180deg, rgba(250, 246, 232, 0.72), rgba(236, 230, 210, 0.62));
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+        clip-path: polygon(4% 8%, 12% 0, 22% 9%, 33% 1%, 44% 8%, 56% 0, 68% 8%, 79% 1%, 90% 9%, 100% 2%, 97% 92%, 87% 100%, 76% 91%, 64% 100%, 53% 92%, 41% 100%, 30% 91%, 18% 100%, 7% 93%, 0 100%);
+      }
+      #hdr .tape.l { left: -22px; transform: rotate(-14deg); }
+      #hdr .tape.r { right: -24px; transform: rotate(11deg); }
+
+      /* ---------- an exhibit (print, page) ---------- */
+      .ex { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; visibility: hidden; }
+      .ex .sh { position: absolute; inset: 0; transform-origin: 50% 50%; }
+      .ex .sh i { position: absolute; inset: 0; display: block; background: #000; border-radius: 6px; }
+      .ex .body { position: absolute; inset: 0; }
+
+      /* printed WhatsApp screenshot */
+      .print .paper {
+        position: absolute; inset: 0; border-radius: 4px;
+        background: linear-gradient(168deg, #fdfcf8 0%, #f3f0e8 55%, #e8e3d7 100%);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.07), inset 0 1.5px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.22);
+      }
+      .grain { position: absolute; inset: 0; background-image: url("./assets/grain.png"); background-size: 256px 256px; opacity: 0.9; pointer-events: none; }
+      .shot { position: absolute; left: 12px; top: 12px; width: 476px; height: 264px; overflow: hidden; border-radius: 2px; background: #0b141a; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45); }
+      .wa-head { position: absolute; left: 0; top: 0; width: 476px; height: 76px; background: #202c33; display: flex; align-items: center; gap: 10px; padding: 0 14px 0 24px; }
+      .wa-head .back { width: 28px; height: 28px; flex: none; }
+      .wa-av { position: relative; width: 50px; height: 50px; border-radius: 50%; flex: none; display: grid; place-items: center; box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.25), inset 0 -3px 6px rgba(0, 0, 0, 0.18); }
+      .wa-av svg { width: 30px; height: 30px; display: block; }
+      .wa-ht { flex: 1; min-width: 0; }
+      .wa-name { font: 600 22px/28px Inter, sans-serif; color: #e9edef; white-space: nowrap; letter-spacing: -0.01em; }
+      .wa-sub { font: 400 16px/21px Inter, sans-serif; color: #8696a0; white-space: nowrap; }
+      .wa-head .kebab { width: 8px; height: 26px; flex: none; }
+      .wa-chat {
+        position: absolute; left: 0; top: 76px; width: 476px; height: 188px; background-color: #0b141a;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120' fill='none' stroke='%23ffffff' stroke-opacity='0.055' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='18' cy='20' r='7'/%3E%3Cpath d='M48 14c4-6 10-6 14 0s10 6 14 0'/%3E%3Cpath d='M96 10v14M89 17h14'/%3E%3Cpath d='M14 62l9-14 9 14z'/%3E%3Crect x='50' y='48' width='18' height='13' rx='3'/%3E%3Cpath d='M86 56c0-6 9-6 9 0 0 5-9 9-9 9s-9-4-9-9c0-6 9-6 9 0'/%3E%3Cpath d='M20 98a10 10 0 1 1 18 6l3 6-7-2a10 10 0 0 1-14-10z'/%3E%3Cpath d='M56 92l6 6 12-14'/%3E%3Ccircle cx='98' cy='98' r='3'/%3E%3Ccircle cx='108' cy='88' r='2'/%3E%3C/svg%3E");
+        background-size: 120px 120px;
+      }
+      .bub { position: absolute; left: 36px; top: 14px; background: #202c33; border-radius: 0 12px 12px 12px; padding: 7px 10px 6px 10px; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); }
+      .bub .tail { position: absolute; left: -9px; top: 0; width: 10px; height: 13px; display: block; }
+      .snd { font: 600 18px/22px Inter, sans-serif; padding-left: 2px; }
+      .doc { margin-top: 5px; display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border-radius: 8px; background: rgba(11, 20, 26, 0.42); }
+      .doc .pdf { width: 40px; height: 50px; flex: none; display: block; }
+      .doc-n { font: 500 23px/28px Inter, sans-serif; color: #e9edef; letter-spacing: -0.01em; }
+      .doc-m { margin-top: 2px; font: 400 17px/22px Inter, sans-serif; color: #8696a0; white-space: nowrap; }
+      .bt { margin-top: 3px; font: 400 15px/18px Inter, sans-serif; color: #8696a0; text-align: right; }
+      .cap { position: absolute; left: 0; right: 0; bottom: 0; height: 50px; display: flex; align-items: center; gap: 10px; padding-left: 56px; }
+      .cap .wa { width: 26px; height: 26px; flex: none; display: block; border-radius: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
+      .cap .x { font: 800 20px/1 "JetBrains Mono", monospace; letter-spacing: 0.14em; color: #17191b; }
+      .cap .d { font: 700 15px/1 "JetBrains Mono", monospace; letter-spacing: 0.08em; color: #8a857a; }
+      .mark { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+      .mark path { fill: none; stroke: #e0232c; stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.92; }
+      .sheen { position: absolute; top: -40%; left: 0; width: 34%; height: 180%; background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.10) 38%, rgba(255, 255, 255, 0.30) 50%, rgba(255, 255, 255, 0.10) 62%, rgba(255, 255, 255, 0) 100%); opacity: 0; }
+      .clipfx { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; pointer-events: none; }
+
+      /* torn calendar page */
+      .page .paper { position: absolute; inset: 0; background: linear-gradient(172deg, #fdfbf5 0%, #f6f2e8 60%, #ece6d8 100%); }
+      .page .rule { position: absolute; left: 0; right: 0; height: 1px; background: rgba(60, 90, 140, 0.13); }
+      .cal-band { position: absolute; left: 0; right: 0; top: 28px; height: 46px; background: linear-gradient(180deg, #d63038 0%, #b81f28 100%); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12); }
+      .cal-band .t { position: absolute; left: 22px; top: 0; font: 800 22px/46px Sora, sans-serif; letter-spacing: 0.3em; color: #fff; }
+      .cal-band .n { position: absolute; right: 22px; top: 0; font: 700 18px/46px "JetBrains Mono", monospace; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.78); }
+      .cal-ttl { position: absolute; left: 22px; top: 90px; font: 800 29px/1 Sora, sans-serif; letter-spacing: 0.01em; color: #141414; white-space: nowrap; }
+      .cal-q { position: absolute; left: 18px; top: 122px; font: 800 106px/1 Sora, sans-serif; letter-spacing: 0.02em; color: #d7262f; white-space: nowrap; }
+      .cal-pin { position: absolute; left: 22px; bottom: 16px; display: flex; align-items: center; gap: 7px; font: 700 14px/1 "JetBrains Mono", monospace; letter-spacing: 0.04em; color: #8a857a; white-space: nowrap; }
+      .cal-pin svg { width: 16px; height: 16px; display: block; }
+
+      /* alarm clock (inside the page) */
+      .clock { position: absolute; width: 156px; height: 168px; transform-origin: 50% 58%; }
+      .clock svg { position: absolute; inset: 0; width: 156px; height: 168px; overflow: visible; }
+
+      /* evidence tents */
+      .tent { position: absolute; left: 0; top: 0; width: 84px; height: 98px; transform-origin: 50% 100%; visibility: hidden; }
+      .tent svg { width: 84px; height: 98px; display: block; overflow: visible; }
+
+      /* strings */
+      #strs { position: absolute; left: 0; top: 0; overflow: visible; }
+      #strs .s-main { fill: none; stroke: var(--string); stroke-width: 4.6; stroke-linecap: round; }
+      #strs .s-hi { fill: none; stroke: #ff6a70; stroke-width: 1.3; stroke-linecap: round; opacity: 0.55; }
+      #strs .s-sh { fill: none; stroke: #000; stroke-width: 5; stroke-linecap: round; opacity: 0.32; }
+
+      /* push pins */
+      .pin { position: absolute; left: 0; top: 0; width: 34px; height: 34px; visibility: hidden; }
+      .pin .p-sh { position: absolute; left: 3px; top: 3px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0, 0, 0, 0.55); filter: blur(3px); }
+      .pin .p-hd {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: radial-gradient(circle at 36% 30%, #ff8a84 0%, #f0333d 26%, #c8161f 58%, #7d0a11 100%);
+        box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(90, 0, 6, 0.55);
+      }
+      .pin .p-hd::after { content: ""; position: absolute; left: 8px; top: 6px; width: 10px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); filter: blur(0.6px); transform: rotate(-30deg); }
+
+      /* the UNSOLVED tag */
+      #tag { position: absolute; left: 0; top: 0; width: 740px; height: 160px; transform-origin: 50% 50%; visibility: hidden; }
+      #tag .t-sh { position: absolute; inset: 0; background: #000; clip-path: polygon(40px 0, 100% 0, 100% 100%, 40px 100%, 0 calc(100% - 40px), 0 40px); filter: blur(14px); opacity: 0.45; transform: translate(10px, 18px); }
+      #tag .t-body {
+        position: absolute; inset: 0;
+        clip-path: polygon(40px 0, 100% 0, 100% 100%, 40px 100%, 0 calc(100% - 40px), 0 40px);
+        background: linear-gradient(180deg, #e8363f 0%, #d7262f 45%, #b51b24 100%);
+        -webkit-mask-image: url("./assets/worn.png"); mask-image: url("./assets/worn.png");
+        -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+      }
+      #tag .rule1 { position: absolute; left: 14px; right: 14px; top: 14px; bottom: 14px; border: 3px solid rgba(255, 255, 255, 0.92); clip-path: polygon(30px 0, 100% 0, 100% 100%, 30px 100%, 0 calc(100% - 30px), 0 30px); }
+      #tag .hole { position: absolute; left: 34px; top: 60px; width: 40px; height: 40px; border-radius: 50%; background: #8f141b; box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.9), inset 0 3px 5px rgba(0, 0, 0, 0.55); }
+      #tag .q { position: absolute; left: 96px; top: 22px; width: 116px; height: 116px; border-radius: 50%; background: #fff; display: grid; place-items: center; font: 800 96px/1 Sora, sans-serif; color: #d7262f; }
+      #tag .q span { display: block; transform: translateY(2px); }
+      #tag .w { position: absolute; left: 226px; right: 26px; top: 0; text-align: center; font: 800 78px/160px Sora, sans-serif; letter-spacing: 0.035em; color: #fff; white-space: nowrap; }
+      #tag .loop { position: absolute; left: -64px; top: 34px; width: 130px; height: 120px; overflow: visible; }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <!--
+      evidence_behind: the investigation board. Output window 4.267 -> 9.933 s (170 frames), layer BEHIND.
+      Three pieces of WhatsApp evidence slap onto the wall, get pinned and joined by red string; on
+      Kartik's "Bro, what assignment!" the board panics and an UNSOLVED tag slaps across it.
+      All motion is a pure function of time (one linear GSAP driver tween samples render(t)).
+    -->
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="5.666" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="5.666" data-track-index="0">
+        <div id="board">
+          <div id="hdr"><div class="tape l"></div><div class="strip"></div><span class="txt" id="hdrTxt"></span><div class="tape r"></div></div>
+          <div id="exLayer"></div>
+          <div id="tentLayer"></div>
+          <svg id="strs" width="1080" height="1920" viewBox="0 0 1080 1920">
+            <defs><filter id="sblur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4" /></filter></defs>
+          </svg>
+          <div id="pinLayer"></div>
+          <div id="tag">
+            <div class="t-sh"></div>
+            <div class="t-body"><div class="rule1"></div><div class="hole"></div><div class="q"><span>?</span></div><div class="w">UNSOLVED</div></div>
+            <svg class="loop" viewBox="0 0 130 120"><path d="M118 46 C 92 30, 40 22, 18 52 C 2 76, 20 104, 52 98" fill="none" stroke="#c1121f" stroke-width="4.5" stroke-linecap="round" /></svg>
           </div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
       </div>
     </div>
     <script>
-      var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
-      window.__timelines["main"] = tl;
-      tl.seek(0);
+      (function () {
+        "use strict";
+        var FPS = 30;
+        var DUR = 5.666;
+        function T(f) { return f / FPS; }
+        function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
+        function lerp(a, b, p) { return a + (b - a) * p; }
+        function seg(t, t0, d) { return clamp((t - t0) / d, 0, 1); }
+        var ez = WA.ease;
+        var P2O = ez("power2.out"), P3O = ez("power3.out"), P2IO = ez("power2.inOut"), P2I = ez("power2.in"), EXO = ez("expo.out");
+        var BACK = ez("back.out(1.4)"), BACK2 = ez("back.out(2.4)"), BACK3 = ez("back.out(1.15)");
+        var D2R = Math.PI / 180;
+        function rot(x, y, deg) { var a = deg * D2R, c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; }
+
+        /* ---------- cues: comp frames (frame 0 = output 4.2667 s; output frame = 128 + n) ---------- */
+        var CUE = {
+          type0: 1, type1: 13,          // header types 4.30 -> 4.70
+          e1: 3,                         // "Maths" 4.37: EXHIBIT 1 lands
+          e1pins: [5, 6],
+          tent1: 14,                     // beat 4.735*
+          mark1: 25,                     // "group" 5.09: red marker ring on its PDF
+          e2: 39,                        // "Computer Science" 5.57: EXHIBIT 2 lands
+          e2pins: [41, 42],
+          s12: [40, 49],                 // string 1 -> 2 draws 5.60 -> lands on the beat 5.901
+          tent2: 53,
+          mark2: 67,                     // beat 6.485 / "another": marker ring on its PDF
+          cut2: 84,                      // 7.067 cut (J punched in ~14% by the compositor)
+          e3: 90,                        // "assignment" 7.27: EXHIBIT 3 lands
+          e3pins: [92, 93],
+          tent3: 97,
+          s13: 102,                      // string 1 -> 3 snaps on the beat 7.651
+          ring: 107,                     // "deadline" 7.83: the alarm clock rings
+          s23: 119,                      // string 2 -> 3 snaps on the beat 8.234
+          cut3: 124,                     // 8.400 cut to Kartik
+          j1: 127, j2: 137, j3: 147,     // jolts: "Bro" 8.49, beat 8.818, "what" 9.15
+          slap: 155                      // "assignment" 9.42: UNSOLVED slaps, string snaps, card swings
+        };
+
+        /* ---------- glyphs ---------- */
+        var SV = {
+          back: '<svg class="back" viewBox="0 0 48 48"><path d="M22 11 9 24l13 13M10 24h30" fill="none" stroke="#aebac1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+          kebab: '<svg class="kebab" viewBox="0 0 8 26"><circle cx="4" cy="4" r="2.6" fill="#aebac1"/><circle cx="4" cy="13" r="2.6" fill="#aebac1"/><circle cx="4" cy="22" r="2.6" fill="#aebac1"/></svg>',
+          sigma: '<svg viewBox="0 0 48 48"><path d="M35 11H13l11.5 13L13 37h22" fill="none" stroke="#fff" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+          code: '<svg viewBox="0 0 48 48"><path d="M16 14 6 24l10 10M32 14l10 10-10 10M27.5 10l-7 28" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+          tail: '<svg class="tail" viewBox="0 0 10 13"><path d="M10 0H2.2C.4 0-.5 2 .9 3.3L10 13z" fill="#202c33"/></svg>',
+          pdf: '<svg class="pdf" viewBox="0 0 40 50"><path d="M5 1h21l13 13v31a4 4 0 0 1-4 4H5a4 4 0 0 1-4-4V5a4 4 0 0 1 4-4z" fill="#e5534b"/><path d="M26 1v9a4 4 0 0 0 4 4h9z" fill="#f4a49e"/><text x="20" y="40" text-anchor="middle" font-family="Inter" font-weight="800" font-size="11" fill="#fff" letter-spacing="0.4">PDF</text></svg>',
+          pin: '<svg viewBox="0 0 16 16"><path d="M10.6 1.4l4 4-2.2.6-2.9 2.9.3 3.3-1.2 1.2-2.6-2.6-3.6 3.6-.9-.1-.1-.9 3.6-3.6L2.4 7.2l1.2-1.2 3.3.3L9.8 3.4z" fill="#8a857a"/></svg>'
+        };
+
+        /* ---------- build the exhibits ---------- */
+        var exLayer = document.getElementById("exLayer");
+        function div(cls, html) { var d = document.createElement("div"); if (cls) d.className = cls; if (html) d.innerHTML = html; return d; }
+
+        // print: a WhatsApp group screenshot, printed with a white border and an EXHIBIT caption
+        function makePrint(id, o) {
+          var el = div("ex print"); el.id = id;
+          el.style.width = o.w + "px"; el.style.height = o.h + "px";
+          var sh = div("sh", "<i></i>");
+          var body = div("body");
+          body.appendChild(div("paper"));
+          body.appendChild(div("grain"));
+          var shot = div("shot");
+          var head = div("wa-head", SV.back + '<div class="wa-av" style="background:' + o.av + '">' + o.glyph + '</div><div class="wa-ht"><div class="wa-name">' + o.name + '</div><div class="wa-sub">' + o.sub + '</div></div>' + SV.kebab);
+          var chat = div("wa-chat");
+          var bub = div("bub", SV.tail + '<div class="snd" style="color:' + o.sc + '">' + o.sender + '</div><div class="doc">' + SV.pdf + '<div class="doc-t"><div class="doc-n">' + o.file + '</div><div class="doc-m">' + o.meta + '</div></div></div><div class="bt">' + o.time + "</div>");
+          bub.style.width = o.bw + "px";
+          chat.appendChild(bub);
+          shot.appendChild(head); shot.appendChild(chat);
+          body.appendChild(shot);
+          body.appendChild(div("cap", WA.G.waIcon("wag" + id).replace("<svg ", '<svg class="wa" ') + '<span class="x">EXHIBIT ' + o.n + "</span>"));
+          var fx = div("clipfx"); var sheen = div("sheen"); fx.appendChild(sheen); body.appendChild(fx);
+          // red marker ring around the PDF (drawn later); ellipse in print coordinates
+          var m = o.mark;
+          var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.setAttribute("class", "mark"); svg.setAttribute("width", o.w); svg.setAttribute("height", o.h); svg.setAttribute("viewBox", "0 0 " + o.w + " " + o.h);
+          var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", ringPath(m[0], m[1], m[2], m[3], m[4]));
+          svg.appendChild(path); body.appendChild(svg);
+          el.appendChild(sh); el.appendChild(body);
+          exLayer.appendChild(el);
+          var len = path.getTotalLength();
+          path.style.strokeDasharray = len + " " + (len + 20);
+          path.style.strokeDashoffset = len;
+          return { el: el, sh: sh, body: body, sheen: sheen, mark: path, markLen: len };
+        }
+        // a hand-drawn marker loop: an ellipse that overshoots its start, slightly wobbly
+        function ringPath(cx, cy, rx, ry, a0) {
+          var pts = [], N = 46, sweep = 2 * Math.PI * 1.13;
+          for (var i = 0; i <= N; i++) {
+            var u = i / N, a = a0 + sweep * u;
+            var wob = 1 + 0.035 * Math.sin(u * 9.0 + 1.3) + 0.06 * u;
+            pts.push([cx + Math.cos(a) * rx * wob, cy + Math.sin(a) * ry * (wob - 0.03 * u)]);
+          }
+          var d = "M" + pts[0][0].toFixed(1) + " " + pts[0][1].toFixed(1);
+          for (var j = 1; j < pts.length; j++) d += " L" + pts[j][0].toFixed(1) + " " + pts[j][1].toFixed(1);
+          return d;
+        }
+
+        var P1 = makePrint("e1", {
+          n: 1, w: 500, h: 326, name: "MATHS &middot; SEM 4", sub: "214 members",
+          av: "linear-gradient(160deg,#7d7bff 0%,#4b48d6 100%)", glyph: SV.sigma,
+          sender: "~ Ananya", sc: "#fc9775", file: "M3_Unit2_notes.pdf", meta: "24 pages &middot; PDF &middot; 3.1 MB", time: "11:42 pm",
+          bw: 344, mark: [214, 172, 182, 56, -2.75]
+        });
+        var P2 = makePrint("e2", {
+          n: 2, w: 500, h: 326, name: "COMPUTER SCIENCE &middot; CSE-B", sub: "187 members",
+          av: "linear-gradient(160deg,#2fb8d8 0%,#137a94 100%)", glyph: SV.code,
+          sender: "~ Rahul (CR)", sc: "#53bdeb", file: "DBMS_Unit3_<wbr>FINAL_final_v2.pdf", meta: "18 pages &middot; PDF &middot; 2.4 MB", time: "9:05 pm",
+          bw: 372, mark: [228, 186, 196, 72, -2.6]
+        });
+
+        // EXHIBIT 3: a torn calendar page with a red alarm clock
+        var E3W = 400, E3H = 266;
+        var torn = (function () {
+          var r = WA.rng(7);
+          var pts = ["0px 100%", "0px 9px"];
+          for (var x = 10; x < E3W; x += 10 + Math.floor(r() * 9)) pts.push(x + "px " + (1 + Math.floor(r() * 9)) + "px");
+          pts.push(E3W + "px 5px", E3W + "px 100%");
+          return "polygon(" + pts.join(",") + ")";
+        })();
+        var P3 = (function () {
+          var el = div("ex page"); el.id = "e3";
+          el.style.width = E3W + "px"; el.style.height = E3H + "px";
+          var sh = div("sh", "<i></i>");
+          sh.firstChild.style.clipPath = torn; sh.firstChild.style.borderRadius = "0";
+          var body = div("body");
+          var paper = div("paper"); paper.style.clipPath = torn;
+          for (var i = 0; i < 6; i++) { var ru = div("rule"); ru.style.top = (102 + i * 27) + "px"; paper.appendChild(ru); }
+          var gr = div("grain"); paper.appendChild(gr);
+          paper.appendChild(div("cal-band", '<span class="t">DUE DATE</span><span class="n">WK ??</span>'));
+          paper.appendChild(div("cal-ttl", "ASSIGNMENT DUE:"));
+          paper.appendChild(div("cal-q", "???"));
+          paper.appendChild(div("cal-pin", SV.pin + "PINNED &middot; 21 DAYS AGO"));
+          var fx = div("clipfx"); fx.style.borderRadius = "0"; var sheen = div("sheen"); fx.appendChild(sheen); paper.appendChild(fx);
+          body.appendChild(paper);
+          // the clock overlaps the page's right edge
+          var clock = div("clock");
+          clock.style.left = "244px"; clock.style.top = "100px";
+          clock.innerHTML =
+            '<svg viewBox="0 0 156 168">' +
+            '<defs><radialGradient id="ckb" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ff6b62"/><stop offset=".45" stop-color="#e0222b"/><stop offset="1" stop-color="#8e0c13"/></radialGradient>' +
+            '<radialGradient id="ckf" cx="45%" cy="40%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9e4da"/></radialGradient></defs>' +
+            '<ellipse cx="80" cy="160" rx="54" ry="6" fill="#000" opacity=".28"/>' +
+            '<g class="ring-a" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0"><path d="M10 52 Q2 70 8 90"/><path d="M146 52 Q154 70 148 90"/><path d="M-4 44 Q-14 72 -6 100"/><path d="M160 44 Q170 72 162 100"/></g>' +
+            '<g class="ring-b" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round" fill="none" opacity="0"><path d="M14 40 L-2 30"/><path d="M142 40 L158 30"/><path d="M8 112 L-8 120"/><path d="M148 112 L164 120"/></g>' +
+            '<path d="M46 136 34 156M110 136l12 20" stroke="#2a2a2a" stroke-width="7" stroke-linecap="round"/>' +
+            '<g class="bells"><path d="M28 50a24 24 0 0 1 34-26z" fill="url(#ckb)" stroke="#5c060b" stroke-width="2"/><path d="M128 50a24 24 0 0 0-34-26z" fill="url(#ckb)" stroke="#5c060b" stroke-width="2"/>' +
+            '<rect class="hammer" x="74" y="14" width="8" height="18" rx="3" fill="#2a2a2a"/><path d="M78 16v-8" stroke="#2a2a2a" stroke-width="4" stroke-linecap="round"/></g>' +
+            '<circle cx="78" cy="92" r="56" fill="url(#ckb)" stroke="#5c060b" stroke-width="2"/>' +
+            '<circle cx="78" cy="92" r="44" fill="url(#ckf)"/>' +
+            '<g stroke="#2a2a2a" stroke-width="3.2" stroke-linecap="round"><path d="M78 53v7M78 124v7M39 92h7M110 92h7"/></g>' +
+            '<g stroke="#2a2a2a" stroke-width="2" stroke-linecap="round" opacity=".7"><path d="M97.5 58.2l-2 3.4M111.8 72.5l-3.4 2M111.8 111.5l-3.4-2M97.5 125.8l-2-3.4M58.5 125.8l2-3.4M44.2 111.5l3.4-2M44.2 72.5l3.4 2M58.5 58.2l2 3.4"/></g>' +
+            '<path class="hands" d="M78 92 78 66M78 92 98 104" stroke="#151515" stroke-width="5" stroke-linecap="round"/>' +
+            '<circle cx="78" cy="92" r="5" fill="#d7262f"/>' +
+            '<path d="M44 66a40 40 0 0 1 22-18" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".55"/>' +
+            "</svg>";
+          body.appendChild(clock);
+          el.appendChild(sh); el.appendChild(body);
+          exLayer.appendChild(el);
+          return { el: el, sh: sh, body: body, sheen: sheen, clock: clock, ringA: clock.querySelector(".ring-a"), ringB: clock.querySelector(".ring-b"), hammer: clock.querySelector(".hammer"), bells: clock.querySelector(".bells") };
+        })();
+        // z-order: E1, then E3, then E2 (E2 overlaps E1's corner)
+        exLayer.appendChild(P3.el); exLayer.appendChild(P2.el);
+
+        /* ---------- exhibit physics ---------- */
+        // base pose (board coordinates), arrival direction, jolt response
+        var EX = {
+          e1: { k: P1, w: 500, h: 326, cx: 322, cy: 586, r: 1.5, sc: 1, land: CUE.e1, fx: -150, fy: -80, fr: -12, fs: 1.55,
+                pins: [[-226, -147], [226, -147]], pinAt: CUE.e1pins, tent: [110, 178], tentAt: CUE.tent1,
+                jr: [1.8, -1.0, 1.4, 2.6], jA: 4.2, jf: 4.3, jph: 0.0 },
+          e2: { k: P2, w: 500, h: 326, cx: 750, cy: 528, r: -2.5, sc: 1.06, land: CUE.e2, fx: 190, fy: -70, fr: 14, fs: 1.55,
+                pins: [[-226, -147], [226, -147]], pinAt: CUE.e2pins, tent: [210, 150], tentAt: CUE.tent2,
+                jr: [-1.5, 0.9, -1.1, 0], jA: 4.6, jf: 3.9, jph: 1.1 },
+          e3: { k: P3, w: E3W, h: E3H, cx: 276, cy: 888, r: 2.0, sc: 1, land: CUE.e3, fx: -130, fy: 110, fr: -10, fs: 1.6,
+                pins: [[-178, -115], [170, -115]], pinAt: CUE.e3pins, tent: [226, 112], tentAt: CUE.tent3,
+                jr: [1.3, -0.7, 1.0, -2.2], jA: 3.8, jf: 4.7, jph: 2.2 }
+        };
+        var JOLTS = [[CUE.j1, 1.0], [CUE.j2, 0.55], [CUE.j3, 0.8], [CUE.slap, 1.3]];
+        var SNAPS3 = [[CUE.s13, 0.6], [CUE.s23, 0.6]]; // the strings tug EXHIBIT 3 when they snap onto it
+        var FLIGHT = 0.24, HIT = 1 / 2.4; // back.out(1.4) first reaches 1 at p = 1/2.4
+
+        function arrival(c, t) {
+          var tl = T(c.land), t0 = tl - HIT * FLIGHT;
+          if (t < t0 - 1e-6) return null;
+          var p = seg(t, t0, FLIGHT), e = BACK(p), q = 1 - e;
+          return { q: q, lift: clamp(1 - (t - t0) / (tl - t0), 0, 1) };
+        }
+        // damped rotation response to the jolts (+ new resting tilt after each jolt)
+        function joltRot(c, t) {
+          var r = 0;
+          for (var i = 0; i < JOLTS.length; i++) {
+            var u = t - T(JOLTS[i][0]);
+            if (u < 0) break;
+            var k = JOLTS[i][1];
+            r += c.jr[i] * (1 - Math.exp(-u / 0.07));
+            r += k * c.jA * Math.exp(-u / 0.2) * Math.sin(2 * Math.PI * c.jf * u + c.jph * 0.3) * (i % 2 ? -1 : 1);
+          }
+          return r;
+        }
+        function joltXY(c, t) {
+          var x = 0, y = 0;
+          for (var i = 0; i < JOLTS.length; i++) {
+            var u = t - T(JOLTS[i][0]);
+            if (u < 0) break;
+            var k = JOLTS[i][1] * Math.exp(-u / 0.11);
+            x += k * 7 * Math.cos(2 * Math.PI * 7.5 * u + c.jph);
+            y += k * 9 * Math.cos(2 * Math.PI * 6.5 * u + c.jph + 1.7);
+          }
+          return [x, y];
+        }
+        // E2's swing on its top-left pin after the slap (its top-right pin pops out)
+        var SWING = { piv: [-226, -147], eq: 22, f: 1.45, tau: 0.42 };
+        function swingAngle(t) {
+          var u = t - T(CUE.slap);
+          if (u < 0) return 0;
+          return SWING.eq - SWING.eq * Math.exp(-u / SWING.tau) * Math.cos(2 * Math.PI * SWING.f * u);
+        }
+
+        function pose(id, t) {
+          var c = EX[id];
+          var a = arrival(c, t);
+          if (!a) return null;
+          var cx = c.cx + c.fx * a.q, cy = c.cy + c.fy * a.q, r = c.r + c.fr * a.q, s = c.sc * (1 + (c.fs - 1) * Math.max(0, a.q));
+          r += joltRot(c, t);
+          var j = joltXY(c, t); cx += j[0]; cy += j[1];
+          if (id === "e3") {
+            for (var i = 0; i < SNAPS3.length; i++) {
+              var u = t - T(SNAPS3[i][0]);
+              if (u >= 0) r += (i ? -1 : 1) * 2.6 * SNAPS3[i][1] * Math.exp(-u / 0.16) * Math.sin(2 * Math.PI * 5 * u);
+            }
+          }
+          if (id === "e2") {
+            var sw = swingAngle(t);
+            if (sw !== 0) {
+              var pv = rot(SWING.piv[0] * s, SWING.piv[1] * s, r);
+              var px = cx + pv[0], py = cy + pv[1];
+              var nv = rot(-SWING.piv[0] * s, -SWING.piv[1] * s, r + sw);
+              cx = px + nv[0]; cy = py + nv[1]; r += sw;
+            }
+          }
+          return { cx: cx, cy: cy, r: r, s: s, lift: a.lift, q: a.q };
+        }
+        function world(id, P, lx, ly) {
+          var v = rot(lx * P.s, ly * P.s, P.r);
+          return [P.cx + v[0], P.cy + v[1]];
+        }
+        function speed(id, t) {
+          var a = pose(id, t - 1 / 60), b = pose(id, t + 1 / 60);
+          if (!a || !b) return 0;
+          var c = EX[id], half = (c.w + c.h) / 4;
+          return Math.hypot(b.cx - a.cx, b.cy - a.cy) + Math.abs(b.s - a.s) * half + Math.abs(b.r - a.r) * D2R * half * 0.6;
+        }
+
+        /* ---------- tents ---------- */
+        var tentLayer = document.getElementById("tentLayer");
+        function tentSVG(n) {
+          return '<svg viewBox="0 0 84 98">' +
+            '<ellipse cx="44" cy="95" rx="38" ry="4.5" fill="#000" opacity=".3"/>' +
+            '<path d="M62 7 76 12 82 92 66 95z" fill="#a87b00"/>' +
+            '<path d="M8 95 17 9Q18 4 23 4H58Q63 4 63 9L70 95z" fill="url(#tg' + n + ')" stroke="#6d5000" stroke-width="1.4" stroke-linejoin="round"/>' +
+            '<path d="M10.6 78H68.4L69.4 88H9.6z" fill="#141414"/>' +
+            '<text x="39.5" y="62" text-anchor="middle" font-family="Sora" font-weight="800" font-size="48" fill="#111">' + n + "</text>" +
+            '<defs><linearGradient id="tg' + n + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe45c"/><stop offset=".55" stop-color="#f4c20d"/><stop offset="1" stop-color="#d9a600"/></linearGradient></defs>' +
+            "</svg>";
+        }
+        var TENTS = ["e1", "e2", "e3"].map(function (id, i) {
+          var el = div("tent", tentSVG(i + 1)); tentLayer.appendChild(el); return { id: id, el: el, L: {} };
+        });
+
+        /* ---------- pins ---------- */
+        var pinLayer = document.getElementById("pinLayer");
+        var PINS = [];
+        ["e1", "e2", "e3"].forEach(function (id) {
+          EX[id].pins.forEach(function (lp, j) {
+            var el = div("pin", '<div class="p-sh"></div><div class="p-hd"></div>');
+            pinLayer.appendChild(el);
+            PINS.push({ id: id, j: j, lp: lp, at: EX[id].pinAt[j], el: el, sh: el.firstChild, L: {} });
+          });
+        });
+        var POP = PINS[3]; // E2's top-right pin pops out at the slap
+
+        /* ---------- strings ---------- */
+        var svgNS = "http://www.w3.org/2000/svg";
+        var strs = document.getElementById("strs");
+        function mkString() {
+          var g = document.createElementNS(svgNS, "g");
+          var sh = document.createElementNS(svgNS, "path"); sh.setAttribute("class", "s-sh"); sh.setAttribute("filter", "url(#sblur)");
+          var m = document.createElementNS(svgNS, "path"); m.setAttribute("class", "s-main");
+          var hi = document.createElementNS(svgNS, "path"); hi.setAttribute("class", "s-hi");
+          g.appendChild(sh); g.appendChild(m); g.appendChild(hi); strs.appendChild(g);
+          return { g: g, sh: sh, m: m, hi: hi, d: null };
+        }
+        var S12 = mkString(), S13 = mkString(), S23 = mkString(), S12a = mkString(), S12b = mkString();
+        function setPath(S, d) {
+          if (d === S.d) return;
+          S.d = d;
+          if (!d) { S.g.style.display = "none"; return; }
+          S.g.style.display = "";
+          S.m.setAttribute("d", d);
+          S.hi.setAttribute("d", d);
+          S.sh.setAttribute("d", d);
+        }
+        var f1 = function (v) { return v.toFixed(1); };
+        // a hanging string: quadratic from A to B, sagging by g (gravity, +y) and wobbling by w (normal)
+        function qd(A, B, g, w) {
+          var mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2;
+          var dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1;
+          var nx = -dy / L, ny = dx / L;
+          var cx = mx + nx * 2 * w, cy = my + 2 * g + ny * 2 * w;
+          return "M" + f1(A[0]) + " " + f1(A[1]) + " Q" + f1(cx) + " " + f1(cy) + " " + f1(B[0]) + " " + f1(B[1]);
+        }
+        function qpt(A, B, g, w, u) {
+          var mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2;
+          var dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1;
+          var cx = mx - dy / L * 2 * w, cy = my + 2 * g + dx / L * 2 * w;
+          var a = (1 - u) * (1 - u), b = 2 * u * (1 - u), c = u * u;
+          return [a * A[0] + b * cx + c * B[0], a * A[1] + b * cy + c * B[1]];
+        }
+        // the twang of a string: damped wobble after it lands, re-excited by every jolt
+        function twang(t, land, amp, ph) {
+          var w = 0, u = t - T(land);
+          if (u >= 0) w += amp * Math.exp(-u / 0.2) * Math.sin(2 * Math.PI * 6.2 * u + ph);
+          for (var i = 0; i < JOLTS.length; i++) {
+            var v = t - T(JOLTS[i][0]);
+            if (v < 0 || T(JOLTS[i][0]) < T(land)) continue;
+            w += JOLTS[i][1] * 9 * Math.exp(-v / 0.18) * Math.sin(2 * Math.PI * 7 * v + ph + i);
+          }
+          return w;
+        }
+
+        /* ---------- header ---------- */
+        var hdr = document.getElementById("hdr");
+        var hdrTxt = document.getElementById("hdrTxt");
+        var HTXT = [["CASE #0047", "y"], [" · ", "g"], ["THE MISSING NOTES", ""]];
+        var chars = [];
+        HTXT.forEach(function (p) {
+          for (var i = 0; i < p[0].length; i++) {
+            var sp = document.createElement("span");
+            if (p[1]) sp.className = p[1];
+            sp.textContent = p[0][i];
+            sp.style.visibility = "hidden";
+            hdrTxt.appendChild(sp); chars.push(sp);
+          }
+        });
+        var cur = document.createElement("span"); cur.className = "cur"; hdrTxt.appendChild(cur);
+        // typed with a slightly uneven hand (seeded)
+        var typeAt = (function () {
+          var r = WA.rng(47), acc = [], sum = 0, w = [];
+          for (var i = 0; i < chars.length; i++) { var x = 0.7 + 0.6 * r(); if (chars[i].textContent === " ") x *= 0.6; w.push(x); sum += x; }
+          var t0 = T(CUE.type0), d = T(CUE.type1) - t0, run = 0;
+          for (var j = 0; j < chars.length; j++) { acc.push(t0 + d * (run / sum)); run += w[j]; }
+          return acc;
+        })();
+        var HDR = { x: 64, y: 262, r: -1.2 };
+
+        /* ---------- tag ---------- */
+        var tag = document.getElementById("tag");
+        var TAG = { cx: 540, cy: 742, r: -5, w: 740, h: 160 };
+
+        /* ---------- board camera: re-frame per shot + shake ---------- */
+        // shot 2 (7.067-8.400) is punched in 1.14x by the compositor around J's face; the board counter-
+        // scales so it sits like shot 1, easing in over 0.25 s after each cut.
+        var PUNCH = { k: 1 / 1.14, x: 790, y: 990 };
+        function boardCam(t) {
+          var s = 1, tx = 0, ty = 0;
+          var K = PUNCH.k, TX = PUNCH.x * (1 - K), TY = PUNCH.y * (1 - K);
+          if (t >= T(CUE.cut2)) { var p = P3O(seg(t, T(CUE.cut2), 0.25)); s = lerp(1, K, p); tx = lerp(0, TX, p); ty = lerp(0, TY, p); }
+          if (t >= T(CUE.cut3)) { var q = P3O(seg(t, T(CUE.cut3), 0.25)); s = lerp(K, 1, q); tx = lerp(TX, 0, q); ty = lerp(TY, 0, q); }
+          var sx = 0, sy = 0, sr = 0;
+          for (var i = 0; i < JOLTS.length; i++) {
+            var u = t - T(JOLTS[i][0]);
+            if (u < 0) break;
+            var k = JOLTS[i][1] * Math.exp(-u / 0.09);
+            sx += k * 13 * Math.cos(2 * Math.PI * 11 * u);
+            sy += k * 8 * Math.cos(2 * Math.PI * 9 * u + 1.1);
+            sr += k * 0.7 * Math.cos(2 * Math.PI * 8 * u + 0.4);
+          }
+          return { s: s, tx: tx + sx, ty: ty + sy, r: sr };
+        }
+
+        /* ---------- render(t): every frame is a pure function of t ---------- */
+        var board = document.getElementById("board");
+        var LB = {}, LH = {}, LT = {};
+        function setT(el, L, key, v) { if (L[key] !== v) { L[key] = v; el.style[key] = v; } }
+
+        function renderExhibit(id, t) {
+          var c = EX[id], k = c.k, P = pose(id, t);
+          var L = c.L || (c.L = {});
+          if (!P) { setT(k.el, L, "visibility", "hidden"); return null; }
+          setT(k.el, L, "visibility", "visible");
+          var tf = "translate(" + f1(P.cx - c.w / 2) + "px," + f1(P.cy - c.h / 2) + "px) rotate(" + P.r.toFixed(3) + "deg) scale(" + P.s.toFixed(4) + ")";
+          setT(k.el, L, "transform", tf);
+          var v = speed(id, t), blur = clamp((v - 6) * 0.16, 0, 16);
+          if (t >= T(c.land) - 1e-6) blur = Math.min(blur, t >= T(CUE.slap) ? 3.5 : 1.2);
+          setT(k.el, L, "filter", blur > 0.35 ? "blur(" + blur.toFixed(1) + "px)" : "none");
+          // shadow: high & soft in flight, tight on the wall (offset is world down-right, undo the card's rotation)
+          var lf = P.lift;
+          var off = rot(lerp(6, 34, lf) / P.s, lerp(12, 64, lf) / P.s, -P.r);
+          setT(k.sh, L, "transform", "translate(" + f1(off[0]) + "px," + f1(off[1]) + "px) scale(" + lerp(1.0, 0.94, lf).toFixed(3) + ")");
+          setT(k.sh, L, "filter", "blur(" + lerp(9, 30, lf).toFixed(1) + "px)");
+          setT(k.sh, L, "opacity", lerp(0.46, 0.22, lf).toFixed(3));
+          // landing sheen
+          var su = seg(t, T(c.land), 0.42);
+          if (su > 0 && su < 1) { setT(k.sheen, L, "opacity", (Math.sin(Math.PI * su) * 0.95).toFixed(3)); setT(k.sheen, L, "transform", "translateX(" + f1(-200 + 900 * P2IO(su)) + "px) rotate(8deg)"); }
+          else setT(k.sheen, L, "opacity", "0");
+          return P;
+        }
+
+        function render(t) {
+          var f = Math.round(t * FPS);
+          var cam = boardCam(t);
+          setT(board, LB, "transform", "translate(" + f1(cam.tx) + "px," + f1(cam.ty) + "px) scale(" + cam.s.toFixed(4) + ") rotate(" + cam.r.toFixed(3) + "deg)");
+
+          /* header */
+          var hr = HDR.r, hy = 0;
+          for (var i = 0; i < JOLTS.length; i++) { var u = t - T(JOLTS[i][0]); if (u >= 0) { hr += JOLTS[i][1] * 1.6 * Math.exp(-u / 0.18) * Math.sin(2 * Math.PI * 5 * u) + [-0.5, 0.3, -0.4, -1.1][i] * (1 - Math.exp(-u / 0.07)); } }
+          var wipe = EXO(seg(t, 0, 0.16));
+          setT(hdr, LH, "transform", "translate(" + HDR.x + "px," + (HDR.y + hy) + "px) rotate(" + hr.toFixed(3) + "deg) scaleX(" + lerp(0.82, 1, wipe).toFixed(4) + ")");
+          setT(hdr, LH, "opacity", clamp(t * FPS / 1.5 + 0.25, 0, 1).toFixed(3));
+          var shown = 0;
+          for (var c = 0; c < chars.length; c++) { var vis = t >= typeAt[c] - 1e-6; if (vis) shown++; var vv = vis ? "visible" : "hidden"; if (chars[c]._v !== vv) { chars[c]._v = vv; chars[c].style.visibility = vv; } }
+          var curOn = t < T(CUE.type1) + 0.02 ? true : (f - CUE.type1 < 24 ? Math.floor((f - CUE.type1) / 4) % 2 === 1 : false);
+          setT(cur, LH, "opacity", curOn ? "1" : "0");
+
+          /* exhibits */
+          var PS = { e1: renderExhibit("e1", t), e2: renderExhibit("e2", t), e3: renderExhibit("e3", t) };
+
+          /* marker rings */
+          [[P1, CUE.mark1], [P2, CUE.mark2]].forEach(function (mk) {
+            var p = P2O(seg(t, T(mk[1]), 0.22));
+            var v = (mk[0].markLen * (1 - p)).toFixed(1);
+            if (mk[0]._mo !== v) { mk[0]._mo = v; mk[0].mark.style.strokeDashoffset = v; mk[0].mark.style.opacity = p > 0 ? "0.92" : "0"; }
+          });
+
+          /* alarm clock: rings on "deadline", again on every jolt and on the slap */
+          var RINGS = [[CUE.ring, 1.0, 0.42], [CUE.j1, 0.75, 0.3], [CUE.j2, 0.5, 0.24], [CUE.j3, 0.65, 0.28], [CUE.slap, 1.0, 0.7]];
+          var ra = 0;
+          for (var ri = 0; ri < RINGS.length; ri++) { var uu = t - T(RINGS[ri][0]); if (uu >= 0) ra = Math.max(ra, RINGS[ri][1] * Math.exp(-uu / RINGS[ri][2])); }
+          var par = f % 2 ? 1 : -1;
+          var ca = ra > 0.04 ? par * 13 * ra : 0, cy = ra > 0.04 ? -Math.abs(par) * 3 * ra : 0, cs = 1 + 0.12 * ra * (ra > 0.5 ? 1 : 0);
+          var ringPop = 0; var ur = t - T(CUE.ring); if (ur >= 0 && ur < 0.2) ringPop = 0.22 * (1 - ur / 0.2);
+          setT(P3.clock, LT, "transform", "translateY(" + f1(cy) + "px) rotate(" + ca.toFixed(2) + "deg) scale(" + (0.88 * (cs + ringPop)).toFixed(3) + ")");
+          var la = clamp(ra * 1.8, 0, 1);
+          setT(P3.ringA, LT, "opacity", (f % 2 ? la : la * 0.35).toFixed(2));
+          setT(P3.ringB, LT, "opacity", (f % 2 ? la * 0.35 : la).toFixed(2));
+          P3.hammer.setAttribute("transform", ra > 0.04 ? "rotate(" + (par * 28 * Math.min(1, ra * 1.5)).toFixed(1) + " 78 12)" : "");
+
+          /* tents */
+          TENTS.forEach(function (tn, i) {
+            var c = EX[tn.id], P = PS[tn.id];
+            var at = T(c.tentAt);
+            if (!P || t < at - 1e-6) { setT(tn.el, tn.L, "visibility", "hidden"); return; }
+            setT(tn.el, tn.L, "visibility", "visible");
+            var w = world(tn.id, P, c.tent[0], c.tent[1]);
+            var p = seg(t, at, 0.34), sy = BACK2(p), sx = lerp(0.6, 1, P3O(p));
+            var hop = 0, tr = 0;
+            for (var j = 0; j < JOLTS.length; j++) {
+              var u = t - T(JOLTS[j][0]);
+              if (u >= 0 && u < 0.26) { var hh = (j === 3 ? 30 : 18) * JOLTS[j][1]; hop -= hh * Math.sin(Math.PI * u / 0.26); }
+              if (u >= 0) tr += JOLTS[j][1] * 7 * Math.exp(-u / 0.2) * Math.sin(2 * Math.PI * 4 * u + i) * (i % 2 ? 1 : -1);
+            }
+            var r = P.r * 0.5 + tr + (i === 0 ? -4 : i === 1 ? 5 : -3);
+            setT(tn.el, tn.L, "transform", "translate(" + f1(w[0] - 42) + "px," + f1(w[1] - 98 + hop) + "px) rotate(" + r.toFixed(2) + "deg) scale(" + sx.toFixed(3) + "," + Math.max(0.001, sy).toFixed(3) + ")");
+          });
+
+          /* pins */
+          var PW = {};
+          PINS.forEach(function (pn) {
+            var P = PS[pn.id];
+            var key = pn.id + pn.j;
+            if (!P || t < T(pn.at) - 2 / FPS) { setT(pn.el, pn.L, "visibility", "hidden"); PW[key] = P ? world(pn.id, P, pn.lp[0], pn.lp[1]) : null; return; }
+            var w = world(pn.id, P, pn.lp[0], pn.lp[1]);
+            var sc = 1, so = 1, op = 1;
+            var u = t - T(pn.at);
+            if (u < 0) { var pp = clamp((u + 2 / FPS) / (2 / FPS), 0, 1); sc = lerp(1.75, 1.04, P2I(pp)); so = lerp(5, 1, pp); op = pp > 0 ? 1 : 0; }
+            else if (u < 0.1) { sc = lerp(0.9, 1, P2O(u / 0.1)); }
+            if (pn === POP) {
+              var up = t - T(CUE.slap);
+              if (up >= 0) {
+                w = [w[0] + 560 * up, w[1] - 900 * up + 0.5 * 3000 * up * up];
+                sc = 1 + 1.4 * up; so = 1 + 18 * up;
+                PW.pop = true;
+              }
+            }
+            PW[key] = w;
+            setT(pn.el, pn.L, "visibility", op ? "visible" : "hidden");
+            var spin = pn === POP && t >= T(CUE.slap) ? (t - T(CUE.slap)) * 900 : 0;
+            setT(pn.el, pn.L, "transform", "translate(" + f1(w[0] - 17) + "px," + f1(w[1] - 17) + "px) rotate(" + spin.toFixed(1) + "deg) scale(" + sc.toFixed(3) + ")");
+            setT(pn.sh, pn.L, "transform", "translate(" + f1(3 * so) + "px," + f1(5 * so) + "px)");
+            setT(pn.sh, pn.L, "opacity", (so > 3 ? 0.25 : 0.85).toFixed(2));
+          });
+
+          /* strings */
+          var A1 = PW.e10, B2 = PW.e20, C3a = PW.e30, C3b = PW.e31;
+          // 1 -> 2: draws 5.60 -> 5.901, twangs, snaps at the slap
+          var s12d = null, s12a = null, s12b = null;
+          if (A1 && B2 && t >= T(CUE.s12[0]) - 1e-6) {
+            var dp = P2IO(seg(t, T(CUE.s12[0]), T(CUE.s12[1] - CUE.s12[0])));
+            var g = 7, wv = twang(t, CUE.s12[1], 14, 0);
+            if (t < T(CUE.slap)) {
+              var E = [lerp(A1[0], B2[0], dp), lerp(A1[1], B2[1], dp) - 46 * Math.sin(Math.PI * dp)];
+              s12d = qd(A1, E, g * dp, dp < 1 ? 0 : wv);
+            } else {
+              // snapped: two halves recoil toward their pins and fall like pendulums
+              var us = t - T(CUE.slap);
+              var Mx = qpt(A1, B2, g, 0, 0.5);
+              s12a = half(A1, Mx, us, 1);
+              s12b = half(B2, Mx, us, -1);
+            }
+          }
+          setPath(S12, s12d); setPath(S12a, s12a); setPath(S12b, s12b);
+          // 1 -> 3 and 2 -> 3: snap onto EXHIBIT 3 (fast shoot, hard twang)
+          setPath(S13, snapString(A1, C3a, CUE.s13, t, 1.1));
+          setPath(S23, snapString(B2, C3b, CUE.s23, t, -1.3));
+
+          /* UNSOLVED tag slap */
+          var tu = t - T(CUE.slap);
+          var TD = 0.2, thit = 1 / 2.15; // back.out(1.15) reaches 1 at p = 1/2.15
+          var t0 = T(CUE.slap) - thit * TD;
+          if (t < t0 - 1e-6) setT(tag, LT, "visibility", "hidden");
+          else {
+            setT(tag, LT, "visibility", "visible");
+            var p = seg(t, t0, TD), e = BACK3(p), q = 1 - e;
+            var sq = tu >= 0 && tu < 0.12 ? 0.06 * Math.sin(Math.PI * tu / 0.12) : 0;
+            var sc = 1 + 1.1 * Math.max(q, -0.05);
+            var tr = TAG.r - 14 * q;
+            var bl = clamp(q * 40, 0, 18);
+            setT(tag, LT, "transform", "translate(" + f1(TAG.cx - TAG.w / 2 + 60 * q) + "px," + f1(TAG.cy - TAG.h / 2 - 40 * q) + "px) rotate(" + tr.toFixed(2) + "deg) scale(" + (sc + sq).toFixed(4) + "," + (sc - sq).toFixed(4) + ")");
+            setT(tag, LT, "filter", bl > 0.4 ? "blur(" + bl.toFixed(1) + "px)" : "none");
+          }
+        }
+
+        // a snapped string half: pinned at P, free end starts at M, recoils and swings down
+        function half(P, M, u, side) {
+          var dx = M[0] - P[0], dy = M[1] - P[1];
+          var L0 = Math.hypot(dx, dy);
+          var a0 = Math.atan2(dy, dx), ad = Math.PI / 2;
+          var da = ((ad - a0 + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+          var ang = ad - da * Math.exp(-u / 0.28) * Math.cos(2 * Math.PI * 1.7 * u);
+          var L = L0 * (0.62 + 0.38 * Math.exp(-u / 0.05));
+          var F = [P[0] + Math.cos(ang) * L, P[1] + Math.sin(ang) * L];
+          var slack = 0.16 * L0 * (1 - Math.exp(-u / 0.06)) * side;
+          var d = qd(P, F, 0, slack);
+          // frayed end
+          var fx = Math.cos(ang), fy = Math.sin(ang);
+          d += " M" + f1(F[0]) + " " + f1(F[1]) + " l" + f1(fx * 9 - fy * 5) + " " + f1(fy * 9 + fx * 5);
+          d += " M" + f1(F[0]) + " " + f1(F[1]) + " l" + f1(fx * 10 + fy * 4) + " " + f1(fy * 10 - fx * 4);
+          return d;
+        }
+        function snapString(A, B, land, t, ph) {
+          if (!A || !B) return null;
+          var D = 4 / FPS, t0 = T(land) - D;
+          if (t < t0 + 1e-6) return null;
+          var p = P2I(seg(t, t0, D));
+          var E = [lerp(A[0], B[0], p), lerp(A[1], B[1], p) - 22 * Math.sin(Math.PI * p)];
+          var w = p < 1 ? 0 : twang(t, land, 20, ph);
+          return qd(A, E, 5 * p, w);
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        var clock = { t: 0 };
+        tl.fromTo(clock, { t: 0 }, { t: DUR, duration: DUR, ease: "none", onUpdate: function () { render(clock.t); } }, 0);
+        render(0);
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
     </script>
   </body>
 </html>
