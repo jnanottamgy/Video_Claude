@@ -478,20 +478,37 @@ def design():
     S = lambda sid: next(s for s in edl.SEGMENTS if s["id"] == sid)
     D, R, D2 = edl.D, edl.R, edl.D2
 
-    # ---- HOOK: frame 1 is loud ----
+    # ---- HOOK: frame 1 is loud (times from the hook builder's report) ----
     syn(sub_boom(0.8), 0.0, -6.0)
     lib("cinematic-electric-hit", 0.02, -15.0, length=0.9, hp=60)
     syn(whoop(0.5), 0.03, -12.0, 0.25)
     syn(whoop(0.45), 0.62, -17.0, -0.25)
-    for tt, x in ticks(0.54, 1.40, 18, 34):                       # the storage counter rolls
+    syn(wa_receive(), 0.133, -14.0, -0.2)                          # the storage card pops up
+    syn(thunk(60, 0.25), 0.667, -15.0)                             # title beat pulse
+    for tt, x in ticks(0.533, 1.40, 18, 34):                       # the storage counter rolls
         syn(x, tt, -24.0)
-    syn(error_ding(415), 1.90, -12.0)                              # STORAGE FULL
+    syn(thunk(110, 0.12), 1.40, -16.0)                             # lands on 255.9 GB
+    for tt, x in ticks(1.833, 1.90, 30, 30):
+        syn(x, tt, -22.0)
+    syn(error_ding(415), 1.90, -12.0)                              # STORAGE FULL slam
+    syn(thunk(70, 0.3), 1.90, -13.0)
     lib("alien-digital-glitch", 1.90, -19.0, length=0.30)
-    lib("fast-swoosh", 2.46, -9.0, pan=-0.3)                       # the tape whips off
-    lib("woosh-3", 2.50, -12.0, pan=0.3)
+    syn(error_ding(415), 2.40, -20.0)                              # alarm pulse
+    syn(shutter(), 2.40, -14.0)                                    # tape A snaps...
+    lib("fast-swoosh", 2.48, -10.0, pan=-0.5)                      # ...whips off left
+    lib("fast-swoosh", 2.515, -12.0, pan=0.5, semis=2)             # tape B whips off right
+    syn(power_down(0.12), 2.533, -16.0)                            # the title collapses to a CRT line
+    storm = [(2.533, 0), (2.700, 1), (2.833, 0), (3.000, 2), (3.133, 0), (3.267, 1), (3.433, 0), (3.450, 0),
+             (3.500, 0), (3.567, 2), (3.633, 0), (3.700, 0), (3.717, 0)]
+    for k, (t, kind) in enumerate(storm):                          # the WhatsApp storm behind Kartik
+        syn(wa_receive(), t, (-15.0, -13.0, -11.0)[kind], (-0.5, 0.4, -0.2, 0.5, -0.4, 0.2)[k % 6])
+        if kind:
+            syn(thunk(85 if kind == 1 else 60, 0.18), t, -16.0 if kind == 1 else -12.0)
     bleep_sound()
-    syn(error_ding(330), edl.out_of_src(5.62, "A2"), -12.0)        # "No results found"
-    syn(thunk(55, 0.3), edl.out_of_src(5.62, "A2"), -10.0)
+    lib("woosh-3", 3.80, -16.0)                                    # the search card flies in...
+    syn(thunk(55, 0.3), 3.833, -11.0)                              # ...and slams: "notes"
+    syn(error_ding(330), 4.00, -12.0)                              # "No results found"
+    syn(error_ding(311), 4.06, -17.0)
     # evidence board: a camera shutter + pin per exhibit, string draws
     for t in (4.37, 5.57, 7.27):
         syn(shutter(), t - 0.03, -8.0, 0.2)
@@ -505,10 +522,13 @@ def design():
     lib("cinematic-electric-hit", 9.42, -15.0, length=0.45, hp=80, dip=True)   # "assignment!": UNSOLVED slap
     # the record stops, the freeze, two stamps in silence
     lib("beat-slowing", edl.A_FREEZE - 0.42, -12.0, length=0.9)
-    for t, g in ((9.95, -4.0), (10.53, -3.0)):
+    for t, g in ((9.967, -4.0), (10.533, -3.0)):                  # the two stamps
         syn(thunk(48, 0.45), t, g)
         lib("sword-impact", t, -15.0, length=0.35, hp=90)
         syn(sub_boom(0.5, 70, 32), t, -10.0)
+    syn(thunk(140, 0.1), 10.10, -16.0)                             # the case tag is slapped down
+    syn(typing(0.30, 30.0), 10.133, -11.0)                         # typewriter keys
+    lib("fast-swoosh", 10.50, -15.0)                               # stamp 2 swoops in
     lib("gun-reload", 10.88, -14.0, length=0.5)                    # loading up before the name
     syn(reverse_swell(0.42), D - 0.52, -13.0)                       # "I'm..." into the drop, then 100 ms of vacuum
 

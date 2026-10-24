@@ -132,6 +132,7 @@
       #tag .q { position: absolute; left: 96px; top: 22px; width: 116px; height: 116px; border-radius: 50%; background: #fff; display: grid; place-items: center; font: 800 96px/1 Sora, sans-serif; color: #d7262f; }
       #tag .q span { display: block; transform: translateY(2px); }
       #tag .w { position: absolute; left: 226px; right: 26px; top: 0; text-align: center; font: 800 78px/160px Sora, sans-serif; letter-spacing: 0.035em; color: #fff; white-space: nowrap; }
+      #tag .t-glow { position: absolute; inset: -6px; clip-path: polygon(44px 0, 100% 0, 100% 100%, 44px 100%, 0 calc(100% - 44px), 0 44px); background: #fff; opacity: 0; filter: blur(6px); }
       #tag .loop { position: absolute; left: -64px; top: 34px; width: 130px; height: 120px; overflow: visible; }
     </style>
   </head>
@@ -153,7 +154,7 @@
           </svg>
           <div id="pinLayer"></div>
           <div id="tag">
-            <div class="t-sh"></div>
+            <div class="t-sh"></div><div class="t-glow"></div>
             <div class="t-body"><div class="rule1"></div><div class="hole"></div><div class="q"><span>?</span></div><div class="w">UNSOLVED</div></div>
             <svg class="loop" viewBox="0 0 130 120"><path d="M118 46 C 92 30, 40 22, 18 52 C 2 76, 20 104, 52 98" fill="none" stroke="#c1121f" stroke-width="4.5" stroke-linecap="round" /></svg>
           </div>
@@ -322,21 +323,22 @@
           exLayer.appendChild(el);
           return { el: el, sh: sh, body: body, sheen: sheen, clock: clock, ringA: clock.querySelector(".ring-a"), ringB: clock.querySelector(".ring-b"), hammer: clock.querySelector(".hammer"), bells: clock.querySelector(".bells") };
         })();
-        // z-order: E1, then E3, then E2 (E2 overlaps E1's corner)
-        exLayer.appendChild(P3.el); exLayer.appendChild(P2.el);
+        // z-order: E1, its covered top-right pin, then E3, then E2 (E2 overlaps E1's corner)
+        var pinLow = div("abs"); pinLow.id = "pinLow";
+        exLayer.appendChild(pinLow); exLayer.appendChild(P3.el); exLayer.appendChild(P2.el);
 
         /* ---------- exhibit physics ---------- */
         // base pose (board coordinates), arrival direction, jolt response
         var EX = {
-          e1: { k: P1, w: 500, h: 326, cx: 322, cy: 586, r: 1.5, sc: 1, land: CUE.e1, fx: -150, fy: -80, fr: -12, fs: 1.55,
+          e1: { k: P1, w: 500, h: 326, cx: 322, cy: 586, r: 1.5, sc: 1, land: CUE.e1, fx: -150, fy: -80, fr: -12, fs: 1.55, tx: 16, ty: -22,
                 pins: [[-226, -147], [226, -147]], pinAt: CUE.e1pins, tent: [110, 178], tentAt: CUE.tent1,
-                jr: [1.8, -1.0, 1.4, 2.6], jA: 4.2, jf: 4.3, jph: 0.0 },
-          e2: { k: P2, w: 500, h: 326, cx: 750, cy: 528, r: -2.5, sc: 1.06, land: CUE.e2, fx: 190, fy: -70, fr: 14, fs: 1.55,
+                jr: [1.8, -1.0, 1.4, 2.6], jA: 5.2, jf: 4.3, jph: 0.0 },
+          e2: { k: P2, w: 500, h: 326, cx: 750, cy: 528, r: -2.5, sc: 1.06, land: CUE.e2, fx: 190, fy: -70, fr: 14, fs: 1.55, tx: 14, ty: 24,
                 pins: [[-226, -147], [226, -147]], pinAt: CUE.e2pins, tent: [210, 150], tentAt: CUE.tent2,
-                jr: [-1.5, 0.9, -1.1, 0], jA: 4.6, jf: 3.9, jph: 1.1 },
-          e3: { k: P3, w: E3W, h: E3H, cx: 276, cy: 888, r: 2.0, sc: 1, land: CUE.e3, fx: -130, fy: 110, fr: -10, fs: 1.6,
+                jr: [-1.5, 0.9, -1.1, 0], jA: 5.6, jf: 3.9, jph: 1.1 },
+          e3: { k: P3, w: E3W, h: E3H, cx: 276, cy: 888, r: 2.0, sc: 1, land: CUE.e3, fx: -130, fy: 110, fr: -10, fs: 1.6, tx: -16, ty: -20,
                 pins: [[-178, -115], [170, -115]], pinAt: CUE.e3pins, tent: [226, 112], tentAt: CUE.tent3,
-                jr: [1.3, -0.7, 1.0, -2.2], jA: 3.8, jf: 4.7, jph: 2.2 }
+                jr: [1.3, -0.7, 1.0, -2.2], jA: 4.8, jf: 4.7, jph: 2.2 }
         };
         var JOLTS = [[CUE.j1, 1.0], [CUE.j2, 0.55], [CUE.j3, 0.8], [CUE.slap, 1.3]];
         var SNAPS3 = [[CUE.s13, 0.6], [CUE.s23, 0.6]]; // the strings tug EXHIBIT 3 when they snap onto it
@@ -344,7 +346,7 @@
 
         function arrival(c, t) {
           var tl = T(c.land), t0 = tl - HIT * FLIGHT;
-          if (t < t0 - 1e-6) return null;
+          if (t < t0 - 1e-4) return null;
           var p = seg(t, t0, FLIGHT), e = BACK(p), q = 1 - e;
           return { q: q, lift: clamp(1 - (t - t0) / (tl - t0), 0, 1) };
         }
@@ -355,8 +357,8 @@
             var u = t - T(JOLTS[i][0]);
             if (u < 0) break;
             var k = JOLTS[i][1];
-            r += c.jr[i] * (1 - Math.exp(-u / 0.07));
-            r += k * c.jA * Math.exp(-u / 0.2) * Math.sin(2 * Math.PI * c.jf * u + c.jph * 0.3) * (i % 2 ? -1 : 1);
+            r += c.jr[i] * (1 - Math.exp(-u / 0.05));
+            r += k * c.jA * Math.exp(-u / 0.2) * Math.sin(2 * Math.PI * c.jf * u + 1.0 + c.jph * 0.3) * (i % 2 ? -1 : 1);
           }
           return r;
         }
@@ -366,8 +368,8 @@
             var u = t - T(JOLTS[i][0]);
             if (u < 0) break;
             var k = JOLTS[i][1] * Math.exp(-u / 0.11);
-            x += k * 7 * Math.cos(2 * Math.PI * 7.5 * u + c.jph);
-            y += k * 9 * Math.cos(2 * Math.PI * 6.5 * u + c.jph + 1.7);
+            x += k * 10 * Math.cos(2 * Math.PI * 7.5 * u + c.jph);
+            y += k * 12 * Math.cos(2 * Math.PI * 6.5 * u + c.jph + 1.7);
           }
           return [x, y];
         }
@@ -386,6 +388,7 @@
           var cx = c.cx + c.fx * a.q, cy = c.cy + c.fy * a.q, r = c.r + c.fr * a.q, s = c.sc * (1 + (c.fs - 1) * Math.max(0, a.q));
           r += joltRot(c, t);
           var j = joltXY(c, t); cx += j[0]; cy += j[1];
+          for (var ji = 0; ji < JOLTS.length; ji++) { var uj = t - T(JOLTS[ji][0]); if (uj >= 0) s *= 1 + 0.035 * JOLTS[ji][1] * Math.exp(-uj / 0.07); }
           if (id === "e3") {
             for (var i = 0; i < SNAPS3.length; i++) {
               var u = t - T(SNAPS3[i][0]);
@@ -409,6 +412,7 @@
         }
         function speed(id, t) {
           var a = pose(id, t - 1 / 60), b = pose(id, t + 1 / 60);
+          if (!a) { a = pose(id, t); b = pose(id, t + 1 / 30); }
           if (!a || !b) return 0;
           var c = EX[id], half = (c.w + c.h) / 4;
           return Math.hypot(b.cx - a.cx, b.cy - a.cy) + Math.abs(b.s - a.s) * half + Math.abs(b.r - a.r) * D2R * half * 0.6;
@@ -436,7 +440,7 @@
         ["e1", "e2", "e3"].forEach(function (id) {
           EX[id].pins.forEach(function (lp, j) {
             var el = div("pin", '<div class="p-sh"></div><div class="p-hd"></div>');
-            pinLayer.appendChild(el);
+            (id === "e1" && j === 1 ? pinLow : pinLayer).appendChild(el);
             PINS.push({ id: id, j: j, lp: lp, at: EX[id].pinAt[j], el: el, sh: el.firstChild, L: {} });
           });
         });
@@ -518,6 +522,7 @@
 
         /* ---------- tag ---------- */
         var tag = document.getElementById("tag");
+        var tagGlow = tag.querySelector(".t-glow");
         var TAG = { cx: 540, cy: 742, r: -5, w: 740, h: 160 };
 
         /* ---------- board camera: re-frame per shot + shake ---------- */
@@ -534,8 +539,8 @@
             var u = t - T(JOLTS[i][0]);
             if (u < 0) break;
             var k = JOLTS[i][1] * Math.exp(-u / 0.09);
-            sx += k * 13 * Math.cos(2 * Math.PI * 11 * u);
-            sy += k * 8 * Math.cos(2 * Math.PI * 9 * u + 1.1);
+            sx += k * 16 * Math.cos(2 * Math.PI * 11 * u);
+            sy += k * 10 * Math.cos(2 * Math.PI * 9 * u + 1.1);
             sr += k * 0.7 * Math.cos(2 * Math.PI * 8 * u + 0.4);
           }
           return { s: s, tx: tx + sx, ty: ty + sy, r: sr };
@@ -551,10 +556,11 @@
           var L = c.L || (c.L = {});
           if (!P) { setT(k.el, L, "visibility", "hidden"); return null; }
           setT(k.el, L, "visibility", "visible");
-          var tf = "translate(" + f1(P.cx - c.w / 2) + "px," + f1(P.cy - c.h / 2) + "px) rotate(" + P.r.toFixed(3) + "deg) scale(" + P.s.toFixed(4) + ")";
+          var tq = clamp(P.q, -0.25, 1);
+          var tf = "translate(" + f1(P.cx - c.w / 2) + "px," + f1(P.cy - c.h / 2) + "px) perspective(1600px) rotateX(" + (c.tx * tq).toFixed(2) + "deg) rotateY(" + (c.ty * tq).toFixed(2) + "deg) rotate(" + P.r.toFixed(3) + "deg) scale(" + P.s.toFixed(4) + ")";
           setT(k.el, L, "transform", tf);
           var v = speed(id, t), blur = clamp((v - 6) * 0.16, 0, 16);
-          if (t >= T(c.land) - 1e-6) blur = Math.min(blur, t >= T(CUE.slap) ? 3.5 : 1.2);
+          if (t >= T(c.land) - 1e-4) blur = Math.min(blur, t >= T(CUE.slap) ? 2.2 : 1.2);
           setT(k.el, L, "filter", blur > 0.35 ? "blur(" + blur.toFixed(1) + "px)" : "none");
           // shadow: high & soft in flight, tight on the wall (offset is world down-right, undo the card's rotation)
           var lf = P.lift;
@@ -581,7 +587,8 @@
           setT(hdr, LH, "transform", "translate(" + HDR.x + "px," + (HDR.y + hy) + "px) rotate(" + hr.toFixed(3) + "deg) scaleX(" + lerp(0.82, 1, wipe).toFixed(4) + ")");
           setT(hdr, LH, "opacity", clamp(t * FPS / 1.5 + 0.25, 0, 1).toFixed(3));
           var shown = 0;
-          for (var c = 0; c < chars.length; c++) { var vis = t >= typeAt[c] - 1e-6; if (vis) shown++; var vv = vis ? "visible" : "hidden"; if (chars[c]._v !== vv) { chars[c]._v = vv; chars[c].style.visibility = vv; } }
+          for (var c = 0; c < chars.length; c++) { var vis = t >= typeAt[c] - 1e-4; if (vis) shown++; var vv = vis ? "visible" : "hidden"; if (chars[c]._v !== vv) { chars[c]._v = vv; chars[c].style.visibility = vv; } }
+          if (cur._at !== shown) { cur._at = shown; if (shown < chars.length) hdrTxt.insertBefore(cur, chars[shown]); else hdrTxt.appendChild(cur); }
           var curOn = t < T(CUE.type1) + 0.02 ? true : (f - CUE.type1 < 24 ? Math.floor((f - CUE.type1) / 4) % 2 === 1 : false);
           setT(cur, LH, "opacity", curOn ? "1" : "0");
 
@@ -611,8 +618,8 @@
           /* tents */
           TENTS.forEach(function (tn, i) {
             var c = EX[tn.id], P = PS[tn.id];
-            var at = T(c.tentAt);
-            if (!P || t < at - 1e-6) { setT(tn.el, tn.L, "visibility", "hidden"); return; }
+            var at = T(c.tentAt) - 1 / FPS;
+            if (!P || t < at - 1e-4) { setT(tn.el, tn.L, "visibility", "hidden"); return; }
             setT(tn.el, tn.L, "visibility", "visible");
             var w = world(tn.id, P, c.tent[0], c.tent[1]);
             var p = seg(t, at, 0.34), sy = BACK2(p), sx = lerp(0.6, 1, P3O(p));
@@ -631,13 +638,15 @@
           PINS.forEach(function (pn) {
             var P = PS[pn.id];
             var key = pn.id + pn.j;
-            if (!P || t < T(pn.at) - 2 / FPS) { setT(pn.el, pn.L, "visibility", "hidden"); PW[key] = P ? world(pn.id, P, pn.lp[0], pn.lp[1]) : null; return; }
+            if (!P || t < T(pn.at) - 1 / FPS - 1e-4) { setT(pn.el, pn.L, "visibility", "hidden"); PW[key] = P ? world(pn.id, P, pn.lp[0], pn.lp[1]) : null; return; }
             var w = world(pn.id, P, pn.lp[0], pn.lp[1]);
             var sc = 1, so = 1, op = 1;
             var u = t - T(pn.at);
-            if (u < 0) { var pp = clamp((u + 2 / FPS) / (2 / FPS), 0, 1); sc = lerp(1.75, 1.04, P2I(pp)); so = lerp(5, 1, pp); op = pp > 0 ? 1 : 0; }
+            if (u < -1e-4) { sc = 1.45; so = 3.2; }
             else if (u < 0.1) { sc = lerp(0.9, 1, P2O(u / 0.1)); }
             if (pn === POP) {
+              var ul = t - T(CUE.j3);
+              if (ul >= 0) { sc *= 1 + 0.16 * Math.exp(-ul / 0.08) + 0.07 * (1 - Math.exp(-ul / 0.05)); so = Math.max(so, 1.9); }
               var up = t - T(CUE.slap);
               if (up >= 0) {
                 w = [w[0] + 560 * up, w[1] - 900 * up + 0.5 * 3000 * up * up];
@@ -657,7 +666,7 @@
           var A1 = PW.e10, B2 = PW.e20, C3a = PW.e30, C3b = PW.e31;
           // 1 -> 2: draws 5.60 -> 5.901, twangs, snaps at the slap
           var s12d = null, s12a = null, s12b = null;
-          if (A1 && B2 && t >= T(CUE.s12[0]) - 1e-6) {
+          if (A1 && B2 && t >= T(CUE.s12[0]) - 1e-4) {
             var dp = P2IO(seg(t, T(CUE.s12[0]), T(CUE.s12[1] - CUE.s12[0])));
             var g = 7, wv = twang(t, CUE.s12[1], 14, 0);
             if (t < T(CUE.slap)) {
@@ -680,16 +689,17 @@
           var tu = t - T(CUE.slap);
           var TD = 0.2, thit = 1 / 2.15; // back.out(1.15) reaches 1 at p = 1/2.15
           var t0 = T(CUE.slap) - thit * TD;
-          if (t < t0 - 1e-6) setT(tag, LT, "visibility", "hidden");
+          if (t < t0 - 1e-4) setT(tag, LT, "visibility", "hidden");
           else {
             setT(tag, LT, "visibility", "visible");
             var p = seg(t, t0, TD), e = BACK3(p), q = 1 - e;
             var sq = tu >= 0 && tu < 0.12 ? 0.06 * Math.sin(Math.PI * tu / 0.12) : 0;
             var sc = 1 + 1.1 * Math.max(q, -0.05);
             var tr = TAG.r - 14 * q;
-            var bl = clamp(q * 40, 0, 18);
+            var bl = clamp(q * 30, 0, 12);
             setT(tag, LT, "transform", "translate(" + f1(TAG.cx - TAG.w / 2 + 60 * q) + "px," + f1(TAG.cy - TAG.h / 2 - 40 * q) + "px) rotate(" + tr.toFixed(2) + "deg) scale(" + (sc + sq).toFixed(4) + "," + (sc - sq).toFixed(4) + ")");
             setT(tag, LT, "filter", bl > 0.4 ? "blur(" + bl.toFixed(1) + "px)" : "none");
+            setT(tagGlow, LT, "opacity", (tu >= 0 ? 0.85 * Math.exp(-tu / 0.06) : 0).toFixed(3));
           }
         }
 
@@ -699,10 +709,10 @@
           var L0 = Math.hypot(dx, dy);
           var a0 = Math.atan2(dy, dx), ad = Math.PI / 2;
           var da = ((ad - a0 + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-          var ang = ad - da * Math.exp(-u / 0.28) * Math.cos(2 * Math.PI * 1.7 * u);
-          var L = L0 * (0.62 + 0.38 * Math.exp(-u / 0.05));
+          var ang = ad - da * Math.exp(-u / 0.3) * Math.cos(2 * Math.PI * 1.6 * u) + side * 0.35 * (1 - Math.exp(-u / 0.12));
+          var L = L0 * (0.34 + 0.66 * Math.exp(-u / 0.045));
           var F = [P[0] + Math.cos(ang) * L, P[1] + Math.sin(ang) * L];
-          var slack = 0.16 * L0 * (1 - Math.exp(-u / 0.06)) * side;
+          var slack = 0.32 * L * (1 - Math.exp(-u / 0.05)) * side;
           var d = qd(P, F, 0, slack);
           // frayed end
           var fx = Math.cos(ang), fy = Math.sin(ang);
@@ -713,7 +723,7 @@
         function snapString(A, B, land, t, ph) {
           if (!A || !B) return null;
           var D = 4 / FPS, t0 = T(land) - D;
-          if (t < t0 + 1e-6) return null;
+          if (t < t0 + 1e-4) return null;
           var p = P2I(seg(t, t0, D));
           var E = [lerp(A[0], B[0], p), lerp(A[1], B[1], p) - 22 * Math.sin(Math.PI * p)];
           var w = p < 1 ? 0 : twang(t, land, 20, ph);

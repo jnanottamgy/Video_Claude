@@ -101,14 +101,17 @@
     </svg>
     <div id="stage" data-composition-id="main" data-start="0" data-duration="1.3" data-width="1080" data-height="1920">
       <div id="scene" class="clip scene" data-start="0" data-duration="1.3" data-track-index="0">
+        <!-- static guard: nothing of the stamps layer ever lands on his face (x >= 700, y >= 830) -->
+        <div class="full" id="faceguard" data-layout-allow-overflow style="clip-path: polygon(0px 0px, 1080px 0px, 1080px 826px, 698px 826px, 698px 1920px, 0px 1920px)">
         <div class="full" id="shake" data-layout-allow-overflow>
-          <div id="stamps" data-layout-allow-overflow style="position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; clip-path: polygon(0px 0px, 1080px 0px, 1080px 828px, 700px 828px, 700px 1920px, 0px 1920px)"></div>
+          <div id="stamps" data-layout-allow-overflow style="position: absolute; left: 0; top: 0; width: 1080px; height: 1920px"></div>
           <div class="tag-pos" id="tagpos">
             <div class="tag-drop" id="tagdrop">
               <div class="tag" id="tag"></div>
               <div class="tag-tape"></div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

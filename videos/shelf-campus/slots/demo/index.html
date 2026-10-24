@@ -138,8 +138,8 @@
       .tx { font: 400 30px/40px var(--font-ui); letter-spacing: -0.006em; white-space: nowrap; }
       .tx.b { font-weight: 600; }
       .sp { flex: 1; min-width: 14px; }
-      .tm { display: flex; align-items: center; gap: 5px; height: 26px; font: 400 20px/26px var(--font-ui); color: rgba(233, 237, 239, 0.62); white-space: nowrap; flex: none; transform: translateY(5px); }
-      .bub.in .tm { color: #8696a0; }
+      .tm { display: flex; align-items: center; gap: 5px; height: 26px; font: 400 20px/26px var(--font-ui); color: rgba(233, 237, 239, 0.8); white-space: nowrap; flex: none; transform: translateY(5px); }
+      .bub.in .tm { color: #94a3ad; }
       .tk { width: 24px; height: 15px; display: block; }
       .tk path { fill: none; stroke: #8696a0; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
       .tk.read path { stroke: #53bdeb; }
@@ -162,7 +162,7 @@
       .dn { min-width: 0; flex: 1; }
       .fn { font: 600 27px/32px var(--font-ui); color: #e9edef; white-space: nowrap; }
       .fm { font: 400 21px/26px var(--font-ui); color: #8696a0; white-space: nowrap; margin-top: 2px; }
-      .bub.out .fm { color: rgba(233, 237, 239, 0.6); }
+      .bub.out .fm { color: rgba(233, 237, 239, 0.76); }
       .dfoot { display: flex; align-items: center; justify-content: flex-end; height: 34px; padding: 0 12px 2px; }
       .dfoot .tm { transform: none; }
       .dcap { display: flex; align-items: flex-end; height: 46px; padding: 0 14px 8px; }
@@ -178,7 +178,7 @@
       /* deadline card */
       .dcard { position: relative; display: flex; gap: 18px; align-items: center; width: 458px; height: 168px; padding: 0 18px; border-radius: 16px; background: #111b21; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
       .cal { position: relative; width: 96px; height: 100px; flex: none; border-radius: 18px; overflow: hidden; background: #f4f6f9; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); }
-      .cal-h { height: 30px; background: #e5534b; color: #fff; font: 800 17px/30px var(--font-ui); letter-spacing: 0.12em; text-align: center; }
+      .cal-h { height: 30px; background: #d63c33; color: #fff; font: 800 17px/30px var(--font-ui); letter-spacing: 0.12em; text-align: center; }
       .cal-d { font: 700 46px/66px var(--font-ui); color: #1b2333; text-align: center; letter-spacing: -0.02em; }
       .dct { min-width: 0; flex: 1; }
       .dc-t { font: 600 30px/36px var(--font-ui); color: #e9edef; white-space: nowrap; }
@@ -321,14 +321,14 @@
         <div id="cam" class="L">
           <div id="stage3d" class="L">
             <div id="phone" data-layout-allow-overflow data-layout-allow-occlusion>
-              <div id="phEdges"></div>
-              <div id="phBody" class="ph-body"><div class="ph-bezel"></div></div>
-              <div id="badgeGlow"></div>
+              <div id="phEdges" data-layout-ignore></div>
+              <div id="phBody" class="ph-body" data-layout-ignore><div class="ph-bezel"></div></div>
+              <div id="badgeGlow" data-layout-ignore></div>
               <div id="screen" data-layout-allow-occlusion>
                 <div id="ui">
                   <div id="wall"></div>
                   <div id="chat" data-layout-allow-occlusion><div id="chatContent" data-layout-allow-overflow data-layout-allow-occlusion></div></div>
-                  <div id="hdr">
+                  <div id="hdr" data-layout-allow-occlusion>
                     <svg id="hback" viewBox="0 0 26 40"><path d="M20 4 5 20l15 16" fill="none" stroke="#e9edef" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                     <div id="ava"><img src="./assets/shelf-mark.png" alt="" /></div>
                     <div id="nm">SHELF Campus</div>
@@ -338,7 +338,7 @@
                       <svg viewBox="0 0 24 24"><path d="M7.4 3.6l2.3 4.2c.3.6.2 1.3-.3 1.8l-1.5 1.4c1.1 2.2 2.9 4 5.1 5.1l1.4-1.5c.5-.5 1.2-.6 1.8-.3l4.2 2.3c.6.3.8 1 .6 1.6l-.7 2c-.4 1.1-1.5 1.7-2.6 1.5C10.9 20.6 3.4 13.1 2.3 6.3c-.2-1.1.4-2.2 1.5-2.6l2-.7c.6-.2 1.3 0 1.6.6z" fill="none" stroke="#e9edef" stroke-width="1.7" stroke-linejoin="round" /></svg>
                     </div>
                   </div>
-                  <div id="inp">
+                  <div id="inp" data-layout-allow-occlusion>
                     <svg id="iplus" viewBox="0 0 24 24"><path d="M12 4.5v15M4.5 12h15" stroke="#aebac1" stroke-width="2.1" stroke-linecap="round" /></svg>
                     <div id="field">
                       <div id="ftxt" data-layout-allow-overflow><div id="ftrack"><span id="ftx"></span><i id="caret"></i></div></div>
@@ -357,9 +357,9 @@
                       <svg style="left: 552px; top: 452px" viewBox="0 0 24 24"><rect x="8.8" y="3" width="6.4" height="11" rx="3.2" fill="none" stroke="#c8c8ce" stroke-width="1.7" /><path d="M5.8 11.4a6.2 6.2 0 0 0 12.4 0M12 17.6v3" fill="none" stroke="#c8c8ce" stroke-width="1.7" stroke-linecap="round" /></svg>
                     </div>
                   </div>
-                  <div id="dim"></div>
-                  <div id="lock"><div id="lkDay">Tuesday</div><div id="lkTime">9:41</div></div>
-                  <div id="sbar">
+                  <div id="dim" data-layout-allow-occlusion></div>
+                  <div id="lock" data-layout-allow-occlusion><div id="lkDay" data-layout-allow-overlap data-layout-allow-occlusion>Tuesday</div><div id="lkTime" data-layout-allow-overlap data-layout-allow-occlusion>9:41</div></div>
+                  <div id="sbar" data-layout-allow-occlusion>
                     <div id="clk"><span id="clkTx">9:41</span></div>
                     <div id="sicons">
                       <svg width="34" height="22" viewBox="0 0 34 22"><rect x="0" y="14" width="6" height="8" rx="1.6" fill="#fff" /><rect x="9" y="10" width="6" height="12" rx="1.6" fill="#fff" /><rect x="18" y="5.5" width="6" height="16.5" rx="1.6" fill="#fff" /><rect x="27" y="1" width="6" height="21" rx="1.6" fill="#fff" /></svg>
@@ -369,10 +369,10 @@
                   </div>
                   <div id="home"></div>
                 </div>
-                <div id="badgeOv"></div>
-                <div id="badgeGlyph"></div>
-                <div id="island"></div>
-                <div id="glare"></div>
+                <div id="badgeOv" data-layout-ignore></div>
+                <div id="badgeGlyph" data-layout-ignore></div>
+                <div id="island" data-layout-ignore></div>
+                <div id="glare" data-layout-ignore></div>
               </div>
               <!-- in the phone's 3D space, outside the screen clip -->
               <div id="fly" class="pop3" data-layout-ignore></div>

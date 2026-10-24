@@ -3,35 +3,348 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
+    <title>reveal / whatsapp_behind</title>
     <script src="./vendor/gsap.min.js"></script>
-    <!-- design/ links to videos/shelf-reel/design: fonts + tokens + base components -->
     <link rel="stylesheet" href="./design/shelf.css" />
     <style>
+      /* BEHIND layer (under Jnanottam's cut-out, on the navy wall). Output 30.000 -> 32.100 (63 frames).
+         Index k (PNG frame k+1) shows t = k/30 = output (900 + k) / 30.
+           k1   30.033  the chrome shelf mark floats in above-left of him (soft whoosh)
+           k8   30.267  "lives": a white chat-bubble outline draws around the mark (done on "on", 30.833)
+           k25  30.833  "on": the bubble squashes, gathering green light (anticipation)
+           k32  31.067  "WhatsApp": a big green app badge springs in (elastic bounce) - the bubble becomes its glyph with
+                        the SHELF avatar inside; green glow burst + ring + particles; 8 small chat bubbles pop out one
+                        frame apart (31.067-31.300) into a slow orbit
+           k45  31.500  "lives here" pointer pill pops, its arrow draws to the badge
+           k60  32.000  everything zooms toward the camera (gone by 32.067); next scene at 32.100
+         Group centre (380, 520): badge x 210-550, y 350-690; orbit ring x 125-635, y 285-755; pill x 684-980, y 360-428.
+         Jnanottam: head x ~580-920, hair top y ~740. Nothing below y 800 except orbiting bubbles' glow. */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
+      .full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      #cam { transform-origin: 380px 520px; }
+
+      #grp { position: absolute; left: 380px; top: 520px; width: 0; height: 0; }
+      #burst {
+        position: absolute;
+        left: -500px;
+        top: -500px;
+        width: 1000px;
+        height: 1000px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(120, 255, 170, 0.6) 0%, rgba(37, 211, 102, 0.42) 16%, rgba(37, 211, 102, 0.18) 34%, rgba(30, 180, 90, 0.06) 52%, rgba(0, 0, 0, 0) 68%);
+        opacity: 0;
+      }
+      #ring {
+        position: absolute;
+        left: -170px;
+        top: -170px;
+        width: 340px;
+        height: 340px;
+        border-radius: 50%;
+        border: 4px solid rgba(190, 255, 215, 0.95);
+        box-shadow: 0 0 22px 4px rgba(37, 211, 102, 0.85), inset 0 0 22px 3px rgba(37, 211, 102, 0.6);
+        opacity: 0;
+      }
+      #parts { position: absolute; left: -380px; top: -520px; width: 1080px; height: 1920px; }
+
+      /* the app badge: 340 px rounded square, radius 24 % */
+      #badge {
+        position: absolute;
+        left: -170px;
+        top: -165px;
+        width: 340px;
+        height: 340px;
+        border-radius: 82px;
+        background: linear-gradient(180deg, #5df58a 0%, #25d366 55%, #1cb653 100%);
+        box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.28), inset 0 3px 0 rgba(255, 255, 255, 0.35), inset 0 -6px 14px rgba(0, 80, 40, 0.25),
+          0 0 70px rgba(37, 211, 102, 0.55), 0 26px 54px rgba(0, 0, 0, 0.45);
+        opacity: 0;
+      }
+      #badge .gloss {
+        position: absolute;
+        inset: 0;
+        border-radius: 82px;
+        background: radial-gradient(120% 70% at 30% 0%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 45%, rgba(255, 255, 255, 0) 60%);
+      }
+
+      /* the glyph: a 454 px box whose bubble circle (centre 50.12 %, 47.88 % of the 100-unit art) sits on the group origin */
+      #pop { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+      #glyph { position: absolute; left: -227.5px; top: -217.4px; width: 454px; height: 454px; transform-origin: 227.5px 217.4px; }
+      #glyph svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+      #markGlowWrap { position: absolute; left: 149.7px; top: 128.4px; width: 155.6px; height: 178px; filter: blur(22px); opacity: 0.7; }
+      .mk {
+        position: absolute;
+        inset: 0;
+        -webkit-mask-image: url(assets/mark.png);
+        mask-image: url(assets/mark.png);
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+      }
+      #markGlow { background: #3f8fff; }
+      #mark { position: absolute; left: 149.7px; top: 128.4px; width: 155.6px; height: 178px; display: block; opacity: 0; }
+
+      /* small chat bubbles orbiting the badge (positioned by the driver) */
+      .sat { position: absolute; left: -33px; top: -29px; width: 66px; height: 58px; opacity: 0; visibility: hidden; }
+      .sat svg { width: 66px; height: 58px; display: block; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35)) drop-shadow(0 0 10px rgba(37, 211, 102, 0.35)); }
+
+      /* the "lives here" pointer */
+      #pill {
+        position: absolute;
+        left: 684px;
+        top: 360px;
+        height: 68px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 28px 0 22px;
+        border-radius: 34px;
+        background: linear-gradient(160deg, rgba(30, 44, 52, 0.94), rgba(11, 20, 26, 0.94));
+        box-shadow: inset 0 0 0 2px rgba(37, 211, 102, 0.85), inset 0 1.5px 0 rgba(255, 255, 255, 0.16), 0 0 26px rgba(37, 211, 102, 0.4), 0 14px 30px rgba(0, 0, 0, 0.45);
+        font: 600 36px/1 var(--font-brand);
+        color: #ffffff;
+        white-space: nowrap;
+        transform-origin: 0% 50%;
+        opacity: 0;
+        visibility: hidden;
+      }
+      #pill .dot { width: 16px; height: 16px; border-radius: 50%; background: #25d366; box-shadow: 0 0 12px rgba(37, 211, 102, 0.95); }
+      #arrow { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+      #arrow path { fill: none; stroke: #ffffff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
     </style>
   </head>
   <body>
-    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
-    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
-      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
-        <div class="notif" id="n1" style="left: 70px; top: 400px">
-          <div class="icon" style="background: #34c759"></div>
-          <div class="body">
-            <div class="row"><div class="title">Template check</div><div class="time">now</div></div>
-            <div class="msg">Inter on dark glass, transparent canvas</div>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="2.1" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="2.1" data-track-index="0">
+        <div id="cam" class="full" data-layout-allow-overflow>
+          <div id="grp" data-layout-ignore>
+            <div id="burst"></div>
+            <canvas id="parts" width="1080" height="1920"></canvas>
+            <div id="sats"></div>
+            <div id="ring"></div>
+            <div id="pop">
+            <div id="badge"><div class="gloss"></div></div>
+            <div id="glyph">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <defs>
+                  <radialGradient id="navyG" cx="0.42" cy="0.3" r="0.8">
+                    <stop offset="0" stop-color="#2a4a86" />
+                    <stop offset="0.55" stop-color="#11244a" />
+                    <stop offset="1" stop-color="#081430" />
+                  </radialGradient>
+                  <filter id="bGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" /></filter>
+                  <radialGradient id="sparkG">
+                    <stop offset="0" stop-color="#ffffff" />
+                    <stop offset="0.3" stop-color="#d8ffe6" />
+                    <stop offset="0.65" stop-color="#25d366" stop-opacity="0.5" />
+                    <stop offset="1" stop-color="#25d366" stop-opacity="0" />
+                  </radialGradient>
+                </defs>
+                <circle id="disc" cx="50.12" cy="47.88" r="29.4" fill="url(#navyG)" opacity="0" />
+                <path id="bubGlow" pathLength="1" d="M21 63.4A33 33 0 1 1 34.6 77L14.6 85.4Z" fill="none" stroke="#37e07a" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" filter="url(#bGlow)" style="stroke-dasharray: 1 1; stroke-dashoffset: 1" />
+                <path id="bub" pathLength="1" d="M21 63.4A33 33 0 1 1 34.6 77L14.6 85.4Z" fill="none" stroke="#ffffff" stroke-width="1.32" stroke-linejoin="round" stroke-linecap="round" style="stroke-dasharray: 1 1; stroke-dashoffset: 1" />
+                <circle id="spark" cx="0" cy="0" r="5" fill="url(#sparkG)" opacity="0" />
+              </svg>
+              <div id="markGlowWrap"><div id="markGlow" class="mk"></div></div>
+              <img id="mark" src="assets/mark.png" alt="" />
+            </div>
+            </div>
           </div>
+          <svg id="arrow" viewBox="0 0 1080 1920" aria-hidden="true">
+            <path id="arrowLine" pathLength="1" d="M672 412 C 630 430, 600 446, 568 468" />
+            <path id="arrowHead" pathLength="1" d="M584 448 L568 468 L593 471" />
+          </svg>
+          <div id="pill" data-layout-allow-occlusion><div class="dot"></div><span>lives here</span></div>
         </div>
-        <div class="giant" id="g1" style="left: 80px; top: 900px">SHELF</div>
       </div>
     </div>
+    <script src="./lib/motion.js"></script>
     <script>
-      var tl = gsap.timeline({ paused: true });
-      tl.fromTo("#n1", { y: -60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-      tl.fromTo("#g1", { scale: 1.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-      window.__timelines = window.__timelines || {};
-      window.__timelines["main"] = tl;
-      tl.seek(0);
+      (function () {
+        "use strict";
+        var FR = 1 / 30;
+        var D = 63 / 30;
+        var H = MO.hit, seg = MO.seg;
+        var K = { mark: 1, lives: 8, on: 25, wa: 32, here: 45, exit: 60 };
+        var T_LIVES = H(K.lives), T_ON = H(K.on), T_WA = H(K.wa), T_HERE = H(K.here), T_EXIT = H(K.exit);
+        var eIO = MO.ease("power2.inOut"), eBack = MO.ease("back.out(1.9)"), eOut2 = MO.ease("power2.out");
+        var G = [380, 520];
+
+        // ---------- small chat bubbles (three WhatsApp-ish kinds, drawn as SVG) ----------
+        var SAT_SVG = [
+          // green, tail bottom-left, three dots
+          '<svg viewBox="0 0 66 58" aria-hidden="true"><path d="M12 4h42a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8H24l-12 11 2.6-11H12a8 8 0 0 1-8-8V12a8 8 0 0 1 8-8z" fill="#25d366"/>' +
+            '<circle cx="21" cy="23" r="3.8" fill="#fff"/><circle cx="33" cy="23" r="3.8" fill="#fff"/><circle cx="45" cy="23" r="3.8" fill="#fff"/></svg>',
+          // white, tail bottom-right, two text lines
+          '<svg viewBox="0 0 66 58" aria-hidden="true"><path d="M12 4h42a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8h-2.6L54 53 42 42H12a8 8 0 0 1-8-8V12a8 8 0 0 1 8-8z" fill="#f4f7f8"/>' +
+            '<rect x="13" y="15" width="38" height="5" rx="2.5" fill="#9aa7af"/><rect x="13" y="26" width="26" height="5" rx="2.5" fill="#9aa7af"/></svg>',
+          // teal outgoing, lines + blue double tick
+          '<svg viewBox="0 0 66 58" aria-hidden="true"><path d="M12 4h42a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8h-2.6L54 53 42 42H12a8 8 0 0 1-8-8V12a8 8 0 0 1 8-8z" fill="#00a884"/>' +
+            '<rect x="12" y="14" width="34" height="5" rx="2.5" fill="#e9edef"/><rect x="12" y="25" width="22" height="5" rx="2.5" fill="#e9edef"/>' +
+            '<path d="M38 30.5l3 3 6-7M43 33.5l6-7" fill="none" stroke="#53bdeb" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        ];
+        var NS = 8;
+        var sats = [];
+        var satsEl = document.getElementById("sats");
+        var rng = MO.rng(2024);
+        for (var i = 0; i < NS; i++) {
+          var el = document.createElement("div");
+          el.className = "sat";
+          el.innerHTML = SAT_SVG[i % 3];
+          satsEl.appendChild(el);
+          sats.push({
+            el: el,
+            a0: ((-101.5 + i * 45) * Math.PI) / 180 + (rng() - 0.5) * 0.05,
+            rx: 250 + rng() * 14, ry: 228 + rng() * 14,
+            sc: 0.85 + rng() * 0.3,
+            rot: (rng() - 0.5) * 18,
+            t0: T_WA + i * FR,
+            bob: rng() * 6.28,
+            last: {},
+          });
+        }
+        var OMEGA = 0.42; // orbit, rad/s
+        function drawSats(t) {
+          for (var i = 0; i < NS; i++) {
+            var s = sats[i];
+            var L = s.last;
+            var vis = t >= s.t0;
+            if (L.vis !== vis) { s.el.style.visibility = vis ? "visible" : "hidden"; L.vis = vis; }
+            if (!vis) continue;
+            var p = seg(t, s.t0, 0.4);
+            var r = eBack(p);
+            var a = s.a0 + OMEGA * (t - T_WA);
+            var x = Math.cos(a) * s.rx * r;
+            var y = Math.sin(a) * s.ry * r + 5 * Math.sin(2.2 * t + s.bob);
+            var sc = s.sc * (0.25 + 0.75 * eBack(p));
+            var tf = "translate(" + x.toFixed(2) + "px," + y.toFixed(2) + "px) rotate(" + (s.rot * (1 - 0.5 * p)).toFixed(2) + "deg) scale(" + sc.toFixed(4) + ")";
+            if (L.tf !== tf) { s.el.style.transform = tf; L.tf = tf; }
+            var o = Math.min(1, (t - s.t0) / 0.05).toFixed(3);
+            if (L.o !== o) { s.el.style.opacity = o; L.o = o; }
+          }
+        }
+
+        // ---------- particles burst from the badge ----------
+        var pc = document.getElementById("parts").getContext("2d");
+        var PARTS = [];
+        (function () {
+          var r = MO.rng(99);
+          for (var i = 0; i < 30; i++) {
+            var a = r() * Math.PI * 2, sp = 520 + r() * 900;
+            PARTS.push({ vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.45 + r() * 0.5, size: 2.4 + r() * 4.2, green: r() < 0.62, o: 120 + r() * 60 });
+          }
+        })();
+        function drawParts(t) {
+          pc.clearRect(0, 0, 1080, 1920);
+          var tau = t - T_WA;
+          if (tau < 0 || tau > 1.0) return;
+          pc.globalCompositeOperation = "lighter";
+          for (var i = 0; i < PARTS.length; i++) {
+            var q = PARTS[i];
+            if (tau > q.life) continue;
+            var f = (1 - Math.exp(-4 * tau)) / 4;
+            var ux = q.vx / Math.hypot(q.vx, q.vy), uy = q.vy / Math.hypot(q.vx, q.vy);
+            var x = G[0] + ux * q.o + q.vx * f, y = G[1] + uy * q.o + q.vy * f + 120 * tau * tau;
+            var a = Math.pow(1 - tau / q.life, 1.2);
+            var col = q.green ? "80,235,140" : "235,255,240";
+            var g = pc.createRadialGradient(x, y, 0, x, y, q.size * 3);
+            g.addColorStop(0, "rgba(" + col + "," + a.toFixed(3) + ")");
+            g.addColorStop(0.35, "rgba(" + col + "," + (a * 0.45).toFixed(3) + ")");
+            g.addColorStop(1, "rgba(" + col + ",0)");
+            pc.fillStyle = g;
+            pc.beginPath();
+            pc.arc(x, y, q.size * 3, 0, 6.2832);
+            pc.fill();
+          }
+        }
+
+        // ---------- the bubble outline (drawn on "lives") and its spark ----------
+        var bub = document.getElementById("bub"), bubGlow = document.getElementById("bubGlow"), spark = document.getElementById("spark");
+        var bubLen = bub.getTotalLength();
+        var lastBub = "";
+        function drawBubble(t) {
+          var p = eIO(seg(t, T_LIVES, T_ON - T_LIVES + 0.02));
+          var sw = 1.32 + (7.4 - 1.32) * MO.ease("power3.out")(seg(t, T_WA, 0.22));
+          var gw = 3.2 + 4 * seg(t, T_ON, T_WA - T_ON) - 3 * seg(t, T_WA, 0.3);
+          var key = p.toFixed(4) + "|" + sw.toFixed(3) + "|" + gw.toFixed(3);
+          if (key === lastBub) return;
+          lastBub = key;
+          var off = (1 - p).toFixed(4);
+          bub.style.strokeDashoffset = off;
+          bubGlow.style.strokeDashoffset = off;
+          bub.setAttribute("stroke-width", sw.toFixed(3));
+          bubGlow.setAttribute("stroke-width", gw.toFixed(3));
+          bub.style.opacity = p > 0 ? "1" : "0";
+          bubGlow.style.opacity = p > 0 ? "0.9" : "0";
+          var drawing = p > 0 && p < 1;
+          if (drawing) {
+            var pt = bub.getPointAtLength(p * bubLen);
+            spark.setAttribute("cx", pt.x.toFixed(2));
+            spark.setAttribute("cy", pt.y.toFixed(2));
+          }
+          spark.setAttribute("opacity", drawing ? Math.min(1, p * 8, (1 - p) * 8).toFixed(3) : "0");
+        }
+
+        // ================= rigs =================
+        var R = [];
+        function rig(sel, init, write) { var r = MO.rig(sel, init, write); R.push(r); return r; }
+
+        // the mark floats in (30.033); the glyph (bubble + mark) shrinks into the badge on "WhatsApp"
+        rig("#mark", { o: 0, y: 46, b: 9, s: 0.72 }, function (r, v) {
+          r.css("opacity", v.o.toFixed(3));
+          r.css("transform", "translate(0px," + v.y.toFixed(2) + "px) scale(" + v.s.toFixed(4) + ")");
+          r.css("filter", (v.b > 0.05 ? "blur(" + v.b.toFixed(2) + "px) " : "") + "drop-shadow(0 6px 10px rgba(0, 20, 40, 0.45))");
+        }).to("o", H(K.mark), 0.3, 1, "power2.out").to("y", H(K.mark), 0.5, 0, "power3.out").to("b", H(K.mark), 0.35, 0, "power2.out").to("s", H(K.mark), 0.5, 1, "power3.out");
+        rig("#markGlowWrap", { o: 0 }).to("o", H(K.mark), 0.5, 0.7, "power2.out").to("o", T_WA, 0.2, 0, "power2.out");
+        rig("#glyph", { s: 1 }).to("s", T_WA - FR, 0.28, 0.554, "expo.out");
+        rig("#disc", { o: 0 }, function (r, v) { r.css("opacity", v.o.toFixed(3)); }).to("o", T_WA, 0.12, 1, "power2.out");
+
+        // the whole group: a gentle float, an anticipation squash on "on", released on "WhatsApp"
+        var grp = rig("#grp", { y: 0, s: 1 }, function (r, v) {
+          r.css("transform", "translate(0px," + v.y.toFixed(2) + "px) scale(" + v.s.toFixed(4) + ")");
+        });
+        grp.to("s", T_ON, T_WA - T_ON, 0.92, "power2.in").to("s", T_WA, 0.14, 1, "power2.out");
+        for (var k = 0; k < 63; k++) grp.tr.y.to(k * FR, FR, 7 * Math.sin(2 * Math.PI * 0.55 * (k + 1) * FR), "none");
+
+        // the badge springs in behind (31.067); badge + glyph bounce together
+        rig("#badge", { o: 0, s: 0.5 }).set("o", T_WA, 1).to("s", T_WA, 0.22, 1, "expo.out");
+        rig("#pop", { s: 1 }).to("s", T_WA, 0.11, 1.16, "power2.out").to("s", T_WA + 0.11, 0.1, 0.95, "sine.inOut")
+          .to("s", T_WA + 0.21, 0.09, 1.025, "sine.inOut").to("s", T_WA + 0.3, 0.09, 1, "sine.out");
+        var burst = rig("#burst", { o: 0, s: 0.45 });
+        burst.to("o", T_ON, T_WA - T_ON, 0.22, "power2.in"); // green light gathers on "on"
+        burst.to("o", T_WA, 0.05, 1, "power2.out").to("o", T_WA + 0.05, 0.6, 0.38, "power2.inOut").to("s", T_WA, 0.4, 1, "power3.out");
+        rig("#ring", { o: 0, s: 0.7 }).to("o", T_WA, 0.5, 0, "power1.in", 0.95).to("s", T_WA, 0.5, 2.9, "power3.out", 0.7);
+
+        // "lives here" (31.500): the pill pops, the arrow draws to the badge
+        rig("#pill", { o: 0, s: 0.55, x: 18 }).to("o", T_HERE, 0.06, 1, "none").to("s", T_HERE, 0.36, 1, "back.out(2.6)").to("x", T_HERE, 0.36, 0, "power3.out");
+        function dash(r, v) {
+          r.css("strokeDashoffset", (1 - v.p).toFixed(4));
+          r.css("opacity", v.p > 0.001 ? "1" : "0");
+        }
+        rig("#arrowLine", { p: 0 }, dash).to("p", T_HERE + 0.05, 0.22, 1, "power2.out");
+        rig("#arrowHead", { p: 0 }, dash).to("p", T_HERE + 0.22, 0.1, 1, "power2.out");
+
+        // exit (32.000): everything zooms toward the camera, gone by 32.067
+        rig("#cam", { s: 1, o: 1, b: 0, x: 0, y: 0 }).to("s", T_EXIT - 3 * FR, 3 * FR, 0.95, "sine.inOut")
+          .to("s", T_EXIT, 0.1, 3.4, "power1.in").to("x", T_EXIT, 0.1, 90, "power1.in").to("y", T_EXIT, 0.1, 160, "power1.in")
+          .to("b", T_EXIT, 0.1, 16, "power1.in").to("o", T_EXIT + 0.035, 0.06, 0, "power1.in");
+
+        function render(t) {
+          for (var i = 0; i < R.length; i++) R[i].apply(t);
+          drawBubble(t);
+          drawSats(t);
+          drawParts(t);
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        var drive = { t: 0 };
+        tl.fromTo(drive, { t: 0 }, { t: D, duration: D, ease: "none", onUpdate: function () { render(drive.t); } }, 0);
+        render(0);
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
     </script>
   </body>
 </html>

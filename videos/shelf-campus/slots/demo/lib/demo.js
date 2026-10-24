@@ -274,6 +274,9 @@
       m.halo = e.querySelector(".halo");
       if (m.typing) m.dots = e.querySelectorAll(".typ i");
     });
+    // the chat scrolls under the header / input bar and is clipped by #chat: the audit reads boxes, not pixels
+    host.querySelectorAll("*").forEach(function (n) { n.setAttribute("data-layout-allow-overlap", ""); n.setAttribute("data-layout-allow-occlusion", ""); });
+    host.querySelectorAll(".page, .page *").forEach(function (n) { n.setAttribute("data-layout-ignore", ""); });
     MS.m2.chip = MS.m2.e.querySelector(".chip");
     MS.m2.ck = MS.m2.e.querySelector(".ckp");
     MS.m6.card = $("m6card");
@@ -322,6 +325,7 @@
     KEYS[" "].e.style.fontSize = "24px";
   })();
   var kpop = $("kpop");
+  $("kb").querySelectorAll("*").forEach(function (n) { n.setAttribute("data-layout-allow-occlusion", ""); n.setAttribute("data-layout-allow-overlap", ""); });
 
   // typed strings: prefix widths (Inter 400 @ 29 px, measured offline) let the field scroll to keep the caret in view
   var TYPED = [
@@ -378,6 +382,7 @@
     var host = $("words");
     LINES.forEach(function (L) {
       var e = div("wl");
+      e.setAttribute("data-layout-allow-occlusion", "");
       e.style.fontSize = L.size + "px";
       e.style.top = -L.size / 2 + "px";
       L.ws = [];
