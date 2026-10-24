@@ -550,17 +550,17 @@ def design():
     syn(twang(261.6, 0.5), 8.233, -14.0, 0.2)                      # string 2 -> 3 snaps taut
     lib("woosh-2", S("A3b")["out0"], -14.0, length=0.6)            # the punch-in
     syn(bell_alarm(0.80), 7.833, -10.0, 0.3)                       # the deadline clock rings
-    for t, g in ((8.50, -9.0), (8.833, -14.0), (9.167, -12.0)):   # the board panics: jolts
+    for t, g in ((8.50, -17.0), (8.833, -21.0), (9.167, -19.0)):  # the board panics: jolts (under his words)
         syn(rattle(), t, g, 0.2)
-    syn(bell_alarm(0.25), 8.50, -15.0, 0.3)
-    syn(twang(174.6, 0.4), 8.52, -18.0)
+    syn(bell_alarm(0.25), 8.50, -21.0, 0.3)
+    syn(twang(174.6, 0.4), 8.52, -23.0)
     lib("sword-slash-3", 8.49, -17.0)                              # "Bro"
-    lib("woosh-3", 9.367, -16.0)                                   # the UNSOLVED tag flies in...
+    lib("woosh-3", 9.367, -19.0)                                   # the UNSOLVED tag flies in...
     lib("cinematic-electric-hit", 9.433, -15.0, length=0.45, hp=80, dip=True)   # ...and slaps on "assignment!"
     syn(thunk(60, 0.3), 9.433, -9.0)
-    syn(twang(392.0, 0.35, 0.9), 9.433, -12.0, 0.3)                # string 1 -> 2 snaps
-    syn(tone(2400, 0.15, 0.04, ((1, 1.0), (2.4, 0.4))), 9.46, -17.0, 0.6)   # the pin pops off
-    syn(bell_alarm(0.45), 9.44, -15.0, 0.3)
+    syn(twang(392.0, 0.35, 0.9), 9.433, -17.0, 0.3)                # string 1 -> 2 snaps
+    syn(tone(2400, 0.15, 0.04, ((1, 1.0), (2.4, 0.4))), 9.46, -21.0, 0.6)   # the pin pops off
+    syn(bell_alarm(0.45), 9.44, -21.0, 0.3)
     # the record stops, the freeze, two stamps in silence
     lib("beat-slowing", edl.A_FREEZE - 0.42, -12.0, length=0.9, pre=0.02)
     for t, g in ((9.967, -4.0), (10.533, -3.0)):                  # the two stamps
