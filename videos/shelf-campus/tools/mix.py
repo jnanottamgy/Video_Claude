@@ -245,6 +245,29 @@ def ticks(t0, t1, rate0, rate1, f=2400):
     return [(tt, x) for tt in out]
 
 
+def twang(f=196.0, dur=0.6, bright=0.5):
+    """A red string snapping taut: a Karplus-Strong pluck."""
+    n, p = int(dur * SR), max(2, int(SR / f))
+    buf = rng.uniform(-1, 1, p)
+    out = np.zeros(n)
+    for i in range(n):
+        out[i] = buf[i % p]
+        buf[i % p] = 0.5 * (buf[i % p] + buf[(i + 1) % p]) * (0.996 - 0.004 * (1 - bright))
+    return out * np.exp(-np.arange(n) / (0.25 * SR)) * 0.6
+
+
+def rattle(dur=0.22, density=70):
+    """Cards and pins rattling on a board when it is jolted."""
+    out = np.zeros(int(dur * SR))
+    for _ in range(int(dur * density)):
+        n = int(0.012 * SR)
+        c = rng.standard_normal(n) * np.exp(-np.arange(n) / (0.0018 * SR))
+        c = sosfilt(butter(2, [900, 6000], "bandpass", fs=SR, output="sos"), c)
+        i = int(rng.uniform(0, dur - 0.013) * SR)
+        out[i:i + n] += c * rng.uniform(0.3, 1.0)
+    return out * np.linspace(1, 0.3, len(out)) * 0.5
+
+
 def bell_alarm(dur=0.7):
     """A small mechanical alarm-clock ring (hammer on two bells)."""
     out = np.zeros(int(dur * SR))
@@ -509,17 +532,35 @@ def design():
     syn(thunk(55, 0.3), 3.833, -11.0)                              # ...and slams: "notes"
     syn(error_ding(330), 4.00, -12.0)                              # "No results found"
     syn(error_ding(311), 4.06, -17.0)
-    # evidence board: a camera shutter + pin per exhibit, string draws
-    for t in (4.37, 5.57, 7.27):
-        syn(shutter(), t - 0.03, -8.0, 0.2)
-        syn(thunk(90, 0.18), t, -11.0)
-    syn(zip_(0.3), 5.65, -13.0, 0.1)
-    syn(zip_(0.25, 1100, 5000), 7.65, -14.0, -0.1)
-    syn(zip_(0.25, 1100, 5000), 8.23, -14.0, 0.2)
+    # ---- the evidence board (times from the evidence builder's report) ----
+    pins = lambda t: [syn(tone(3200, 0.03, 0.004, ((1, 1.0), (1.7, 0.5))), tt, -20.0, 0.2) for tt in (t, t + 0.033)]
+    for w, slap, pin, tent, pan in ((4.267, 4.367, 4.433, 4.733, -0.3), (5.467, 5.567, 5.633, 6.033, 0.3),
+                                    (7.167, 7.267, 7.333, 7.500, -0.1)):
+        lib("woosh-3", w, -17.0, pan=pan)                          # the exhibit flies in...
+        syn(shutter(), slap - 0.03, -9.0, pan)                     # ...a crime-scene photo flash...
+        syn(thunk(90, 0.18), slap, -10.0, pan)                     # ...and slaps onto the board
+        pins(pin)
+        syn(tone(1700, 0.06, 0.015), tent, -17.0, pan)             # the evidence tent pops up
+    syn(typing(0.40, 25.0), 4.30, -15.0)                           # CASE #0047 · THE MISSING NOTES
+    syn(zip_(0.20, 700, 1600), 5.10, -21.0, -0.3)                  # marker rings round the PDFs
+    syn(zip_(0.20, 700, 1600), 6.50, -21.0, 0.3)
+    syn(zip_(0.30), 5.60, -15.0, 0.1)                              # string 1 -> 2 draws...
+    syn(twang(196.0), 5.90, -13.0, 0.1)                            # ...and twangs taut
+    syn(twang(233.1, 0.5), 7.667, -14.0, -0.2)                     # string 1 -> 3 snaps taut
+    syn(twang(261.6, 0.5), 8.233, -14.0, 0.2)                      # string 2 -> 3 snaps taut
     lib("woosh-2", S("A3b")["out0"], -14.0, length=0.6)            # the punch-in
-    syn(bell_alarm(0.75), 7.83, -10.0, 0.3)                        # the deadline clock rings
+    syn(bell_alarm(0.80), 7.833, -10.0, 0.3)                       # the deadline clock rings
+    for t, g in ((8.50, -9.0), (8.833, -14.0), (9.167, -12.0)):   # the board panics: jolts
+        syn(rattle(), t, g, 0.2)
+    syn(bell_alarm(0.25), 8.50, -15.0, 0.3)
+    syn(twang(174.6, 0.4), 8.52, -18.0)
     lib("sword-slash-3", 8.49, -17.0)                              # "Bro"
-    lib("cinematic-electric-hit", 9.42, -15.0, length=0.45, hp=80, dip=True)   # "assignment!": UNSOLVED slap
+    lib("woosh-3", 9.367, -16.0)                                   # the UNSOLVED tag flies in...
+    lib("cinematic-electric-hit", 9.433, -15.0, length=0.45, hp=80, dip=True)   # ...and slaps on "assignment!"
+    syn(thunk(60, 0.3), 9.433, -9.0)
+    syn(twang(392.0, 0.35, 0.9), 9.433, -12.0, 0.3)                # string 1 -> 2 snaps
+    syn(tone(2400, 0.15, 0.04, ((1, 1.0), (2.4, 0.4))), 9.46, -17.0, 0.6)   # the pin pops off
+    syn(bell_alarm(0.45), 9.44, -15.0, 0.3)
     # the record stops, the freeze, two stamps in silence
     lib("beat-slowing", edl.A_FREEZE - 0.42, -12.0, length=0.9, pre=0.02)
     for t, g in ((9.967, -4.0), (10.533, -3.0)):                  # the two stamps

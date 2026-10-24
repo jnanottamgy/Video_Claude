@@ -104,7 +104,7 @@ def frame(t, n):
         nxt = words[k + 1][1] if k + 1 < len(words) else end
         live = ws <= t < nxt
         u = (t - ws) / 0.12
-        sc = 1.0 + 0.13 * max(0.0, 1 - u) ** 2                  # pop: 1.13 -> 1.0 over ~4 frames
+        sc = 1.0 + 0.13 * min(1.0, 220.0 / max(wd, 1.0)) * max(0.0, 1 - u) ** 2   # pop (smaller on long words: no collisions)
         s = int(round(size * sc))
         f = font(s)
         wx = x + wd / 2 - f.getlength("FUCKING" if w == "#BLEEP" else w) / 2
