@@ -11,7 +11,8 @@
          "I'm" 13.76: nothing yet. Bar 14.033 (frame 18): KARTIK slams in letter by letter from the centre
          out (1 frame apart), 1.35 -> 1 with blur -> sharp, white-hot for 3 frames, then chrome silver.
          Light sweep on 14.616, slow zoom 1 -> 1.04, holds to the cut.
-         Baseline y 950, Sora 800 250 px; his head (top ~820, x ~700-1050) covers the lower right (T I K). */
+         Baseline y 770, Sora 800 250 px: fully readable above his head; two outlined echoes of the
+         name rise out of it and fill the empty wall above (y ~200-575). */
       #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       .scene { position: absolute; inset: 0; }
 
@@ -104,6 +105,21 @@
         background: radial-gradient(ellipse at center, rgba(120, 180, 255, 0.55) 0%, rgba(79, 157, 255, 0.28) 34%, rgba(31, 95, 214, 0.08) 58%, rgba(31, 95, 214, 0) 72%);
         opacity: 0;
       }
+
+      /* outlined echoes of the name, stacked above it (they fill the empty wall) */
+      .echo {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        display: flex;
+        justify-content: center;
+        font: 800 var(--fs) / 1 var(--font-brand);
+        white-space: nowrap;
+        color: transparent;
+        -webkit-text-stroke: 2.5px rgba(170, 205, 255, 0.95);
+        text-shadow: 0 0 22px rgba(var(--glow), 0.35);
+        opacity: 0;
+      }
     </style>
   </head>
   <body>
@@ -111,6 +127,7 @@
       <div id="scene" class="clip scene" data-start="0" data-duration="1.766667" data-track-index="0">
         <div id="word" data-layout-allow-overflow>
           <div id="halo" aria-hidden="true"></div>
+          <div id="echoes" aria-hidden="true" data-layout-allow-overflow></div>
           <div class="line" id="l1" data-text="KARTIK" aria-hidden="true" data-layout-allow-overflow></div>
           <div class="sheen" id="sh1" aria-hidden="true" data-layout-allow-overflow></div>
           <div id="streak" aria-hidden="true"></div>
@@ -120,7 +137,7 @@
     <script>
       // ---------- layout ----------
       var FS = 250;            // px: ink spans x ~40-1040 at scale 1
-      var BASE = 950;          // baseline y
+      var BASE = 770;          // baseline y: the whole name sits above his head (top ~820), in the free wall
       var TOP = BASE - 0.835 * FS; // Sora: baseline sits 0.835 em under the top of a line-height:1 box
       var MID = BASE - 0.36 * FS;  // optical centre of the caps
       var KERN = { KA: -0.01, RT: -0.02 };
@@ -167,6 +184,19 @@
         sheen.appendChild(s);
       }
 
+
+      // ---------- echoes ----------
+      var ECHO_N = 2, ECHO_LH = 0.78 * FS, ECHO_A = [0.55, 0.28];
+      var echoBox = document.getElementById("echoes");
+      for (var e = 1; e <= ECHO_N; e++) {
+        var ed = el("div", "echo", text);
+        ed.id = "echo" + e;
+        ed.style.top = TOP - e * ECHO_LH + "px";
+        ed.setAttribute("data-layout-allow-overflow", "");
+        layered(ed);
+        echoBox.appendChild(ed);
+      }
+
       // ---------- timeline ----------
       var T0 = 13.4333;                        // window start (output s)
       function at(out) { return Math.round(out * 30) / 30 - T0 - 0.004; } // first frame shows the pose
@@ -197,6 +227,15 @@
       tl.to("#streak", { opacity: 0, scaleX: 1.15, scaleY: 0.4, duration: 0.18, ease: "power2.out" }, T_DROP + 0.08);
       tl.fromTo("#halo", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "power2.out" }, T_DROP);
       tl.to("#halo", { opacity: 0.22, duration: 0.7, ease: "power2.out" }, T_DROP + 0.06);
+
+
+      // echoes rise out of the landed name, one after another (2 frames apart), then drift up slowly
+      for (var e2 = 1; e2 <= ECHO_N; e2++) {
+        var te = T_DROP + (4 + 2 * e2) / 30;
+        tl.fromTo("#echo" + e2, { opacity: 0, y: ECHO_LH * 0.55, scale: 0.96 },
+          { opacity: ECHO_A[e2 - 1], y: 0, scale: 1, duration: 0.32, ease: "expo.out" }, te);
+        tl.to("#echo" + e2, { y: -10 * e2, duration: 1.6, ease: "sine.out", immediateRender: false }, te + 0.32);
+      }
 
       // slow zoom to the end
       tl.fromTo("#word", { scale: 1 }, { scale: 1.04, duration: 1.766667 - T_DROP, ease: "sine.out" }, T_DROP);

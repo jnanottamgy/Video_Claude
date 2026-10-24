@@ -43,8 +43,8 @@ OVERLAYS = [
     ("evidence_behind", DR.o0("A3a"), "behind", dict(until=DR.o0("A5"))),
     ("hook_title", 0.000, "front"),
     ("stamps", DR.o0("A5"), "front", dict(until=DR.o0("B1"))),
-    ("name_j_behind", DR.o0("B1"), "behind", dict(until=DR.o0("B2"))),
-    ("name_k_behind", DR.o0("B2"), "behind", dict(until=DR.o0("B3"))),
+    ("name_j_behind", DR.o0("B1"), "behind", dict(until=DR.o0("B2"), screen=True)),   # screen-locked: the punch-ins move
+    ("name_k_behind", DR.o0("B2"), "behind", dict(until=DR.o0("B3"), screen=True)),   # the founder, never push the name off-frame
     ("lowers", DR.o0("B1"), "front", dict(until=DR.o0("B3"))),
     ("poster_bg", DR.o0("B3"), "full", dict(until=DR.o0("B4"))),
     ("poster_text", DR.o0("B3"), "front", dict(until=DR.o0("B4"))),
@@ -72,7 +72,7 @@ def overlay_index():
         end = f0 + n
         if "until" in opts:
             end = min(end, int(round(opts["until"] * FPS)))
-        idx.append((d, f0, n, layer, end))
+        idx.append((d, f0, n, layer + ("_screen" if opts.get("screen") else ""), end))
     return idx
 
 
@@ -260,12 +260,15 @@ class Comp:
         if mw.ndim == 2:
             mw = mw[..., None]
         behind = layer_frames(self.overlays, n, "behind")
-        if behind:
+        locked = layer_frames(self.overlays, n, "behind_screen")
+        if behind or locked:
             bg = img
             for layer in behind:      # on the wall: moves with the camera; premultiplied so edges stay clean
                 a = fx.warp(layer[..., 3], M, cv2.BORDER_CONSTANT, cv2.INTER_LINEAR)[..., None]
                 pm = fx.warp(layer[..., :3] * layer[..., 3:4], M, cv2.BORDER_CONSTANT, cv2.INTER_LINEAR)
                 bg = pm + bg * (1 - a)
+            for layer in locked:      # behind the person but fixed to the screen (the giant names)
+                bg = fx.over(bg, layer)
             img = img * mw + bg * (1 - mw)
         if wall == "night":
             img = fx.rim(img, mw, (0.55, 0.75, 1.0), 0.45)
