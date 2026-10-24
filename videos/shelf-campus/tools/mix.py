@@ -532,42 +532,74 @@ def design():
     lib("gun-reload", 10.88, -14.0, length=0.5)                    # loading up before the name
     syn(reverse_swell(0.42), D - 0.52, -13.0)                       # "I'm..." into the drop, then 100 ms of vacuum
 
-    # ---- FOUNDERS ----
+    # ---- FOUNDERS (times from the founders builder's report) ----
     lib("bass-woosh-1", D, -7.0, hp=70, dip=True, pre=0.04)
     lib("cinematic-electric-hit", D, -11.0, hp=70, length=1.6, dip=True, pre=0.02)
-    lib("woosh-3", D + 0.584, -16.0)                               # the light sweep
+    lib("woosh-3", 11.80, -19.0, pan=-0.5)                         # lower third wipes in
+    lib("woosh-3", 12.284, -16.0)                                  # the light sweep through JNANOTTAM
     syn(shutter(), S("B1f")["out0"], -10.0)                        # the micro freeze
+    lib("woosh-3", 13.133, -21.0, pan=-0.5)                        # lower third out
     lib("sword-impact", 14.033, -10.0, hp=90, length=0.9, dip=True)   # KARTIK
     lib("fast-swoosh", 14.033, -13.0, dip=True)
-    for t in (15.199, 15.782):
-        lib("sword-slash-3", t, -10.0)
-    lib("sword-impact", 16.366, -10.0, hp=90, length=0.8)
-    lib("sword-slash-1", 16.949, -16.0)
-    lib("woosh-4", 18.10, -13.0)
-    for k, t in enumerate((19.67, 19.83, 19.98, 20.12)):           # "students": stressed messages
+    lib("woosh-3", 14.10, -19.0, pan=-0.5)
+    lib("woosh-3", 14.60, -17.0)                                   # the sweep through KARTIK
+    lib("woosh-3", 14.90, -21.0, pan=-0.5)
+    lib("sword-slash-3", 15.200, -10.0)                            # TWO FOUNDERS.
+    lib("sword-slash-3", 15.767, -10.0, pan=0.4)                   # ONE SHARED BRAIN CELL.
+    lib("sword-impact", 16.367, -10.0, hp=90, length=0.8)          # QUESTIONABLE SLEEP SCHEDULE.
+    lib("sword-slash-1", 16.933, -17.0)                            # the rule and EST. 2026
+    for t in (17.05, 17.10):
+        syn(tone(2200, 0.03, 0.008), t, -20.0)                     # name tags
+    syn(tone(2600, 0.03, 0.006), 17.19, -19.0)                     # end dots
+    lib("woosh-4", 17.975, -12.0)                                  # zoom-blur exit
+    for k, t in enumerate((19.667, 19.800, 19.933, 20.067)):       # "students": stressed messages
         syn(wa_receive(), t, -12.0, (-0.4, 0.3, -0.1, 0.4)[k])
-    syn(error_ding(520), 20.15, -7.0)                              # brain.exe
-    for k in range(5):
-        syn(error_ding(520 * 1.06 ** k), 20.63 + k * 0.07, -12.0 - k, 0.2 * (-1) ** k)
-    lib("alien-digital-glitch", 20.63, -15.0, length=0.45)
-    syn(data_sweep(0.55), 21.57, -14.0)                            # the blueprint draws
-    lib("radio-switch", 22.13, -14.0, length=0.3)
-    syn(power_down(0.3), R - 0.20, -9.0)
+    syn(error_ding(520), 20.167, -7.0)                             # brain.exe has stopped responding
+    syn(thunk(70, 0.2), 20.167, -14.0)
+    lib("alien-digital-glitch", 20.633, -15.0, length=0.45)
+    for k in range(13):                                            # the error-window cascade
+        syn(tone(880 * 1.03 ** k, 0.05, 0.015, ((1, 1.0), (2, 0.3))), 20.667 + k / 30, -20.0 - k * 0.3, 0.3 * (-1) ** k)
+    for k in range(4):
+        syn(error_ding(520 * 1.06 ** k), 20.70 + k * 0.10, -15.0 - k, 0.2 * (-1) ** k)
+    syn(data_sweep(0.55), 21.567, -14.0)                           # the blueprint powers up
+    syn(typing(0.35, 24.0), 21.62, -15.0)                          # PROJECT: ??? types
+    syn(zip_(0.53, 600, 2400), 21.60, -18.0, -0.2)                 # the plotter pens
+    lib("radio-switch", 22.133, -14.0, length=0.3)                 # completion flash
+    syn(data_sweep(0.12, 2000, 6000), 22.60, -16.0)                # power surge...
+    syn(power_down(0.25), 22.633, -9.0)                            # ...and out
 
-    # ---- REVEAL ----
-    syn(ping(), R + 0.13, -4.0)                                    # one ping in the dark
-    lib("build-up-2", D2 - 0.10, -12.0, t_from=R + 0.05, fade_out=0.03)   # builds through the dark, stops 100 ms before drop 2
-    lib("slow-woosh", 24.2, -15.0)
-    lib("lightning-strike", D2, -9.0, hp=60, dip=True, pre=0.03)
-    lib("bass-woosh-2", D2, -8.0, hp=70, dip=True, pre=0.05)
-    lib("cinematic-electric-hit", D2, -12.0, hp=70, length=1.8, dip=True, pre=0.02)
-    lib("sword-slash-1", 26.01, -15.0)                             # CAMPUS
+    # ---- REVEAL (times from the reveal builder's report; its slam frame is 25.667) ----
+    syn(ping(), 22.900, -4.0)                                      # one ping in the dark
+    lib("build-up-2", D2 - 0.10, -13.0, t_from=R + 0.05, fade_out=0.03)   # builds through the dark, stops 100 ms before drop 2
+    syn(zip_(0.58, 2500, 7000), 23.35, -22.0, -0.3)                # sparks trace the mark's edges
+    lib("slow-woosh", 24.50, -16.0)                                # the light sweep across the chrome
+    for k, t in enumerate((25.150, 25.270, 25.370, 25.460, 25.530, 25.590)):     # shimmer glints, rising
+        syn(tone(2637.0 * 1.06 ** k, 0.25, 0.06, ((1, 1.0), (2.76, 0.25))), t, -20.0 + k * 0.6, 0.3 * (-1) ** k)
+    syn(reverse_swell(0.36), 25.30, -14.0)                         # the ring contracts into the mark
+    lib("lightning-strike", 25.667, -9.0, hp=60, dip=True, pre=0.03)
+    lib("bass-woosh-2", 25.667, -8.0, hp=70, dip=True, pre=0.05)
+    lib("cinematic-electric-hit", 25.667, -12.0, hp=70, length=1.8, dip=True, pre=0.02)
+    lib("sword-slash-1", 26.000, -15.0)                            # CAMPUS
+    for t in (26.267, 26.833):                                     # glow pulses with a crackle
+        lib("alien-digital-glitch", t, -24.0, length=0.08)
+        lib("woosh-3", t + 0.12, -22.0)
     lib("woosh-1", S("C2")["out0"], -16.0, length=0.8)
-    syn(data_sweep(0.4, 800, 6000), 28.05, -15.0)                  # AI-powered
-    lib("glitchy-woosh", 29.49, -16.0)                             # memory
-    syn(wa_receive(), 31.08, -6.0)                                 # the WhatsApp badge
-    lib("woosh-3", 31.0, -14.0)
-    lib("fast-swoosh", 32.05, -11.0)
+    for k, t in enumerate((27.483, 27.533, 27.623, 27.663, 27.803, 27.863)):     # memory nodes pop
+        syn(tone(1046.5 * (1.12 ** k), 0.12, 0.03, ((1, 1.0), (2, 0.2))), t, -19.0, (-0.5, 0.4, -0.2, 0.3, -0.4, 0.5)[k])
+    syn(data_sweep(0.40, 800, 6000), 28.033, -15.0)                # AI-POWERED: the wavefront
+    lib("sword-slash-3", 28.033, -15.0)
+    lib("sword-slash-3", 28.933, -15.0, pan=0.3)                   # ACADEMIC
+    lib("sword-slash-3", 29.500, -14.0, pan=-0.3)                  # MEMORY...
+    lib("glitchy-woosh", 29.55, -17.0)                             # ...the network folds
+    lib("sword-impact", 29.767, -17.0, hp=120, length=0.5)         # the mark locks in
+    lib("woosh-3", 30.033, -20.0, pan=-0.4)                        # the mark floats in above Jnanottam
+    syn(zip_(0.55, 1200, 3800), 30.267, -20.0, -0.3)               # the bubble outline draws
+    syn(reverse_swell(0.23), 30.833, -15.0)                        # green light gathers
+    syn(wa_receive(), 31.067, -6.0)                                # the WhatsApp badge pops
+    for k in range(8):                                             # eight little chat bubbles
+        syn(tone(1500 * 1.05 ** k, 0.04, 0.012), 31.067 + k / 30, -21.0, 0.6 * np.sin(k))
+    syn(wa_send(), 31.50, -14.0)                                   # "lives here"
+    lib("fast-swoosh", 32.00, -11.0)                               # zoom toward the camera
 
     # ---- DEMO ----
     lib("sword-impact", 32.10, -12.0, hp=90, length=0.7)           # NO NEW APP.

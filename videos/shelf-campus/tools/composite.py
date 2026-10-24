@@ -216,7 +216,8 @@ class Comp:
                 rgb = self.src.get(n).astype(np.float32) / 255
                 rgb = fx.grade(rgb, "night")
                 m = matte(n)[..., 0]
-                rgb = fx.rim(rgb, m[..., None], (0.55, 0.75, 1.0), 0.9)
+                m = cv2.GaussianBlur(cv2.erode(m, np.ones((3, 3), np.uint8)), (0, 0), 1.2)   # choke the wall-coloured fringe
+                rgb = fx.rim(rgb, m[..., None], (0.55, 0.75, 1.0), 0.5)
                 out[who] = SP.cutout(who, rgb, m)
             self._people = out
         return self._people

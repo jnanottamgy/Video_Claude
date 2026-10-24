@@ -69,7 +69,7 @@
   T.type5 = T.m5 - 0.36; T.type7 = T.m7 - 0.42;
   T.cardOut = T.m6 + 0.07;
   T.skip0 = 9.42; T.skip1 = 9.84;
-  T.whip = 10.86;
+  T.whip = 10.8;
   var BEATS = [32.097, 32.68, 33.263, 33.847, 34.43, 35.013, 35.596, 36.179, 36.762, 37.345, 37.929, 38.512, 39.095, 39.678, 40.261, 40.844, 41.428, 42.011, 42.594, 43.177, 43.76, 44.343, 44.926].map(function (b) { return b - W0; });
   var DOWN = [32.68, 35.013, 37.345, 39.678, 42.011, 44.343].map(function (b) { return b - W0; });
   window.__demoCues = T;
@@ -79,6 +79,7 @@
   function div(cls, html) { var d = document.createElement("div"); if (cls) d.className = cls; if (html) d.innerHTML = html; return d; }
   // cached style writes (skip identical values; every value is recomputed from t each frame)
   function st(e, p, v) { var c = e.__c || (e.__c = {}); if (c[p] !== v) { e.style[p] = v; c[p] = v; } }
+  function dsp(e, on) { st(e, "display", on ? "block" : "none"); return on; } // containers: children may set visibility themselves
   function op(e, o) { // opacity + visibility; returns whether visible
     if (o <= 0.002) { st(e, "visibility", "hidden"); return false; }
     st(e, "visibility", "visible");
@@ -346,11 +347,12 @@
   var banner = $("banner");
   banner.innerHTML =
     '<div class="wa-card" style="--wa-w:860px;--wa-h:156px" data-layout-allow-overflow><div class="wa-fly"><div class="wa-banner">' +
-    '<div class="wa-av" id="bav">' + MARK + '<div class="wa-badge">' + WA.G.wa() + "</div></div>" +
+    '<div class="wa-av shelfav">' + MARK + '<div class="wa-badge">' + WA.G.wa() + "</div></div>" +
     '<div class="wa-txt"><div class="wa-row"><div class="wa-title">SHELF Campus</div><div class="wa-time">now</div></div>' +
     '<div class="wa-row"><div class="wa-body">Reminder: submit the lab record</div></div></div>' +
     '<div class="wa-fx"><div class="wa-sheen" id="bsheen"></div></div></div><div class="wa-glow" id="bglow"></div></div></div>';
   var bsheen = $("bsheen"), bglow = $("bglow");
+  var BAN_Y = 236; // banner centre, phone-local: just under the status bar, over the header
   var rings = [];
   (function () {
     var host = $("rings");
@@ -362,22 +364,23 @@
 
   /* ================= build: kinetic words ================= */
   var BIG_Y = 452, LEAD_Y = 322, LEAD_SIZE = 70;
-  var LINES = [
-    { size: 128, words: [["NO NEW APP.", -0.07, "slam"]], exit: T.wa - 0.02, ex: "scale", shake: [0, 9] },
-    { size: 150, words: [["JUST", T.wa - 0.03, "drop"]], lead0: true, exit: T.exitWA },
-    { size: 140, words: [["WHATSAPP.", T.wa - 0.02, "slam", "green"]], exit: T.exitWA, shake: [T.wa, 10], sweep: T.wa + 0.08 },
-    { size: 150, words: [["GOT", T.got - 0.03, "rise"]], toLead: T.notes - 0.03, exit: T.just - 0.05 },
-    { size: 160, words: [["NOTES?", T.notes - 0.03, "slam"]], exit: T.just - 0.05, shake: [T.notes, 8] },
-    { size: 150, words: [["JUST", T.just - 0.03, "snapL"]], toLead: T.shelf - 0.03, exit: T.need - 0.05 },
-    { size: 160, words: [["SHELF", T.shelf - 0.03, "slam", "blue"], ["IT.", T.it - 0.03, "snapR"]], widths: [507.4, 725.6], exit: T.need - 0.05, shake: [T.shelf, 8], sweep: T.shelf + 0.06 },
-    { size: 150, words: [["NEED", T.need - 0.03, "rise"], ["THEM", T.them - 0.03, "rise"]], widths: [427.1, 908.3], toLead: T.back - 0.03, exit: T.ask - 0.05 },
-    { size: 170, words: [["BACK?", T.back - 0.03, "slam"]], exit: T.ask - 0.05, shake: [T.back, 8] },
-    { size: 200, words: [["ASK.", T.ask - 0.03, "punch", "blue"]], exit: T.deadlines - 0.05, shake: [T.ask, 12], sweep: T.ask + 0.1 },
-    { size: 140, words: [["DEADLINES.", T.deadlines - 0.03, "snapR"]], toLead: T.handled - 0.03, exit: T.reminders - 0.05 },
-    { size: 150, words: [["HANDLED.", T.handled - 0.03, "slam"]], exit: T.reminders - 0.05, shake: [T.handled, 9] },
-    { size: 136, words: [["REMINDERS.", T.reminders - 0.03, "rise"]], toLead: T.sorted - 0.03, exit: 99 },
-    { size: 160, words: [["SORTED.", T.sorted - 0.03, "slam"]], exit: 99, shake: [T.sorted, 9] }
+  var LINES = [ // [text, onset frame time, entrance, style]; toLead / exit = the onset that displaces the line
+    { size: 128, words: [["NO NEW APP.", -0.04, "slam"]], exit: T.wa, ex: "scale", shake: [0, 9] },
+    { size: 150, words: [["JUST", T.wa, "drop"]], lead0: true, exit: T.exitWA },
+    { size: 140, words: [["WHATSAPP.", T.wa, "slam", "green"]], exit: T.exitWA, shake: [T.wa, 10], sweep: T.wa + 0.08 },
+    { size: 150, words: [["GOT", T.got, "rise"]], toLead: T.notes, exit: T.just },
+    { size: 160, words: [["NOTES?", T.notes, "slam"]], exit: T.just, shake: [T.notes, 8] },
+    { size: 150, words: [["JUST", T.just, "snapL"]], toLead: T.shelf, exit: T.need },
+    { size: 160, words: [["SHELF", T.shelf, "slam", "blue"], ["IT.", T.it, "snapR"]], widths: [507.4, 725.6], exit: T.need, shake: [T.shelf, 8], sweep: T.shelf + 0.06 },
+    { size: 150, words: [["NEED", T.need, "rise"], ["THEM", T.them, "rise"]], widths: [427.1, 908.3], toLead: T.back, exit: T.ask },
+    { size: 170, words: [["BACK?", T.back, "slam"]], exit: T.ask, shake: [T.back, 8] },
+    { size: 200, words: [["ASK.", T.ask, "punch", "blue"]], exit: T.deadlines, shake: [T.ask, 12], sweep: T.ask + 0.1 },
+    { size: 140, words: [["DEADLINES.", T.deadlines, "snapR"]], toLead: T.handled, exit: T.reminders },
+    { size: 150, words: [["HANDLED.", T.handled, "slam"]], exit: T.reminders, shake: [T.handled, 9] },
+    { size: 136, words: [["REMINDERS.", T.reminders, "rise"]], toLead: T.sorted, exit: 99 },
+    { size: 160, words: [["SORTED.", T.sorted, "slam"]], exit: 99, shake: [T.sorted, 9] }
   ];
+  var ATK = 0.03, EXD = 0.067, LEADPRE = 0.12;
   (function () {
     var host = $("words");
     LINES.forEach(function (L) {
@@ -396,7 +399,7 @@
       });
       L.e = e;
       L.green = L.words[0][3] === "green";
-      L.t0 = L.words[0][1];
+      L.t0 = L.words[0][1] - ATK;
       if (L.sweep !== undefined) L.ws.forEach(function (s) {
         var base = s.className.indexOf("green") >= 0 ? "linear-gradient(180deg, #c6ffda 0%, #52e384 44%, #1fbf5a 100%)" : "linear-gradient(180deg, #ffffff 0%, #cfe6ff 34%, #6cb0ff 100%)";
         if (s.className.indexOf("green") < 0 && s.className.indexOf("blue") < 0) base = "linear-gradient(180deg, #ffffff 0%, #eef3fa 42%, #b4c3d8 100%)";
@@ -408,12 +411,13 @@
       host.appendChild(e);
     });
   })();
-  function wordPose(kind, t, t0) {
+  function wordPose(kind, t, onset) {
+    var t0 = onset - ATK;
     var o = { x: 0, y: 0, s: 1, r: 0, b: 0, a: 0 };
     if (t < t0) return o;
     o.a = clamp((t - t0) / 0.03, 0, 1);
     var p, e;
-    if (kind === "slam") { p = prog(t, t0, 0.32); e = EO(p); o.s = lerp(1.55, 1, e); o.b = 14 * (1 - e); }
+    if (kind === "slam") { p = prog(t, t0, 0.32); e = EO(p); o.s = lerp(1.36, 1, e); o.b = 12 * (1 - e); }
     else if (kind === "rise") { p = prog(t, t0, 0.34); e = EO(p); o.y = lerp(95, 0, e); o.b = 10 * (1 - e); }
     else if (kind === "drop") { p = prog(t, t0, 0.3); e = EO(p); o.y = lerp(-85, 0, e); o.b = 9 * (1 - e); }
     else if (kind === "snapL") { p = prog(t, t0, 0.3); e = EO(p); o.x = lerp(-330, 0, e); o.b = 12 * (1 - e); }
@@ -423,22 +427,43 @@
   }
 
   /* ================= build: the four hits ================= */
+  // each hit: a hard cut to a new framing + colour pop, one icon, the word huge, and the matching piece of the
+  // demo (blurred, tilted, behind) so the recap reads as SHELF, not as stock type
   var HITS = [
-    { t: T.hit1, t1: T.hit2, icon: "doc", tile: true, iy: 690, isz: 270, glyph: 150, words: [["SAVE IT.", 196, 1012]], rot: 0,
-      bg: "radial-gradient(75% 46% at 50% 36%, #2f74ff 0%, #133d96 30%, #081d4f 60%, #030a1d 100%)", burst: "rgba(120,190,255,0.75)", bx: 540, by: 690 },
-    { t: T.hit2, t1: T.hit3, icon: "search", tile: false, iy: 1105, isz: 300, glyph: 250, words: [["FIND IT.", 200, 790]], rot: 2.2,
-      bg: "radial-gradient(80% 52% at 50% 60%, #7cbcff 0%, #3483ff 24%, #1749bd 54%, #0a2368 100%)", burst: "rgba(255,255,255,0.6)", bx: 540, by: 1105 },
-    { t: T.hit3, t1: T.hit4, icon: "cal", tile: true, iy: 700, isz: 270, glyph: 156, words: [["TRACK IT.", 182, 1012]], rot: -2.4,
-      bg: "radial-gradient(70% 44% at 50% 37%, #3d8bff 0%, #16397f 30%, #0a1838 60%, #04091a 100%)", burst: "rgba(140,200,255,0.7)", bx: 540, by: 700 },
-    { t: T.hit4, t1: 99, icon: "stamp", tile: false, iy: 640, isz: 360, glyph: 360, words: [["ACTUALLY", 124, 930], ["SUBMIT IT.", 172, 1088]], rot: 0,
-      bg: "radial-gradient(72% 44% at 50% 33%, #2fe07a 0%, #138a4b 24%, #073a25 52%, #020d08 100%)", burst: "rgba(90,255,160,0.75)", bx: 540, by: 640 }
+    { t: T.hit1, t1: T.hit2, icon: "doc", tile: true, ix: 540, iy: 645, isz: 330, glyph: 196, irot: 0, words: [["SAVE IT.", 200, 990]], rot: 0,
+      bg: "radial-gradient(75% 46% at 50% 34%, #2f74ff 0%, #133d96 30%, #081d4f 60%, #030a1d 100%)", burst: "rgba(120,190,255,0.75)",
+      frag: { id: "m1", w: 440, h: 282, x: 540, y: 1440, s: 1.8, rx: 42, rz: -7, blur: 2.4, o: 0.62 } },
+    { t: T.hit2, t1: T.hit3, icon: "search", tile: false, ix: 560, iy: 1110, isz: 330, glyph: 280, irot: 0, words: [["FIND IT.", 204, 745]], rot: 2.5,
+      bg: "radial-gradient(80% 52% at 50% 58%, #7cbcff 0%, #3483ff 24%, #1749bd 54%, #0a2368 100%)", burst: "rgba(255,255,255,0.55)",
+      frag: { id: "m4", w: 440, h: 304, x: 520, y: 1150, s: 1.3, rx: 22, rz: -5, blur: 1.8, o: 0.62 } },
+    { t: T.hit3, t1: T.hit4, icon: "cal", tile: true, ix: 350, iy: 675, isz: 320, glyph: 188, irot: -8, words: [["TRACK IT.", 176, 1000]], rot: -4,
+      bg: "radial-gradient(70% 44% at 38% 36%, #3d8bff 0%, #16397f 30%, #0a1838 60%, #04091a 100%)", burst: "rgba(140,200,255,0.7)",
+      frag: { id: "card", w: 458, h: 168, x: 620, y: 1420, s: 1.85, rx: 40, rz: -9, blur: 2.2, o: 0.66 } },
+    { t: T.hit4, t1: 99, icon: "stamp", tile: false, ix: 540, iy: 620, isz: 390, glyph: 390, irot: -12, words: [["ACTUALLY", 126, 930], ["SUBMIT IT.", 166, 1090]], rot: 0,
+      bg: "radial-gradient(72% 44% at 50% 32%, #2fe07a 0%, #138a4b 24%, #073a25 52%, #020d08 100%)", burst: "rgba(90,255,160,0.75)",
+      frag: { id: "banner", w: 860, h: 156, x: 540, y: 1450, s: 1.0, rx: 44, rz: 0, blur: 2.2, o: 0.55 } }
   ];
+  function fragHTML(id) {
+    var h;
+    if (id === "card") h = MS.m6.card.outerHTML;
+    else if (id === "banner") h = banner.innerHTML;
+    else h = bubbleHTML(id);
+    return h.replace(/ id="[^"]*"/g, "").replace('class="tk"', 'class="tk dlv read"');
+  }
   (function () {
     var host = $("hits"), R = rng(777);
     HITS.forEach(function (h, i) {
       var e = div("hit");
       var bg = div("hbg"); bg.style.background = h.bg; e.appendChild(bg);
       var grp = div("hgrp"); e.appendChild(grp);
+      // the demo fragment, deep in the frame
+      var pp = div("hpersp"), fr = div("hfrag", fragHTML(h.frag.id));
+      fr.style.left = h.frag.x - h.frag.w / 2 + "px"; fr.style.top = h.frag.y - h.frag.h / 2 + "px";
+      fr.style.width = h.frag.w + "px"; fr.style.height = h.frag.h + "px";
+      fr.setAttribute("data-layout-ignore", "");
+      fr.querySelectorAll("*").forEach(function (n) { n.setAttribute("data-layout-ignore", ""); });
+      pp.appendChild(fr); grp.appendChild(pp);
+      h.fragE = fr;
       h.streaks = [];
       for (var k = 0; k < 7; k++) {
         var s = div("streak");
@@ -448,15 +473,15 @@
         h.streaks.push({ e: s, ang: ang, y: 300 + R() * 1300, len: len, d: R() * 0.12, sp: 2600 + R() * 1800 });
       }
       var burst = div("hburst");
-      burst.style.left = h.bx - 450 + "px"; burst.style.top = h.by - 450 + "px"; burst.style.width = "900px"; burst.style.height = "900px";
+      burst.style.left = h.ix - 450 + "px"; burst.style.top = h.iy - 450 + "px"; burst.style.width = "900px"; burst.style.height = "900px";
       burst.style.background = "radial-gradient(circle, " + h.burst + " 0%, rgba(0,0,0,0) 62%)";
       grp.appendChild(burst);
       var ring = div("hring");
-      ring.style.left = h.bx - 200 + "px"; ring.style.top = h.by - 200 + "px"; ring.style.width = "400px"; ring.style.height = "400px";
+      ring.style.left = h.ix - 200 + "px"; ring.style.top = h.iy - 200 + "px"; ring.style.width = "400px"; ring.style.height = "400px";
       ring.style.boxShadow = "0 0 0 5px " + (h.icon === "stamp" ? "rgba(90,255,160,0.85)" : "rgba(190,225,255,0.85)") + ", 0 0 40px " + (h.icon === "stamp" ? "rgba(37,211,102,0.6)" : "rgba(79,157,255,0.6)");
       grp.appendChild(ring);
       var icon = div("hicon" + (h.tile ? " tile" : ""));
-      icon.style.left = 540 - h.isz / 2 + "px"; icon.style.top = h.iy - h.isz / 2 + "px";
+      icon.style.left = h.ix - h.isz / 2 + "px"; icon.style.top = h.iy - h.isz / 2 + "px";
       icon.style.width = h.isz + "px"; icon.style.height = h.isz + "px";
       icon.innerHTML = HI[h.icon];
       var sv = icon.querySelector("svg");
@@ -490,7 +515,7 @@
   function gridScale(t) { return lerp(1.1, 1, EO(prog(t, 0, 0.42))) * (1 + 0.014 * prog(t, 0.42, 0.3)); }
   function badgeSize(t) {
     var s = 140 * gridScale(t);
-    if (t >= T.wa - 0.01) s *= 1 + 0.12 * Math.sin(Math.PI * prog(t, T.wa - 0.01, 0.14));
+    if (t >= T.wa - 0.01) s *= 1 + 0.22 * Math.sin(Math.PI * prog(t, T.wa - 0.01, 0.14));
     return s;
   }
   function camState(t) {
@@ -498,8 +523,8 @@
     var s1 = lerp(EST, 1, u), oy = lerp(40, 0, u);
     var k = 1;
     for (var i = 0; i < MSG_T.length; i++) { var d = t - (MSG_T[i] - 0.02); if (d > 0) k += 0.0135 * BO(prog(d, 0, 0.42)); }
-    var wz = 1 + 0.9 * P3I(prog(t, T.whip, T.hit1 - T.whip));
-    return { s1: s1, oy: oy, k: k, wz: wz, blur: 15 * P3I(prog(t, T.whip, T.hit1 - T.whip)) };
+    var wz = 1 + 1.15 * P3I(prog(t, T.whip, T.hit1 - T.whip));
+    return { s1: s1, oy: oy, k: k, wz: wz, blur: 18 * P3I(prog(t, T.whip, T.hit1 - T.whip)) };
   }
   // the camera maps a layout point to the screen: X = a*x + tx, Y = a*y + ty
   function camMatrix(C, bx, by) {
@@ -522,7 +547,7 @@
     var s0 = badgeSize(T.zoom0) / (BWL * EST), dy0 = (GRID.cy - 640) / EST + 600 - PCY;
     if (t < T.zoom1) {
       var z = prog(t, T.zoom0, T.zoom1 - T.zoom0), g = P3IO(z);
-      P.s = lerp(s0, 1.1, g);
+      P.s = lerp(s0, 1.3, g);
       P.dy = lerp(dy0, 0, g);
       P.rx = 13 * g; P.ry = -24 * g; P.rz = -3 * Math.sin(Math.PI * z);
       var gw = P3IO(prog(t, T.zoom0, 0.4));
@@ -532,8 +557,8 @@
       P.blur = 6 * Math.pow(Math.sin(Math.PI * z), 2);
       return P;
     }
-    var d = t - T.zoom1, sp = spring(d, 10, 0.62);
-    P.s = 1 + 0.1 * sp;
+    var d = t - T.zoom1, sp = spring(d, 9, 0.6);
+    P.s = 1 + 0.3 * sp;
     P.rx = 5 + 8 * sp; P.ry = -7 - 17 * sp;
     var sw = sstep(T.zoom1, T.zoom1 + 0.9, t), q = t - 1.1;
     P.ry += sw * 2.6 * Math.sin((TAU * q) / 6.4);
@@ -602,8 +627,7 @@
   }
 
   function renderGrid(t, imp) {
-    if (t > T.wa + 0.75) { st(E.grid, "visibility", "hidden"); return; }
-    st(E.grid, "visibility", "visible");
+    if (!dsp(E.grid, t <= T.wa + 0.85)) return;
     st(E.grid, "transform", imp ? "translate(" + imp[0] + "px," + imp[1] + "px)" : "none");
     var gs = gridScale(t);
     for (var i = 0; i < apps.length; i++) {
@@ -618,11 +642,11 @@
         y += 250 * de; x -= 30 * de; r = 28 * de; s *= 1 - 0.42 * de; blur = 7 * de; o = 1 - sstep(0.55, 1, dp);
         st(a.e, "filter", t >= T.strike + 0.04 ? "saturate(0.25) brightness(0.72)" + (blur > 0.3 ? " blur(" + blur.toFixed(1) + "px)" : "") : "none");
       } else if (t >= T.wa) {
-        var u = prog(t, T.wa + 0.012 * a.ring, 0.6), e = P3O(u);
-        x += a.ux * 1350 * a.sp * e; y += a.uy * 1350 * a.sp * e;
-        s *= 1 + 1.15 * P2O(u); r = a.rot * e;
-        blur = u > 0 && u < 1 ? Math.min(18, 26 * (1 - u) * (1 - u)) : 0;
-        o = 1 - sstep(0.45, 0.95, u);
+        var u = prog(t, T.wa + 0.015 * a.ring, 0.78), e = P2O(u);
+        x += a.ux * 1150 * a.sp * e; y += a.uy * 1150 * a.sp * e;
+        s *= 1 + 1.05 * e; r = a.rot * e;
+        blur = u > 0 && u < 1 ? Math.min(14, 20 * (1 - u) * (1 - u)) : 0;
+        o = 1 - sstep(0.5, 1, u);
         st(a.e, "filter", fx(blur));
       }
       if (!op(a.e, o)) continue;
@@ -631,8 +655,7 @@
   }
 
   function renderPhone(t, C, M, P, shk) {
-    if (t >= T.hit1) { st(E.cam, "visibility", "hidden"); return; }
-    st(E.cam, "visibility", "visible");
+    if (!dsp(E.cam, t < T.hit1)) return;
     var tx = M.tx + (shk ? shk[0] : 0), ty = M.ty + (shk ? shk[1] : 0);
     st(E.cam, "transform", "translate(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px) scale(" + M.a.toFixed(5) + ")");
     st(E.cam, "filter", fx(Math.max(P.blur, C.blur)));
@@ -804,7 +827,7 @@
     var b0 = T.banner - 0.02;
     if (t >= b0) {
       var d = t - b0, sp = spring(d, 19, 0.58);
-      var by = lerp(182, 46, sp), bs = lerp(1, 0.3, sp);
+      var by = lerp(BAN_Y, 46, sp), bs = lerp(1, 0.3, sp);
       var shake = buzz(t - (T.banner + 0.1), 17, 0.15) + buzz(t - T.ring2, 17, 0.15);
       var shake2 = buzz(t - (T.banner + 0.1) - 0.012, 17, 0.15) + buzz(t - T.ring2 - 0.012, 17, 0.15);
       op(banner, prog(d, 0, 0.05));
@@ -817,14 +840,14 @@
       st(bsheen, "transform", "translateX(" + lerp(-260, 1000, P2IO(sh)).toFixed(1) + "px)");
       var gl = Math.exp(-Math.max(0, t - (T.banner + 0.1)) / 0.22) * (t >= T.banner + 0.1 ? 1 : 0) + Math.exp(-Math.max(0, t - T.ring2) / 0.22) * (t >= T.ring2 ? 0.8 : 0);
       st(bglow, "opacity", Math.min(1, gl).toFixed(3));
-      // ring waves
-      var evs = [T.banner + 0.1, T.banner + 0.24, T.ring2, T.ring2 + 0.14];
+      // ring ripples from the avatar (the phone is ringing)
+      var evs = [T.banner + 0.1, T.banner + 0.26, T.ring2, T.ring2 + 0.16];
       for (var i = 0; i < 4; i++) {
         var dr = t - evs[i];
-        if (dr < 0 || dr > 0.6) { st(rings[i], "visibility", "hidden"); continue; }
-        var ru = dr / 0.6;
-        op(rings[i], 0.8 * (1 - ru));
-        st(rings[i], "transform", "translate3d(" + (330 - 430).toFixed(1) + "px," + (182 - 78).toFixed(1) + "px,108px) scale(" + (1 + 0.3 * P2O(ru)).toFixed(4) + "," + (1 + 0.9 * P2O(ru)).toFixed(4) + ")");
+        if (dr < 0 || dr > 0.62) { st(rings[i], "visibility", "hidden"); continue; }
+        var ru = dr / 0.62;
+        op(rings[i], 0.9 * (1 - ru) * (1 - ru));
+        st(rings[i], "transform", "translate3d(" + (330 - 358 - 46 + 15 * shake).toFixed(1) + "px," + (BAN_Y - 46).toFixed(1) + "px,111px) scale(" + (1 + 2.3 * P2O(ru)).toFixed(4) + ")");
       }
     } else {
       st(banner, "visibility", "hidden");
@@ -833,30 +856,29 @@
   }
 
   function renderWords(t) {
-    if (t >= T.hit1) { st(E.words, "visibility", "hidden"); return; }
-    st(E.words, "visibility", "visible");
+    if (!dsp(E.words, t < T.hit1)) return;
     var wz = prog(t, T.whip, T.hit1 - T.whip);
     st(E.words, "transform", wz > 0 ? "scale(" + (1 + 0.25 * P3I(wz)).toFixed(4) + ")" : "none");
     st(E.words, "transformOrigin", "540px 420px");
     st(E.words, "opacity", (1 - P2I(wz)).toFixed(3));
     for (var i = 0; i < LINES.length; i++) {
       var L = LINES[i], e = L.e;
-      if (t < L.t0 || t > L.exit + 0.16) { st(e, "visibility", "hidden"); continue; }
+      if (t < L.t0 || t >= L.exit) { st(e, "visibility", "hidden"); continue; }
       // line pose: big line, or shrunk into the lead line above when the next word lands
       var y = BIG_Y, s = 1;
       if (L.lead0) { y = LEAD_Y; s = LEAD_SIZE / L.size; }
-      else if (L.toLead !== undefined && t >= L.toLead) { var u = EO(prog(t, L.toLead, 0.3)); y = lerp(BIG_Y, LEAD_Y, u); s = lerp(1, LEAD_SIZE / L.size, u); }
+      else if (L.toLead !== undefined && t >= L.toLead - LEADPRE) { var u = EO(prog(t, L.toLead - LEADPRE, 0.22)); y = lerp(BIG_Y, LEAD_Y, u); s = lerp(1, LEAD_SIZE / L.size, u); }
       var x = 0;
       if (L.widths) {
         var full = L.widths[L.widths.length - 1];
         x = (full - L.widths[0]) / 2;
-        for (var k = 1; k < L.words.length; k++) x = lerp(x, (full - L.widths[k]) / 2, EO(prog(t, L.words[k][1], 0.26)));
+        for (var k = 1; k < L.words.length; k++) x = lerp(x, (full - L.widths[k]) / 2, EO(prog(t, L.words[k][1] - ATK, 0.26)));
       }
       var a = 1, blur = 0, ex = 0, es = 1;
-      if (t >= L.exit) {
-        var p = prog(t, L.exit, 0.13);
-        a = 1 - P2O(p); blur = 10 * p;
-        if (L.ex === "scale") es = lerp(1, 0.86, P2I(p)); else ex = -60 * P2I(p);
+      if (t >= L.exit - EXD) {
+        var p = prog(t, L.exit - EXD, EXD);
+        a = 1 - p; blur = 12 * p;
+        if (L.ex === "scale") es = 1 + 0.22 * p; else ex = -50 * p;
       }
       var shk = L.shake ? shake3(t, L.shake[0], L.shake[1]) : null;
       if (!op(e, a)) continue;
@@ -874,50 +896,51 @@
   }
 
   function renderHits(t) {
-    if (t < T.hit1) { st(E.hits, "visibility", "hidden"); return; }
-    st(E.hits, "visibility", "visible");
+    if (!dsp(E.hits, t >= T.hit1)) return;
     for (var i = 0; i < HITS.length; i++) {
       var h = HITS[i];
-      if (t < h.t || t >= h.t1) { st(h.e, "visibility", "hidden"); continue; }
-      st(h.e, "visibility", "visible");
+      if (!dsp(h.e, t >= h.t && t < h.t1)) continue;
       var d = t - h.t;
-      var gs = (1 + 0.1 * (1 - EO(prog(d, 0, 0.18)))) * (1 + 0.045 * P2O(prog(d, 0, 0.6)));
-      var shk = shake3(t, h.t, i === 3 ? 14 : 9) || (i === 3 ? shake3(t, h.t + 0.1, 10) : null);
+      // cut-in punch then a slow push for the rest of the beat
+      var gs = (1 + 0.04 * (1 - EO(prog(d, 0, 0.16)))) * (1 + 0.045 * P2O(prog(d, 0, 0.6)));
+      var shk = shake3(t, h.t, i === 3 ? 12 : 8) || (i === 3 ? shake3(t, h.t + 0.1, 11) : null);
       st(h.grp, "transform", "translate(" + (shk ? shk[0] : 0) + "px," + (shk ? shk[1] : 0) + "px) rotate(" + h.rot + "deg) scale(" + gs.toFixed(4) + ")");
       for (var w = 0; w < h.ws.length; w++) {
-        var wd = Math.max(0, d - w * 0.035), we = EO(prog(wd, 0, 0.2));
-        st(h.ws[w], "transform", "scale(" + lerp(1.28, 1, we).toFixed(4) + ")");
-        st(h.ws[w], "filter", fx(7 * (1 - we)));
-        st(h.ws[w], "opacity", d >= w * 0.035 ? "1" : "0");
+        var we = EO(prog(d, -0.02, 0.16));
+        st(h.ws[w], "opacity", "1");
+        st(h.ws[w], "transform", "scale(" + lerp(1.08, 1, we).toFixed(4) + ")");
+        st(h.ws[w], "filter", fx(2.5 * (1 - we)));
       }
-      // icon
+      var F2 = h.frag, fu = prog(d, 0, 0.6);
+      st(h.fragE, "opacity", F2.o.toFixed(3));
+      st(h.fragE, "transform", "translateY(" + (-40 * P2O(fu)).toFixed(1) + "px) rotateX(" + F2.rx + "deg) rotateZ(" + F2.rz + "deg) scale(" + (F2.s * (1 + 0.05 * P2O(fu))).toFixed(4) + ")");
+      st(h.fragE, "filter", fx(F2.blur));
       var ic = h.iconE;
       if (h.icon === "stamp") {
-        var sd = d - 0.06, su = prog(sd, 0, 0.16);
+        var sd = d - 0.067, su = prog(sd, 0, 0.15);
         op(ic, sd >= 0 ? 1 : 0);
-        st(ic, "transform", "rotate(" + lerp(-30, -12, P3O(su)).toFixed(2) + "deg) scale(" + lerp(2.6, 1, P3O(su)).toFixed(4) + ")");
-        st(ic, "filter", fx(10 * (1 - su)));
+        st(ic, "transform", "rotate(" + lerp(-32, h.irot, P3O(su)).toFixed(2) + "deg) scale(" + lerp(2.5, 1, P3O(su)).toFixed(4) + ")");
+        st(ic, "filter", fx(9 * (1 - su)));
       } else if (h.icon === "search") {
-        var mu = prog(d, 0.02, 0.36);
-        op(ic, prog(d, 0.02, 0.04));
-        st(ic, "transform", "translateX(" + lerp(-300, 0, EO(mu)).toFixed(1) + "px) rotate(" + lerp(-25, 0, BO1(mu)).toFixed(2) + "deg) scale(" + lerp(0.7, 1, BO1(mu)).toFixed(4) + ")");
+        var mu = prog(d, -0.02, 0.34);
+        op(ic, 1);
+        st(ic, "transform", "translateX(" + lerp(-320, 0, EO(mu)).toFixed(1) + "px) rotate(" + lerp(-28, 0, BO1(mu)).toFixed(2) + "deg) scale(" + lerp(0.75, 1, BO1(mu)).toFixed(4) + ")");
         st(ic, "filter", fx(8 * (1 - EO(mu))));
       } else {
-        var pu = prog(d, 0.03, 0.3);
-        op(ic, prog(d, 0.03, 0.04));
-        st(ic, "transform", "scale(" + lerp(0.45, 1, BO2(pu)).toFixed(4) + ")");
+        var pu = prog(d, -0.02, 0.3);
+        op(ic, 1);
+        st(ic, "transform", "rotate(" + h.irot + "deg) scale(" + lerp(0.62, 1, BO2(pu)).toFixed(4) + ")");
         if (h.day) h.day.setAttribute("fill", d > 0.22 ? "#7cc0ff" : "#fff");
       }
-      // burst + shockwave + streaks
       var bu = prog(d, 0, 0.5);
       st(h.burstE, "opacity", (1 - 0.45 * P2O(bu)).toFixed(3));
       st(h.burstE, "transform", "scale(" + lerp(0.75, 1.12, P2O(bu)).toFixed(4) + ")");
-      var ru = prog(d, 0.03, 0.42);
+      var ru = prog(d, 0, 0.42);
       if (op(h.ringE, ru > 0 && ru < 1 ? 0.85 * (1 - ru) : 0)) st(h.ringE, "transform", "scale(" + lerp(0.35, 2.3, P2O(ru)).toFixed(4) + ")");
       for (var k = 0; k < h.streaks.length; k++) {
         var S = h.streaks[k], sd2 = d - S.d;
         if (sd2 < 0 || sd2 > 0.3) { st(S.e, "visibility", "hidden"); continue; }
-        var dir = S.ang * Math.PI / 180, dist = -S.len + S.sp * sd2;
+        var dir = (S.ang * Math.PI) / 180, dist = -S.len + S.sp * sd2;
         op(S.e, 0.9 * (1 - sd2 / 0.3));
         st(S.e, "transform", "translate(" + (540 + Math.cos(dir) * (dist - 700)).toFixed(1) + "px," + (S.y + Math.sin(dir) * (dist - 700)).toFixed(1) + "px) rotate(" + S.ang.toFixed(1) + "deg)");
       }
@@ -925,12 +948,11 @@
   }
 
   function renderFx(t) {
-    var ev = [[0, 0.3], [T.wa, 0.26], [T.banner, 0.12], [T.hit1, 0.5], [T.hit2, 0.42], [T.hit3, 0.42], [T.hit4, 0.62]];
+    var ev = [[0, 0.14], [T.wa, 0.2], [T.banner, 0.12], [T.hit1, 0.3], [T.hit2, 0.26], [T.hit3, 0.26], [T.hit4, 0.36]];
     var f = 0;
     for (var i = 0; i < ev.length; i++) { var d = t - ev[i][0]; if (d >= 0 && d < 0.4) f = Math.max(f, ev[i][1] * Math.exp(-d / 0.065)); }
     op(E.flash, f);
-    var off = t >= T.hit1;
-    st(E.bgfx, "visibility", off ? "hidden" : "visible");
+    dsp(E.bgfx, t < T.hit1);
   }
 
   function render(t) {
@@ -939,7 +961,7 @@
     var P = phoneState(t);
     // the whip zooms toward the banner's on-screen centre
     var M0 = camMatrix({ s1: C.s1, oy: C.oy, k: C.k, wz: 1 }, 0, 0);
-    var bxS = M0.a * 540 + M0.tx, byS = M0.a * (600 + 182) + M0.ty;
+    var bxS = M0.a * 540 + M0.tx, byS = M0.a * (600 + BAN_Y) + M0.ty;
     var M = camMatrix(C, bxS, byS);
     var imp = shake3(t, 0, 7) || shake3(t, T.wa, 8); // the two opening slams shake grid + badge together
     renderBackground(t, C, M, P);
