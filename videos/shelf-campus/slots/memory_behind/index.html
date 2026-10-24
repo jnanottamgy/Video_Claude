@@ -351,6 +351,10 @@
           if (t >= T_AI) {
             var wr = (t - T_AI) * 2300;
             if (wr < 1500) {
+              cx.save();
+              cx.beginPath();
+              cx.rect(0, 0, 1080, 1270); // keep the caption band (y 1290-1460) clean
+              cx.clip();
               var wa = (1 - wr / 1500) * Math.min(1, (t - T_AI) / 0.04);
               cx.strokeStyle = "rgba(60,130,255," + (wa * 0.16).toFixed(3) + ")";
               cx.lineWidth = 46;
@@ -361,6 +365,7 @@
               cx.strokeStyle = "rgba(235,245,255," + (wa * 0.55).toFixed(3) + ")";
               cx.lineWidth = 2.5;
               cx.beginPath(); cx.arc(O[0], O[1], wr, 0, 6.2832); cx.stroke();
+              cx.restore();
             }
           }
           // constellation edges (draw on as the nodes land)

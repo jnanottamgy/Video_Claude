@@ -58,7 +58,7 @@
       .wa-av svg { width: 30px; height: 30px; display: block; }
       .wa-ht { flex: 1; min-width: 0; }
       .wa-name { font: 600 22px/28px Inter, sans-serif; color: #e9edef; white-space: nowrap; letter-spacing: -0.01em; }
-      .wa-sub { font: 400 16px/21px Inter, sans-serif; color: #8696a0; white-space: nowrap; }
+      .wa-sub { font: 400 16px/21px Inter, sans-serif; color: #93a2ab; white-space: nowrap; }
       .wa-head .kebab { width: 8px; height: 26px; flex: none; }
       .wa-chat {
         position: absolute; left: 0; top: 76px; width: 476px; height: 188px; background-color: #0b141a;
@@ -70,9 +70,9 @@
       .snd { font: 600 18px/22px Inter, sans-serif; padding-left: 2px; }
       .doc { margin-top: 5px; display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border-radius: 8px; background: rgba(11, 20, 26, 0.42); }
       .doc .pdf { width: 40px; height: 50px; flex: none; display: block; }
-      .doc-n { font: 500 23px/28px Inter, sans-serif; color: #e9edef; letter-spacing: -0.01em; }
-      .doc-m { margin-top: 2px; font: 400 17px/22px Inter, sans-serif; color: #8696a0; white-space: nowrap; }
-      .bt { margin-top: 3px; font: 400 15px/18px Inter, sans-serif; color: #8696a0; text-align: right; }
+      .doc-n { font: 500 25px/30px Inter, sans-serif; color: #e9edef; letter-spacing: -0.01em; }
+      .doc-m { margin-top: 2px; font: 400 17px/22px Inter, sans-serif; color: #93a2ab; white-space: nowrap; }
+      .bt { margin-top: 3px; font: 400 15px/18px Inter, sans-serif; color: #93a2ab; text-align: right; }
       .cap { position: absolute; left: 0; right: 0; bottom: 0; height: 50px; display: flex; align-items: center; gap: 10px; padding-left: 56px; }
       .cap .wa { width: 26px; height: 26px; flex: none; display: block; border-radius: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
       .cap .x { font: 800 20px/1 "JetBrains Mono", monospace; letter-spacing: 0.14em; color: #17191b; }
@@ -153,9 +153,9 @@
             <defs><filter id="sblur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4" /></filter></defs>
           </svg>
           <div id="pinLayer"></div>
-          <div id="tag">
+          <div id="tag" data-layout-allow-occlusion data-layout-allow-overflow>
             <div class="t-sh"></div><div class="t-glow"></div>
-            <div class="t-body"><div class="rule1"></div><div class="hole"></div><div class="q"><span>?</span></div><div class="w">UNSOLVED</div></div>
+            <div class="t-body"><div class="rule1"></div><div class="hole"></div><div class="q" data-layout-allow-overlap><span>?</span></div><div class="w" data-layout-allow-overlap>UNSOLVED</div></div>
             <svg class="loop" viewBox="0 0 130 120"><path d="M118 46 C 92 30, 40 22, 18 52 C 2 76, 20 104, 52 98" fill="none" stroke="#c1121f" stroke-width="4.5" stroke-linecap="round" /></svg>
           </div>
         </div>
@@ -207,7 +207,7 @@
           sigma: '<svg viewBox="0 0 48 48"><path d="M35 11H13l11.5 13L13 37h22" fill="none" stroke="#fff" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round"/></svg>',
           code: '<svg viewBox="0 0 48 48"><path d="M16 14 6 24l10 10M32 14l10 10-10 10M27.5 10l-7 28" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
           tail: '<svg class="tail" viewBox="0 0 10 13"><path d="M10 0H2.2C.4 0-.5 2 .9 3.3L10 13z" fill="#202c33"/></svg>',
-          pdf: '<svg class="pdf" viewBox="0 0 40 50"><path d="M5 1h21l13 13v31a4 4 0 0 1-4 4H5a4 4 0 0 1-4-4V5a4 4 0 0 1 4-4z" fill="#e5534b"/><path d="M26 1v9a4 4 0 0 0 4 4h9z" fill="#f4a49e"/><text x="20" y="40" text-anchor="middle" font-family="Inter" font-weight="800" font-size="11" fill="#fff" letter-spacing="0.4">PDF</text></svg>',
+          pdf: '<svg class="pdf" data-layout-ignore viewBox="0 0 40 50"><path d="M5 1h21l13 13v31a4 4 0 0 1-4 4H5a4 4 0 0 1-4-4V5a4 4 0 0 1 4-4z" fill="#e5534b"/><path d="M26 1v9a4 4 0 0 0 4 4h9z" fill="#f4a49e"/><text x="20" y="40" text-anchor="middle" font-family="Inter" font-weight="800" font-size="11" fill="#fff" letter-spacing="0.4">PDF</text></svg>',
           pin: '<svg viewBox="0 0 16 16"><path d="M10.6 1.4l4 4-2.2.6-2.9 2.9.3 3.3-1.2 1.2-2.6-2.6-3.6 3.6-.9-.1-.1-.9 3.6-3.6L2.4 7.2l1.2-1.2 3.3.3L9.8 3.4z" fill="#8a857a"/></svg>'
         };
 
@@ -218,6 +218,7 @@
         // print: a WhatsApp group screenshot, printed with a white border and an EXHIBIT caption
         function makePrint(id, o) {
           var el = div("ex print"); el.id = id;
+          el.setAttribute("data-layout-allow-occlusion", ""); el.setAttribute("data-layout-allow-orbit", "");
           el.style.width = o.w + "px"; el.style.height = o.h + "px";
           var sh = div("sh", "<i></i>");
           var body = div("body");
@@ -232,7 +233,7 @@
           shot.appendChild(head); shot.appendChild(chat);
           body.appendChild(shot);
           body.appendChild(div("cap", WA.G.waIcon("wag" + id).replace("<svg ", '<svg class="wa" ') + '<span class="x">EXHIBIT ' + o.n + "</span>"));
-          var fx = div("clipfx"); var sheen = div("sheen"); fx.appendChild(sheen); body.appendChild(fx);
+          var fx = div("clipfx"); var sheen = div("sheen"); sheen.setAttribute("data-layout-allow-overflow", ""); fx.appendChild(sheen); body.appendChild(fx);
           // red marker ring around the PDF (drawn later); ellipse in print coordinates
           var m = o.mark;
           var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -264,13 +265,13 @@
           n: 1, w: 500, h: 326, name: "MATHS &middot; SEM 4", sub: "214 members",
           av: "linear-gradient(160deg,#7d7bff 0%,#4b48d6 100%)", glyph: SV.sigma,
           sender: "~ Ananya", sc: "#fc9775", file: "M3_Unit2_notes.pdf", meta: "24 pages &middot; PDF &middot; 3.1 MB", time: "11:42 pm",
-          bw: 344, mark: [214, 172, 182, 56, -2.75]
+          bw: 362, mark: [222, 174, 190, 58, -2.75]
         });
         var P2 = makePrint("e2", {
           n: 2, w: 500, h: 326, name: "COMPUTER SCIENCE &middot; CSE-B", sub: "187 members",
           av: "linear-gradient(160deg,#2fb8d8 0%,#137a94 100%)", glyph: SV.code,
           sender: "~ Rahul (CR)", sc: "#53bdeb", file: "DBMS_Unit3_<wbr>FINAL_final_v2.pdf", meta: "18 pages &middot; PDF &middot; 2.4 MB", time: "9:05 pm",
-          bw: 372, mark: [228, 186, 196, 72, -2.6]
+          bw: 380, mark: [232, 190, 200, 76, -2.6]
         });
 
         // EXHIBIT 3: a torn calendar page with a red alarm clock
@@ -295,7 +296,7 @@
           paper.appendChild(div("cal-ttl", "ASSIGNMENT DUE:"));
           paper.appendChild(div("cal-q", "???"));
           paper.appendChild(div("cal-pin", SV.pin + "PINNED &middot; 21 DAYS AGO"));
-          var fx = div("clipfx"); fx.style.borderRadius = "0"; var sheen = div("sheen"); fx.appendChild(sheen); paper.appendChild(fx);
+          var fx = div("clipfx"); fx.style.borderRadius = "0"; var sheen = div("sheen"); sheen.setAttribute("data-layout-allow-overflow", ""); fx.appendChild(sheen); paper.appendChild(fx);
           body.appendChild(paper);
           // the clock overlaps the page's right edge
           var clock = div("clock");
@@ -431,7 +432,7 @@
             "</svg>";
         }
         var TENTS = ["e1", "e2", "e3"].map(function (id, i) {
-          var el = div("tent", tentSVG(i + 1)); tentLayer.appendChild(el); return { id: id, el: el, L: {} };
+          var el = div("tent", tentSVG(i + 1)); el.setAttribute("data-layout-ignore", ""); tentLayer.appendChild(el); return { id: id, el: el, L: {} };
         });
 
         /* ---------- pins ---------- */

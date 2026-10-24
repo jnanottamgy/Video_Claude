@@ -501,9 +501,9 @@ def design():
     storm = [(2.533, 0), (2.700, 1), (2.833, 0), (3.000, 2), (3.133, 0), (3.267, 1), (3.433, 0), (3.450, 0),
              (3.500, 0), (3.567, 2), (3.633, 0), (3.700, 0), (3.717, 0)]
     for k, (t, kind) in enumerate(storm):                          # the WhatsApp storm behind Kartik
-        syn(wa_receive(), t, (-15.0, -13.0, -11.0)[kind], (-0.5, 0.4, -0.2, 0.5, -0.4, 0.2)[k % 6])
+        syn(wa_receive(), t, (-19.0, -17.0, -15.0)[kind], (-0.5, 0.4, -0.2, 0.5, -0.4, 0.2)[k % 6])
         if kind:
-            syn(thunk(85 if kind == 1 else 60, 0.18), t, -16.0 if kind == 1 else -12.0)
+            syn(thunk(85 if kind == 1 else 60, 0.18), t, -19.0 if kind == 1 else -15.0)
     bleep_sound()
     lib("woosh-3", 3.80, -16.0)                                    # the search card flies in...
     syn(thunk(55, 0.3), 3.833, -11.0)                              # ...and slams: "notes"
@@ -521,7 +521,7 @@ def design():
     lib("sword-slash-3", 8.49, -17.0)                              # "Bro"
     lib("cinematic-electric-hit", 9.42, -15.0, length=0.45, hp=80, dip=True)   # "assignment!": UNSOLVED slap
     # the record stops, the freeze, two stamps in silence
-    lib("beat-slowing", edl.A_FREEZE - 0.42, -12.0, length=0.9)
+    lib("beat-slowing", edl.A_FREEZE - 0.42, -12.0, length=0.9, pre=0.02)
     for t, g in ((9.967, -4.0), (10.533, -3.0)):                  # the two stamps
         syn(thunk(48, 0.45), t, g)
         lib("sword-impact", t, -15.0, length=0.35, hp=90)
