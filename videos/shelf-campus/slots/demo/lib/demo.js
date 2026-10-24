@@ -46,7 +46,10 @@
   }
 
   /* ================= cue sheet (composition seconds; every cue is the time of the frame it lands on) ================= */
-  function F(out) { return Math.round((out - W0) * FPS + 1e-9) / FPS; }
+  // the renderer's frame time can land a hair under k/30, so every cue sits 1 ms early: it shows on frame k, never k+1
+  function F(out) { return Math.round((out - W0) * FPS + 1e-9) / FPS - 0.001; }
+  function Fr(k) { return k / FPS - 0.001; } // a cue on composition frame k (0-based)
+  function fk(tc) { return Math.round((tc + 0.001) * FPS); } // the frame a cue lands on
   var T = {
     wa: F(32.68), land: F(33.263), kb: F(33.847),
     got: F(34.0), notes: F(34.39), m1: F(34.43),
@@ -60,16 +63,17 @@
     banner: F(42.011), ring2: F(42.594),
     hit1: F(43.177), hit2: F(43.76), hit3: F(44.343), hit4: F(44.926)
   };
-  T.strike = 0.1; T.dropNew = 0.24;
+  T.strike = Fr(3); T.dropNew = Fr(7);
   T.zoom0 = T.wa + 0.06; T.zoom1 = 1.12;
   T.push0 = 1.7; T.push1 = 2.28;
   T.exitWA = 1.8;
   T.fly0 = T.m1 - 0.34;
-  T.ty1 = T.m1 + 0.4; T.ty2 = T.m3 + 0.3; T.ty3 = T.m5 + 0.32; T.ty4 = T.m7 + 0.22;
-  T.type5 = T.m5 - 0.36; T.type7 = T.m7 - 0.42;
-  T.cardOut = T.m6 + 0.07;
-  T.skip0 = 9.42; T.skip1 = 9.84;
-  T.whip = 10.8;
+  // SHELF starts typing a few frames after reading (header "typing…" + the dots bubble)
+  T.ty1 = Fr(fk(T.m1) + 12); T.ty2 = Fr(fk(T.m3) + 9); T.ty3 = Fr(fk(T.m5) + 10); T.ty4 = Fr(fk(T.m7) + 7);
+  T.type5 = Fr(fk(T.m5) - 11); T.type7 = Fr(fk(T.m7) - 13);
+  T.cardOut = Fr(fk(T.m6) + 2);
+  T.skip0 = Fr(fk(T.m8) + 3); T.skip1 = Fr(fk(T.sorted) + 1);
+  T.whip = Fr(324);
   var BEATS = [32.097, 32.68, 33.263, 33.847, 34.43, 35.013, 35.596, 36.179, 36.762, 37.345, 37.929, 38.512, 39.095, 39.678, 40.261, 40.844, 41.428, 42.011, 42.594, 43.177, 43.76, 44.343, 44.926].map(function (b) { return b - W0; });
   var DOWN = [32.68, 35.013, 37.345, 39.678, 42.011, 44.343].map(function (b) { return b - W0; });
   window.__demoCues = T;
@@ -286,7 +290,7 @@
   MS.m1.t = T.m1; MS.m2.t = T.m2; MS.m3.t = T.m3; MS.m4.t = T.m4; MS.m5.t = T.m5; MS.m6.t = T.m6; MS.m7.t = T.m7; MS.m8.t = T.m8;
   MS.ty1.t = T.ty1; MS.ty1.end = T.m2; MS.ty2.t = T.ty2; MS.ty2.end = T.m4; MS.ty3.t = T.ty3; MS.ty3.end = T.m6; MS.ty4.t = T.ty4; MS.ty4.end = T.m8;
   // read receipts on the user's messages: delivered at +0.12 s, read (blue) as SHELF starts typing
-  MS.m1.read = T.ty1 - 0.1; MS.m3.read = T.ty2 - 0.1; MS.m5.read = T.ty3 - 0.1; MS.m7.read = T.ty4 - 0.1;
+  MS.m1.read = T.ty1 - 3 / FPS; MS.m3.read = T.ty2 - 3 / FPS; MS.m5.read = T.ty3 - 3 / FPS; MS.m7.read = T.ty4 - 3 / FPS;
   var TYPWIN = [[T.ty1, T.m2], [T.ty2, T.m4], [T.ty3, T.m6], [T.ty4, T.m8]];
   // the chat's content bottom grows as items land (eased like WhatsApp's own list insert)
   var CB0 = 134;
@@ -430,10 +434,10 @@
   // each hit: a hard cut to a new framing + colour pop, one icon, the word huge, and the matching piece of the
   // demo (blurred, tilted, behind) so the recap reads as SHELF, not as stock type
   var HITS = [
-    { t: T.hit1, t1: T.hit2, icon: "doc", tile: true, ix: 540, iy: 645, isz: 330, glyph: 196, irot: 0, words: [["SAVE IT.", 200, 990]], rot: 0,
+    { t: T.hit1, t1: T.hit2, icon: "doc", tile: true, ix: 540, iy: 645, isz: 330, glyph: 196, irot: 0, words: [["SAVE IT.", 190, 990]], rot: 0,
       bg: "radial-gradient(75% 46% at 50% 34%, #2f74ff 0%, #133d96 30%, #081d4f 60%, #030a1d 100%)", burst: "rgba(120,190,255,0.75)",
       frag: { id: "m1", w: 440, h: 282, x: 540, y: 1440, s: 1.8, rx: 42, rz: -7, blur: 2.4, o: 0.62 } },
-    { t: T.hit2, t1: T.hit3, icon: "search", tile: false, ix: 560, iy: 1110, isz: 330, glyph: 280, irot: 0, words: [["FIND IT.", 204, 745]], rot: 2.5,
+    { t: T.hit2, t1: T.hit3, icon: "search", tile: false, ix: 560, iy: 1110, isz: 330, glyph: 280, irot: 0, words: [["FIND IT.", 192, 745]], rot: 2.5,
       bg: "radial-gradient(80% 52% at 50% 58%, #7cbcff 0%, #3483ff 24%, #1749bd 54%, #0a2368 100%)", burst: "rgba(255,255,255,0.55)",
       frag: { id: "m4", w: 440, h: 304, x: 520, y: 1150, s: 1.3, rx: 22, rz: -5, blur: 1.8, o: 0.62 } },
     { t: T.hit3, t1: T.hit4, icon: "cal", tile: true, ix: 350, iy: 675, isz: 320, glyph: 188, irot: -8, words: [["TRACK IT.", 176, 1000]], rot: -4,
@@ -824,15 +828,15 @@
     } else st(popCard, "visibility", "hidden");
 
     // 3) the reminder banner drops onto the phone (and out of it, oversized), then rings
-    var b0 = T.banner - 0.02;
+    var b0 = T.banner - 0.05;
     if (t >= b0) {
-      var d = t - b0, sp = spring(d, 19, 0.58);
+      var d = t - b0, sp = spring(d, 22, 0.6);
       var by = lerp(BAN_Y, 46, sp), bs = lerp(1, 0.3, sp);
       var shake = buzz(t - (T.banner + 0.1), 17, 0.15) + buzz(t - T.ring2, 17, 0.15);
       var shake2 = buzz(t - (T.banner + 0.1) - 0.012, 17, 0.15) + buzz(t - T.ring2 - 0.012, 17, 0.15);
       op(banner, prog(d, 0, 0.05));
       st(banner, "transform", "translate3d(" + (330 - 430 + 15 * shake).toFixed(1) + "px," + (by - 78).toFixed(1) + "px,110px) rotateZ(" + (1.3 * shake2).toFixed(3) + "deg) scale(" + bs.toFixed(4) + ")");
-      var bv = Math.abs(spring(d + 1 / 60, 19, 0.58) - spring(d - 1 / 60, 19, 0.58)) * 30;
+      var bv = Math.abs(spring(d + 1 / 60, 22, 0.6) - spring(d - 1 / 60, 22, 0.6)) * 30;
       st(banner, "filter", fx(Math.min(10, bv * 4)));
       // sheen sweep + edge glow on landing and on the second ring
       var sh = prog(t, T.banner + 0.06, 0.5);
@@ -975,5 +979,5 @@
   }
 
   /* the paused timeline + its single linear driver are registered inline in index.html */
-  window.__demo = { render: render, T: T, MS: MS, scrollAt: scrollAt, DUR: DUR };
+  window.__demo = { render: render, T: T, MS: MS, scrollAt: scrollAt, DUR: DUR, fk: fk };
 })();

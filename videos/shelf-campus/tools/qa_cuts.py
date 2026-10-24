@@ -34,7 +34,7 @@ cuts = [s["out0"] for s in edl.SEGMENTS[1:]]
 for c in cuts:
     tiles = []
     for d in (-2, -1, 0, 1):
-        t = c + d / edl.FPS + 0.001
+        t = c + d / edl.FPS - 0.001
         im = grab(t)
         cv2.putText(im, f"{t:.2f}", (4, 16), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1, cv2.LINE_AA)
         tiles.append(im)

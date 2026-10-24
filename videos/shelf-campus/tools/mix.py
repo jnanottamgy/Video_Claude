@@ -268,6 +268,15 @@ def rattle(dur=0.22, density=70):
     return out * np.linspace(1, 0.3, len(out)) * 0.5
 
 
+def buzz(dur=0.42):
+    """A phone vibrating."""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    x = np.sign(np.sin(2 * np.pi * 172 * t)) * (0.6 + 0.4 * np.sin(2 * np.pi * 31 * t))
+    x = sosfilt(butter(2, [120, 1800], "bandpass", fs=SR, output="sos"), x)
+    return x * np.minimum(1, t / 0.01) * np.minimum(1, (dur - t) / 0.02) * 0.5
+
+
 def bell_alarm(dur=0.7):
     """A small mechanical alarm-clock ring (hammer on two bells)."""
     out = np.zeros(int(dur * SR))
@@ -642,24 +651,42 @@ def design():
     syn(wa_send(), 31.50, -14.0)                                   # "lives here"
     lib("fast-swoosh", 32.00, -11.0)                               # zoom toward the camera
 
-    # ---- DEMO ----
+    # ---- DEMO (times from the demo builder's report) ----
     lib("sword-impact", 32.10, -12.0, hp=90, length=0.7)           # NO NEW APP.
-    lib("glitchy-woosh", 32.25, -16.0)
-    lib("bass-woosh-1", 32.68, -13.0, hp=80, length=0.9)           # JUST WHATSAPP.
-    syn(wa_receive(), 32.70, -9.0)
-    lib("slow-woosh", 33.35, -14.0)                                # the phone flies in
-    for t in (34.430, 36.762, 38.512, 40.844):
+    lib("sword-slash-1", 32.20, -15.0)                             # the strike-through
+    syn(power_down(0.25), 32.333, -17.0)                           # the NEW APP icon drops away
+    lib("bass-woosh-1", 32.667, -13.0, hp=80, length=0.9, pre=0.3)   # JUST WHATSAPP. (the grid blows out)
+    syn(wa_receive(), 32.667, -9.0)
+    lib("slow-woosh", 33.23, -14.0)                                # the badge rushes the camera, becomes the phone
+    lib("woosh-3", 33.85, -20.0)                                   # keyboard up, push in
+    lib("woosh-3", 34.10, -19.0, pan=0.3)                          # the PDF flies in
+    for t in (34.433, 36.767, 38.500, 40.833):                     # the user sends
         syn(wa_send(), t, -6.0, 0.15)
-    for t in (35.596, 37.929, 39.678, 41.428):
+    for t in (34.733, 36.967, 38.733, 40.967):                     # read ticks turn blue
+        syn(tone(2800, 0.03, 0.006), t, -24.0, 0.15)
+    for t in (35.600, 37.933, 39.667, 41.433):                     # SHELF replies
         syn(wa_receive(), t, -6.0, -0.15)
-    syn(typing(0.55), 36.19, -12.0)
-    lib("woosh-2", 39.68, -16.0, length=0.6)                       # the deadline card pops out
-    syn(chime((1046.5, 1318.5, 1568.0, 2093.0), 0.07, 0.3, 0.5), 42.011, -6.0)   # the reminder fires
-    for k, t in enumerate((43.177, 43.760, 44.343, 44.926)):       # SAVE / FIND / TRACK / ACTUALLY SUBMIT
+    lib("woosh-3", 35.40, -20.0)                                   # the light sweep on "SHELF"
+    syn(tone(1900, 0.07, 0.02), 35.733, -16.0)                     # "saved to your shelf"
+    syn(typing(0.53), 36.167, -12.0)                               # "Send me the DBMS notes"
+    syn(thunk(80, 0.2), 37.50, -15.0)                              # ASK.
+    syn(typing(0.36, 16.0), 38.133, -14.0)                         # "DAA assignment due Friday, 5 PM"
+    lib("woosh-2", 39.733, -16.0, length=0.6)                      # the deadline card lifts out in 3D...
+    lib("woosh-3", 40.40, -22.0)                                   # ...and settles back
+    syn(typing(0.42, 16.0), 40.40, -14.0)                          # "Remind me Monday at 8 AM..."
+    for tt, x in ticks(41.533, 41.933, 14, 42, 2100):              # the time skip: clocks spin
+        syn(x, tt, -19.0)
+    syn(data_sweep(0.40, 400, 4000), 41.533, -18.0)
+    syn(chime((1046.5, 1318.5, 1568.0, 2093.0), 0.07, 0.3, 0.5), 42.000, -6.0)   # the reminder banner drops
+    syn(buzz(0.40), 42.100, -12.0)                                 # ring 1
+    syn(buzz(0.30), 42.600, -15.0)                                 # ring 2
+    syn(reverse_swell(0.27), 42.90, -12.0)                         # whip-zoom into the hits
+    for k, t in enumerate((43.167, 43.767, 44.333, 44.933)):       # SAVE / FIND / TRACK / ACTUALLY SUBMIT
         syn(chime(((1046.5, 1318.5), (1174.7, 1568.0), (1318.5, 1760.0), (1568.0, 2093.0, 2637.0))[k], 0.06, 0.25, 0.5),
             t, -7.0 + (2.0 if k == 3 else 0.0))
         lib("sword-slash-3", t, -13.0, pan=(-0.3, 0.3, -0.3, 0.0)[k])
-    lib("sword-impact", 44.926, -12.0, hp=100, length=0.6)
+    lib("sword-impact", 45.033, -12.0, hp=100, length=0.6)         # the green tick stamp
+    syn(thunk(70, 0.3), 45.033, -12.0)
     lib("woosh-4", 45.48, -14.0)
 
     # ---- PAYOFF (times from the payoff builder's report) ----

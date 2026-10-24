@@ -27,7 +27,15 @@ enc() {  # video audio out
 }
 enc renders/video.mp4 renders/audio/mix.wav "$D/SHELF_CAMPUS_reel.mp4"
 enc renders/video.mp4 renders/audio/mix_nomusic.wav "$D/SHELF_CAMPUS_reel_nomusic.mp4"
-# the cover: the hook frame (title + police tape + Jnanottam), as Instagram shows it full and in the 3:4 grid
-ffmpeg -y -v error -ss 1.00 -i renders/video.mp4 -frames:v 1 -q:v 2 "$D/SHELF_CAMPUS_cover.jpg"
+# the cover: the hook at "STORAGE FULL" (title, police tape, the red 256 GB bar, Jnanottam), drawn without the
+# caption layer, as Instagram shows it full and in the 3:4 grid
+python3 - "$D/SHELF_CAMPUS_cover.jpg" <<'PY'
+import sys; sys.path.insert(0, "tools")
+import cv2, numpy as np
+import composite as C, direction as DR
+DR.NO_CAPTIONS.add("A1")
+im = C.Comp().frame(int(round(2.13 * 30)))
+cv2.imwrite(sys.argv[1], cv2.cvtColor((im * 255).clip(0, 255).astype(np.uint8), cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 94])
+PY
 ffmpeg -y -v error -i "$D/SHELF_CAMPUS_cover.jpg" -vf "crop=1080:1440:0:240" -q:v 2 "$D/SHELF_CAMPUS_cover_grid_preview.jpg"
 ls -la "$D"
