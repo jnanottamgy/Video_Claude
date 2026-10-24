@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>hook_title</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* hook_title: FRONT layer, output 0.000 -> 2.600 s (78 frames). Frame 1 is the reel's thumbnail.
+         Two strips of police tape cross the top of the frame (-9 deg, +6 deg) behind the title
+         "YOUR ACADEMIC LIFE / IS A CRIME SCENE." (line 2: tape-yellow on a black gaffer strip).
+           f1-5   fully visible, settle 1.04 -> 1.0; the tapes twang taut
+           0.667  beat pulse (1.03 punch); 2.400 beat pulse, then the exit
+           2.400  tape A snaps and whips off LEFT (gone 2.500); 2.433 tape B whips off RIGHT (gone 2.533)
+           2.433-2.533  the title collapses in RGB slices into a CRT line; frame 78 (2.567) is empty */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      .full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      /* ---------- police tape ---------- */
+      .tape-pos { position: absolute; left: -330px; width: 1740px; height: 92px; }
+      .tape-twang { position: absolute; inset: 0; }
+      .tape-shadow { position: absolute; inset: 0; filter: drop-shadow(0 13px 13px rgba(0, 0, 0, 0.34)) drop-shadow(0 3px 3px rgba(0, 0, 0, 0.22)); }
+      .tape-whip { position: absolute; inset: 0; }
+      .tape {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        isolation: isolate;
+        background: linear-gradient(180deg, #ffe55a 0%, #ffd60a 22%, #f7cb00 62%, #e9bc00 100%);
+      }
+      .tape-print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 92px;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        font: 800 44px/92px var(--font-ui);
+        letter-spacing: 0.07em;
+        color: var(--tape-ink);
+      }
+      .tape-print b { font-weight: 800; padding: 0 0.42em; transform: translateY(-2px); display: inline-block; }
+      .tape-edge { position: absolute; left: 0; right: 0; height: 5px; background: rgba(17, 17, 17, 0.88); }
+      .tape-edge.t { top: 7px; }
+      .tape-edge.b { bottom: 7px; }
+      .tape-crinkle { position: absolute; inset: 0; mix-blend-mode: multiply; opacity: 0.55; }
+      .tape-light { position: absolute; inset: 0; mix-blend-mode: screen; opacity: 0.6; }
+      .tape-gloss {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 16%, rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, 0) 70%, rgba(80, 50, 0, 0.18) 100%);
+      }
+      .tape-sheen {
+        position: absolute;
+        top: -20px;
+        left: 0;
+        width: 300px;
+        height: 126px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.16) 35%, rgba(255, 255, 255, 0.52) 50%, rgba(255, 255, 255, 0.16) 65%, rgba(255, 255, 255, 0) 100%);
+        mix-blend-mode: screen;
+      }
+
+      /* ---------- title ---------- */
+      .rig { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 470px; }
+      .l1 {
+        position: absolute;
+        left: 0;
+        top: 340px;
+        width: 1080px;
+        height: 104px;
+        display: flex;
+        justify-content: center;
+        font: 800 81px/104px var(--font-brand);
+        letter-spacing: -0.02em;
+        color: #ffffff;
+        white-space: nowrap;
+        -webkit-text-stroke: 9px #0a0a0c;
+        paint-order: stroke fill;
+        filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 4px 0 rgba(0, 0, 0, 0.45)) drop-shadow(0 14px 26px rgba(0, 0, 0, 0.5));
+      }
+      .strip-pos { position: absolute; left: 63px; top: 452px; width: 954px; height: 134px; }
+      .strip {
+        position: absolute;
+        inset: 0;
+        transform: rotate(-1.6deg);
+        filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.5)) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+      }
+      .strip-bg {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 18%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.25) 100%),
+          repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 2px, rgba(0, 0, 0, 0) 2px 5px),
+          #121214;
+      }
+      .strip-txt {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font: 800 98px/134px var(--font-brand);
+        letter-spacing: -0.02em;
+        color: var(--tape);
+        white-space: nowrap;
+        padding-top: 2px;
+        text-shadow: 0 0 22px rgba(255, 214, 10, 0.28);
+      }
+
+      /* glitch: full clones of the title, each clipped to one horizontal band */
+      .slice { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; }
+      .crt {
+        position: absolute;
+        left: 90px;
+        top: 466px;
+        width: 900px;
+        height: 10px;
+        border-radius: 5px;
+        background: #ffffff;
+        box-shadow: 0 0 18px 4px rgba(255, 255, 255, 0.85), 0 0 46px 10px rgba(255, 214, 10, 0.55);
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <!-- motion blur along each tape's own axis (the filter runs in the strip's unrotated space) -->
+      <filter id="mbA" x="-60%" y="-30%" width="220%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur id="mbA-g" stdDeviation="0 0" /></filter>
+      <filter id="mbB" x="-60%" y="-30%" width="220%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur id="mbB-g" stdDeviation="0 0" /></filter>
+    </svg>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="2.6" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="2.6" data-track-index="0">
+        <!-- tapes (built by script) -->
+        <div class="full" id="tapes" data-layout-allow-overflow data-layout-ignore></div>
+        <!-- title rig: settle / pulse / collapse -->
+        <div class="rig" id="ttl-settle" data-layout-allow-overflow>
+          <div class="rig" id="ttl-pulse" data-layout-allow-overflow>
+            <div class="rig" id="ttl-collapse" data-layout-allow-overflow>
+              <div class="full" id="ttl-main" data-layout-allow-overflow></div>
+              <div class="full" id="ttl-slices" data-layout-allow-overflow data-layout-ignore></div>
+              <div class="crt" id="crt"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        "use strict";
+        var D = 2.6;
+        var F = 1 / 30;
+        var EPS = 0.0005; // sets land a hair before the frame they must show on
+
+        function rng(seed) {
+          var a = seed >>> 0;
+          return function () {
+            a = (a + 0x6d2b79f5) >>> 0;
+            var t = a;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+
+        /* ---------- tapes ---------- */
+        var TAPE_LEN = 1740;
+        var TAPES = [
+          // centre y at x = 540, rotation, seed, which motion-blur filter
+          { id: "A", cy: 344, rot: -9, seed: 11, phase: 0 },
+          { id: "B", cy: 574, rot: 6, seed: 29, phase: 260 },
+        ];
+        var PHRASE = ["CRIME SCENE", "DO NOT CROSS"];
+        function printHTML(phase) {
+          var s = "";
+          for (var i = 0; i < 6; i++) s += "<span>" + PHRASE[i % 2] + "</span><b>&middot;</b>";
+          return s;
+        }
+        // seeded crinkle bands along the tape (plastic film catching light unevenly)
+        function crinkle(r, dark) {
+          var stops = [];
+          var x = 0;
+          while (x < 100) {
+            var w = 0.6 + r() * 3.2;
+            var a = dark ? 0.15 + r() * 0.45 : 0.1 + r() * 0.5;
+            var c = dark ? "rgba(150,110,0," + a.toFixed(3) + ")" : "rgba(255,250,215," + a.toFixed(3) + ")";
+            var clear = dark ? "rgba(255,255,255,0)" : "rgba(0,0,0,0)";
+            stops.push(clear + " " + x.toFixed(2) + "%");
+            stops.push(c + " " + (x + w * 0.5).toFixed(2) + "%");
+            stops.push(clear + " " + (x + w).toFixed(2) + "%");
+            x += w + 1.5 + r() * 6;
+          }
+          return "linear-gradient(90deg, " + stops.join(", ") + ")";
+        }
+        // slightly wavy plastic edges
+        function edgeClip(r) {
+          var top = [];
+          var bot = [];
+          for (var x = 0; x <= TAPE_LEN; x += 58) {
+            top.push(x + "px " + (r() * 2.2).toFixed(2) + "px");
+            bot.push(x + "px " + (92 - r() * 2.2).toFixed(2) + "px");
+          }
+          return "polygon(" + top.concat(bot.reverse()).join(", ") + ")";
+        }
+        var tapesEl = document.getElementById("tapes");
+        var tapeRefs = {};
+        TAPES.forEach(function (T) {
+          var r = rng(T.seed);
+          var pos = document.createElement("div");
+          pos.className = "tape-pos";
+          pos.style.top = T.cy - 46 + "px";
+          pos.style.transform = "rotate(" + T.rot + "deg)";
+          pos.innerHTML =
+            '<div class="tape-twang" id="tw' + T.id + '"><div class="tape-shadow"><div class="tape-whip" id="wh' + T.id + '">' +
+            '<div class="tape" id="tape' + T.id + '" style="clip-path:' + edgeClip(r) + '">' +
+            '<div class="tape-print" id="pr' + T.id + '" style="left:' + -T.phase + 'px">' + printHTML() + "</div>" +
+            '<div class="tape-edge t"></div><div class="tape-edge b"></div>' +
+            '<div class="tape-crinkle" style="background:' + crinkle(r, true) + '"></div>' +
+            '<div class="tape-light" style="background:' + crinkle(r, false) + '"></div>' +
+            '<div class="tape-gloss"></div>' +
+            '<div class="tape-sheen" id="sh' + T.id + '"></div>' +
+            "</div></div></div></div>";
+          tapesEl.appendChild(pos);
+          tapeRefs[T.id] = {
+            twang: pos.querySelector("#tw" + T.id),
+            whip: pos.querySelector("#wh" + T.id),
+            print: pos.querySelector("#pr" + T.id),
+            sheen: pos.querySelector("#sh" + T.id),
+            blur: document.getElementById("mb" + T.id + "-g"),
+          };
+          pos.querySelector("#wh" + T.id).style.filter = "url(#mb" + T.id + ")";
+        });
+
+        /* ---------- title ---------- */
+        // torn gaffer ends on the black strip (seeded, so every clone is identical)
+        var tr = rng(5);
+        var SW = 954;
+        var SH = 134;
+        var left = [];
+        var right = [];
+        for (var y = 0; y <= SH; y += 11) {
+          var yy = Math.min(SH, y);
+          left.push((3 + tr() * 13).toFixed(1) + "px " + yy + "px");
+          right.push((SW - 3 - tr() * 13).toFixed(1) + "px " + yy + "px");
+        }
+        var STRIP_CLIP = "polygon(" + left.concat(right.reverse()).join(", ") + ")";
+        function titleHTML() {
+          return (
+            '<div class="l1"><span>YOUR ACADEMIC LIFE</span></div>' +
+            '<div class="strip-pos"><div class="strip"><div class="strip-bg" style="clip-path:' + STRIP_CLIP + '"></div><div class="strip-txt"><span>IS A CRIME SCENE.</span></div></div></div>'
+          );
+        }
+        var main = document.getElementById("ttl-main");
+        main.innerHTML = titleHTML();
+        // glitch slices over the title's extent (line 1 top 340 .. strip shadow ~610), uneven bands
+        var hr = rng(77);
+        var TOP = 336;
+        var BOT = 612;
+        var N = 8;
+        var cuts = [TOP];
+        for (var i = 1; i < N; i++) cuts.push(Math.round(TOP + ((BOT - TOP) * i) / N + (hr() - 0.5) * 22));
+        cuts.push(BOT);
+        var sliceWrap = document.getElementById("ttl-slices");
+        var slices = [];
+        for (var s = 0; s < N; s++) {
+          var sl = document.createElement("div");
+          sl.className = "slice";
+          sl.setAttribute("data-layout-allow-overflow", "");
+          sl.innerHTML = titleHTML();
+          sl.style.clipPath = "inset(" + cuts[s] + "px -200px " + (1920 - cuts[s + 1]) + "px -200px)";
+          sl.style.transformOrigin = "540px " + (cuts[s] + cuts[s + 1]) / 2 + "px";
+          sliceWrap.appendChild(sl);
+          slices.push(sl);
+        }
+
+        /* ---------- timeline ---------- */
+        var tl = gsap.timeline({ paused: true });
+        var A = tapeRefs.A;
+        var B = tapeRefs.B;
+
+        // frame 1: fully visible; settle 1.04 -> 1.0 over frames 1-5
+        tl.fromTo("#ttl-settle", { scale: 1.04 }, { scale: 1, duration: 4 * F, ease: "power2.out" }, 0);
+        // the tapes were just pulled taut: a decaying twang across their width (opposite phases)
+        tl.fromTo(A.twang, { y: -7 }, { y: 0, duration: 0.62, ease: "elastic.out(1.1, 0.32)" }, 0);
+        tl.fromTo(B.twang, { y: 6 }, { y: 0, duration: 0.7, ease: "elastic.out(1.1, 0.3)" }, 0);
+        // tension: the print creeps along each tape for the whole hold
+        tl.fromTo(A.print, { x: 0 }, { x: -46, duration: 2.4, ease: "sine.inOut" }, 0);
+        tl.fromTo(B.print, { x: 0 }, { x: 40, duration: 2.4, ease: "sine.inOut" }, 0);
+        // a specular glint runs along each tape (crossing the frame centre near the 1.236 / 1.819 beats)
+        tl.fromTo(A.sheen, { x: 80 }, { x: 1560, duration: 1.5, ease: "sine.inOut" }, 0.5);
+        tl.fromTo(B.sheen, { x: 1560 }, { x: 80, duration: 1.5, ease: "sine.inOut" }, 1.05);
+
+        // beat pulses: 1.03 punch on the beat frame, released over ~9 frames
+        function pulse(frame) {
+          var t = frame * F - EPS;
+          tl.fromTo("#ttl-pulse", { scale: 1.03 }, { scale: 1, duration: 0.3, ease: "power2.out", immediateRender: false }, t);
+          tl.fromTo(A.twang, { y: 4 }, { y: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, t);
+          tl.fromTo(B.twang, { y: -4 }, { y: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, t);
+        }
+        pulse(20); // 0.653 -> frame 21 (0.667)
+        pulse(72); // 2.403 -> frame 73 (2.400)
+
+        // ---- exit: the tapes snap away ----
+        // tape A: tug right on 2.400, whips off LEFT along its own axis (gone by 2.500)
+        var tA = 72 * F - EPS;
+        tl.to(A.whip, { x: 26, duration: F * 0.9, ease: "power1.out" }, tA);
+        tl.to(A.whip, { x: -2300, scaleY: 0.82, duration: 3 * F, ease: "power2.in" }, tA + F);
+        tl.fromTo(A.blur, { attr: { stdDeviation: "0 0" } }, { attr: { stdDeviation: "70 0" }, duration: 3 * F, ease: "power1.in", immediateRender: false }, tA + F);
+        // tape B: tug left on 2.433, whips off RIGHT (gone by 2.533)
+        var tB = 73 * F - EPS;
+        tl.to(B.whip, { x: -24, duration: F * 0.9, ease: "power1.out" }, tB);
+        tl.to(B.whip, { x: 2300, scaleY: 0.82, duration: 3 * F, ease: "power2.in" }, tB + F);
+        tl.fromTo(B.blur, { attr: { stdDeviation: "0 0" } }, { attr: { stdDeviation: "70 0" }, duration: 3 * F, ease: "power1.in", immediateRender: false }, tB + F);
+
+        // ---- exit: the title collapses in RGB-offset slices (frames 74-76), then a CRT line (77) ----
+        var G0 = 73 * F - EPS; // 2.433
+        var AMP = [16, 58, 150];
+        var RGB = [5, 10, 16];
+        var ALPHA = [1, 0.95, 0.8];
+        var DEATH = [];
+        for (var k = 0; k < N; k++) DEATH.push(1 + Math.floor(hr() * 2.99)); // a band survives 1..3 glitch frames
+        DEATH[3] = 3;
+        DEATH[5] = 3;
+        tl.set(main, { opacity: 0 }, G0);
+        tl.set("#ttl-collapse", { scale: 0.97 }, G0);
+        tl.set("#ttl-collapse", { scale: 0.9, scaleY: 0.82 }, G0 + F);
+        tl.set("#ttl-collapse", { scale: 0.74, scaleY: 0.5 }, G0 + 2 * F);
+        for (var g = 0; g < 3; g++) {
+          var t = G0 + g * F;
+          for (var k2 = 0; k2 < N; k2++) {
+            var h1 = hr();
+            var h2 = hr();
+            tl.set(
+              slices[k2],
+              {
+                x: (h1 * 2 - 1) * AMP[g] * (0.4 + 1.2 * h2),
+                scaleX: 1 + (h2 > 0.55 ? (h2 - 0.55) * 0.5 * (g + 1) : 0),
+                opacity: g < DEATH[k2] ? ALPHA[g] : 0,
+                filter: "drop-shadow(" + -RGB[g] + "px 0 0 rgba(255,32,80,0.95)) drop-shadow(" + RGB[g] + "px 0 0 rgba(20,228,255,0.95))",
+              },
+              t
+            );
+          }
+        }
+        tl.set(slices, { opacity: 0 }, G0 + 3 * F); // 2.533
+        tl.set("#crt", { opacity: 1, scaleX: 1.08, scaleY: 1 }, G0 + 3 * F);
+        tl.set("#crt", { opacity: 0 }, G0 + 4 * F); // 2.567: nothing left
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

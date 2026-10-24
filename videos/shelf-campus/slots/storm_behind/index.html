@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>storm_behind</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <!-- WhatsApp kit + storm engine, copied from slots/_shared -->
+    <link rel="stylesheet" href="./lib/wa-kit.css" />
+    <script src="./lib/wa-kit.js"></script>
+    <script src="./lib/wa-storm.js"></script>
+    <style>
+      /* storm_behind: BEHIND layer (under Kartik's cut-out), output 2.467 -> 4.267 s (54 frames).
+         "And you still can't find the [bleep] notes?" A WhatsApp notification storm piles up on the
+         wall around and above him on the 8ths / 16ths / 32nds, then a WhatsApp search card slams in
+         front of it on "notes?" (3.833): "notes" -> "No results found" (4.000). Hard cut at 4.267. */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      #world { position: absolute; inset: 0; }
+
+      /* ---------- the WhatsApp search card ---------- */
+      .s-rig { position: absolute; left: 84px; top: 418px; width: 912px; height: 316px; transform-origin: 456px 158px; opacity: 0; }
+      .s-shake { position: absolute; inset: 0; }
+      .s-halo {
+        position: absolute;
+        inset: -70px -60px;
+        border-radius: 120px;
+        background: radial-gradient(closest-side, rgba(4, 8, 10, 0.7), rgba(4, 8, 10, 0.45) 62%, rgba(4, 8, 10, 0) 100%);
+      }
+      .s-card {
+        position: absolute;
+        inset: 0;
+        border-radius: 42px;
+        overflow: hidden;
+        background:
+          radial-gradient(120% 120% at 10% -30%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 55%),
+          linear-gradient(180deg, #16232b 0%, #111b21 45%, #0d161c 100%);
+        box-shadow:
+          inset 0 0 0 1.5px rgba(255, 255, 255, 0.09),
+          inset 0 2px 0 rgba(255, 255, 255, 0.07),
+          0 46px 90px rgba(0, 0, 0, 0.62),
+          0 12px 28px rgba(0, 0, 0, 0.4);
+        font-family: var(--font-ui);
+      }
+      .s-flash {
+        position: absolute;
+        inset: 0;
+        border-radius: 42px;
+        box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.95), inset 0 0 40px rgba(255, 255, 255, 0.3), 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 36px 6px rgba(255, 255, 255, 0.45);
+        opacity: 0;
+      }
+      .s-top { position: absolute; left: 26px; right: 30px; top: 26px; height: 98px; display: flex; align-items: center; gap: 14px; }
+      .s-back { flex: none; width: 46px; height: 46px; display: grid; place-items: center; }
+      .s-back svg { width: 30px; height: 38px; display: block; }
+      .s-field {
+        flex: 1;
+        height: 98px;
+        border-radius: 49px;
+        background: #202c33;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 0 0 2px rgba(0, 168, 132, 0.55);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 26px 0 28px;
+      }
+      .s-field .mag { width: 40px; height: 40px; flex: none; display: block; }
+      .s-q { flex: 1; display: flex; align-items: center; height: 98px; font: 500 49px/98px var(--font-ui); color: #e9edef; letter-spacing: -0.01em; white-space: nowrap; }
+      .s-caret { width: 4px; height: 54px; margin-left: 3px; border-radius: 2px; background: #00a884; flex: none; }
+      .s-clear { width: 36px; height: 36px; flex: none; display: block; }
+      .s-chips { position: absolute; left: 34px; top: 146px; display: flex; gap: 12px; }
+      .chip { height: 48px; padding: 0 22px; border-radius: 24px; background: #202c33; color: #8696a0; font: 600 24px/48px var(--font-ui); white-space: nowrap; display: flex; align-items: center; gap: 9px; }
+      .chip.on { background: rgba(0, 168, 132, 0.2); color: #25d366; box-shadow: inset 0 0 0 1.5px rgba(37, 211, 102, 0.45); }
+      .chip svg { width: 24px; height: 24px; display: block; }
+      .s-res { position: absolute; left: 0; right: 0; top: 214px; height: 84px; display: flex; align-items: center; justify-content: center; }
+      .s-spin { position: absolute; width: 46px; height: 46px; display: block; }
+      .s-none { display: flex; align-items: center; gap: 14px; font: 600 39px/1 var(--font-ui); color: #c98e8a; letter-spacing: -0.005em; white-space: nowrap; opacity: 0; }
+      .s-none svg { width: 42px; height: 42px; display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="1.8" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.8" data-track-index="0">
+        <div id="world" data-layout-allow-overflow data-layout-ignore></div>
+        <div class="s-rig" id="srig" data-layout-allow-overflow>
+          <div class="s-shake" id="sshake">
+            <div class="s-halo"></div>
+            <div class="s-card" id="scard">
+              <div class="s-top">
+                <div class="s-back">
+                  <svg viewBox="0 0 30 38" aria-hidden="true"><path d="M21 5 8 19l13 14" fill="none" stroke="#00a884" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                </div>
+                <div class="s-field">
+                  <svg class="mag" viewBox="0 0 38 38" aria-hidden="true"><circle cx="16" cy="16" r="10.5" fill="none" stroke="#8696a0" stroke-width="3.6" /><path d="m24 24 8.5 8.5" stroke="#8696a0" stroke-width="3.8" stroke-linecap="round" /></svg>
+                  <div class="s-q"><span id="typed">notes</span><span class="s-caret" id="caret"></span></div>
+                  <svg class="s-clear" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" fill="#8696a0" fill-opacity="0.55" /><path d="m12.5 12.5 11 11m0-11-11 11" stroke="#111b21" stroke-width="3" stroke-linecap="round" /></svg>
+                </div>
+              </div>
+              <div class="s-chips">
+                <div class="chip">Unread</div>
+                <div class="chip">Photos</div>
+                <div class="chip on">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 2.5h7.6l4.4 4.4v12.4a2.2 2.2 0 0 1-2.2 2.2H6.5a2.2 2.2 0 0 1-2.2-2.2V4.7a2.2 2.2 0 0 1 2.2-2.2z" fill="#25d366" /><path d="M14 2.5v3.6a1.4 1.4 0 0 0 1.4 1.4H19z" fill="#9af0bb" /></svg>
+                  Documents
+                </div>
+                <div class="chip">Links</div>
+              </div>
+              <div class="s-res">
+                <svg class="s-spin" id="spin" viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="17" fill="none" stroke="#202c33" stroke-width="5" /><path d="M23 6a17 17 0 0 1 17 17" fill="none" stroke="#00a884" stroke-width="5" stroke-linecap="round" /></svg>
+                <div class="s-none" id="none">
+                  <svg viewBox="0 0 38 38" aria-hidden="true"><circle cx="17" cy="17" r="11" fill="none" stroke="#c98e8a" stroke-width="3.4" /><path d="m25 25 8 8" stroke="#c98e8a" stroke-width="3.6" stroke-linecap="round" /><path d="m12.6 12.6 8.8 8.8m0-8.8-8.8 8.8" stroke="#e5534b" stroke-width="3" stroke-linecap="round" /></svg>
+                  <span>No results found</span>
+                </div>
+              </div>
+              <div class="s-flash" id="sflash"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        "use strict";
+        var D = 1.8;
+        var T0 = 2.466667; // window start (output s)
+        var F = 1 / 30;
+        var EPS = 0.0005;
+        function L(t) {
+          return t - T0; // output seconds -> local
+        }
+
+        /* ---------- chats + lines (SPEC_hook.md) ---------- */
+        function grad(a, b) {
+          return "linear-gradient(160deg, " + a + " 0%, " + b + " 100%)";
+        }
+        // two extra hand-drawn avatar glyphs: a database (DBMS) and a question mark (doubts)
+        WA.G.db = function () {
+          return (
+            '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+            '<ellipse cx="24" cy="12.5" rx="13.5" ry="5.2" fill="#fff"/>' +
+            '<path d="M10.5 15.6v7.3c0 2.9 6 5.2 13.5 5.2s13.5-2.3 13.5-5.2v-7.3c-2.6 2.4-8 3.6-13.5 3.6s-10.9-1.2-13.5-3.6z" fill="#fff" fill-opacity=".86"/>' +
+            '<path d="M10.5 26.6v8.1c0 2.9 6 5.2 13.5 5.2s13.5-2.3 13.5-5.2v-8.1c-2.6 2.4-8 3.6-13.5 3.6s-10.9-1.2-13.5-3.6z" fill="#fff" fill-opacity=".72"/>' +
+            "</svg>"
+          );
+        };
+        WA.G.q = function () {
+          return (
+            '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+            '<path d="M16.6 17.4a7.6 7.6 0 1 1 11 6.8c-2.4 1.2-3.6 2.7-3.6 5.1v1.4" fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+            '<circle cx="24" cy="37.4" r="3.1" fill="#fff"/>' +
+            "</svg>"
+          );
+        };
+        WA.CHATS.dbms = { name: "DBMS 2nd Yr", av: grad("#5c8dff", "#2c56d6"), glyph: "db", group: true };
+        WA.CHATS.cseb = { name: "CSE-B Official", av: grad("#3fa0ff", "#0a6fe0"), glyph: "cap", group: true };
+        WA.CHATS.boys = { name: "Boys Group", av: grad("#e87400", "#c75a00"), ini: "BG", group: true };
+        WA.CHATS.ucse = { name: "Unofficial CSE", av: grad("#7d7bff", "#4f4dd8"), glyph: "group", group: true };
+        WA.CHATS.lab = { name: "Lab Batch B", av: grad("#52d97a", "#25a84d"), glyph: "flask", group: true };
+        WA.CHATS.reps = { name: "Class Reps", av: grad("#3ad6cc", "#12a49b"), glyph: "megaphone", group: true };
+        WA.CHATS.exam = { name: "Exam Doubts", av: grad("#ff8a4c", "#e0561b"), glyph: "q", group: true };
+        WA.MSG = {
+          u_u3: { chat: "ucse", sender: "Sneha", msg: "anyone has unit 3 notes??", pill: 46 },
+          c_chk: { chat: "cseb", sender: "CR", msg: "check the other group", pill: 128 },
+          b_bro: { chat: "boys", sender: "Zaid", msg: "bro send notes", pill: "99+" },
+          d_pdf: { chat: "dbms", sender: "Priya", msg: "who has the DBMS pdf", pill: 23 },
+          c_del: { chat: "cseb", sender: "Aman", icon: "ban", msg: "This message was deleted", del: true, pill: 131 },
+          e_kah: { chat: "exam", sender: "Ishaan", msg: "notes kahan hai", pill: 31 },
+          l_pdf: { chat: "lab", sender: "Neha", msg: "PDF pls", pill: 9 },
+          r_chk: { chat: "reps", sender: "Kabir", msg: "check the other group", pill: 14 },
+          b_kah: { chat: "boys", sender: "Rahul", msg: "notes kahan hai", pill: "99+" },
+          u_47: { chat: "ucse", msg: "47 new messages", pill: 47 },
+          e_pdf: { chat: "exam", sender: "Aman", msg: "PDF pls", pill: 34 },
+          d_u3: { chat: "dbms", sender: "Rahul", msg: "anyone has unit 3 notes??", pill: 26 },
+          r_del: { chat: "reps", sender: "Priya", icon: "ban", msg: "This message was deleted", del: true, pill: 15 },
+        };
+
+        /* ---------- Kartik's cut-out (union of his matte over the window): the storm sits behind it ---------- */
+        // [y, x0, x1] rows; a banner whose readable left part is hidden behind him is wasted
+        var PERSON = [
+          [715, 760, 770], [725, 723, 801], [750, 629, 862], [775, 590, 882], [800, 578, 913], [825, 561, 952],
+          [850, 546, 976], [875, 538, 981], [900, 530, 977], [950, 529, 965], [1000, 547, 947], [1050, 568, 1022],
+          [1100, 583, 1040], [1150, 595, 1039], [1200, 620, 1042], [1225, 549, 1045], [1250, 466, 1046], [1300, 444, 1041],
+        ];
+        function hiddenAt(px, py) {
+          if (py < PERSON[0][0]) return false;
+          for (var i = 1; i < PERSON.length; i++) {
+            if (py <= PERSON[i][0]) {
+              var a = PERSON[i - 1];
+              var b = PERSON[i];
+              var u = (py - a[0]) / (b[0] - a[0]);
+              var x0 = a[1] + (b[1] - a[1]) * u - 10;
+              var x1 = a[2] + (b[2] - a[2]) * u + 10;
+              return px > x0 && px < x1;
+            }
+          }
+          return px > 444 && px < 1041;
+        }
+        // fraction of the banner's left 62 % (avatar, chat name, message) left visible on the wall
+        function leftVisible(x, y, s, r, h) {
+          var a = (r * Math.PI) / 180;
+          var c = Math.cos(a);
+          var sn = Math.sin(a);
+          var hw = (780 / 2) * s;
+          var hh = (h / 2) * s;
+          var n = 0;
+          var vis = 0;
+          for (var i = 0; i <= 10; i++) {
+            var u = -1 + 1.24 * (i / 10); // -1 .. 0.24 across the width
+            for (var j = 0; j <= 3; j++) {
+              var v = -0.8 + 1.6 * (j / 3);
+              var px = x + u * hw * c - v * hh * sn;
+              var py = y + u * hw * sn + v * hh * c;
+              n++;
+              if (!hiddenAt(px, py)) vis++;
+            }
+          }
+          return vis / n;
+        }
+
+        /* ---------- the storm ---------- */
+        var S = new WA.Storm(document.getElementById("world"), {
+          seed: 2467,
+          W: 780,
+          cx: 540,
+          cy: 760,
+          // banner edges: shadows stay out of the caption band (1290) and the top UI
+          safe: { x0: 66, x1: 1014, y0: 284, y1: 1236, railX: 936, railY: 1100 },
+          peak: { s: 1.035, r: 1.4, dx: 0, dy: 0 }, // vertigo x jolt
+        });
+        S.ageScale = 0.92;
+        var SC = { x: 540, y: 576 }; // the search card's centre (it slams on 3.833)
+
+        var LOG = [];
+        function pile(tOut, key, s, type, opt) {
+          opt = opt || {};
+          var t = L(tOut);
+          var tp = type;
+          var o = {
+            s: s,
+            r: opt.r || [2, 11],
+            h: S.hOf(key),
+            k: opt.k || 3,
+            es: WA.ENTRY_SCALE[tp] || 1,
+            entry: tp,
+            region: opt.region,
+            n: 220,
+            bias: function (x, y, sc, rr) {
+              var fv = leftVisible(x, y, sc, rr, S.hOf(key));
+              return 0.04 + fv * fv * fv;
+            },
+          };
+          if (opt.churn) S.recycle(t, opt.churn);
+          var p = S.pick(t, o);
+          for (var c = 0; c < 2 && p && p.nc !== undefined && p.nc < 90 && t > 0.6; c++) {
+            S.recycle(t, 1);
+            p = S.pick(t, o);
+          }
+          for (var f = 0; f < 3 && !p; f++) {
+            o.s = [o.s[0] * 0.9, o.s[1] * 0.9];
+            if (o.entry === "slam") {
+              o.entry = "pop";
+              tp = "pop";
+            }
+            p = S.pick(t, o);
+          }
+          if (!p) {
+            if (window.console) console.warn("storm_behind: no spot for", key, tOut);
+            return null;
+          }
+          var it = S.add(key, t, p, { type: tp });
+          LOG.push({ t: +(WA.snap(t) + T0).toFixed(3), key: key, type: tp, x: Math.round(p.x), y: Math.round(p.y), s: +p.s.toFixed(2), vis: +leftVisible(p.x, p.y, p.s, p.r, it.h).toFixed(2) });
+          return it;
+        }
+
+        var TOP = { x0: 300, y0: 330, x1: 780, y1: 650 }; // above his head
+        var LEFT = { x0: 320, y0: 760, x1: 470, y1: 1180 }; // the wall left of him
+
+        /* 2.533 -> 3.300: the pile starts on the 16ths / 8ths ("you still can't find the") */
+        pile(2.549, "u_u3", [0.8, 0.86], "pop", { region: TOP });
+        pile(2.695, "c_chk", [0.8, 0.88], "slam", { region: LEFT });
+        pile(2.84, "b_bro", [0.72, 0.8], "pop");
+        pile(2.986, "d_pdf", [0.92, 0.98], "slam", { region: TOP, r: [1, 6] }); // beat: a big one
+        pile(3.132, "c_del", [0.7, 0.78], "pop");
+        pile(3.278, "e_kah", [0.78, 0.86], "slam");
+        /* 3.433 -> 3.700: densest, under the bleep (doubles + 32nds) */
+        pile(3.423, "l_pdf", [0.66, 0.74], "pop");
+        pile(3.423, "r_chk", [0.66, 0.74], "pop");
+        pile(3.496, "b_kah", [0.68, 0.76], "pop");
+        pile(3.569, "u_47", [0.94, 1.0], "slam", { region: TOP, r: [1, 5] }); // beat: the summary line
+        pile(3.642, "e_pdf", [0.66, 0.74], "pop");
+        pile(3.715, "d_u3", [0.66, 0.74], "pop");
+        pile(3.715, "r_del", [0.64, 0.72], "pop");
+
+        // the pile keeps breathing: slow vertigo, and the beats jolt it
+        var tA = L(2.53);
+        var tS = L(3.8);
+        S.wt.r.add(tA, tS - tA, -1.2, "sine.in");
+        S.wt.s.add(tA, tS - tA, 1.025, "sine.in");
+        S.jolt(L(2.986), 1.035, 2);
+        S.jolt(L(3.569), 1.04, 2);
+        S.flash(L(3.569));
+
+        /* 3.833 "notes?": the search card slams in front of the storm; the storm is knocked back */
+        var T_SLAM = 115 * F; // 3.8333 output
+        var tSl = L(T_SLAM);
+        var tH = tSl - EPS;
+        S.items.forEach(function (it) {
+          var a = it.a;
+          if (a.ch("o").at(tSl) < 0.01) return;
+          var p = a.pose(tSl);
+          var dx = p.x - SC.x;
+          var dy = p.y - SC.y;
+          var len = Math.hypot(dx, dy) || 1;
+          S.shove(it, tH, (60 * dx) / len, (46 * dy) / len, dx > 0 ? 3 : -3, 0.1, 0.5);
+          a.ch("d").add(tH, 0.14, 0.62, "power2.out");
+          a.ch("b").add(tH, 0.14, 2.6, "power2.out");
+        });
+        S.wt.j.add(tH, 0.001, 0.965, "none");
+        S.wt.j.add(tH + 0.004, 0.4, 1, "expo.out", 0.965);
+
+        // pills keep racing as the storm builds
+        S.countUp = function (t, it) {
+          var d = t - L(3.2);
+          return d > 0 ? Math.floor(it.rate * 9 * d * d) : 0;
+        };
+
+        /* ---------- timeline ---------- */
+        var tl = gsap.timeline({ paused: true });
+        var clock = { t: 0 };
+        tl.fromTo(clock, { t: 0 }, { t: D, duration: D, ease: "none", onUpdate: function () { S.apply(clock.t); } }, 0);
+
+        // search card: two flight frames (3.767, 3.800) at speed, lands on 3.833 with a squash and settle
+        var tIn = tSl - 2 * F - EPS;
+        tl.fromTo("#srig", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, tIn);
+        tl.fromTo("#srig", { scale: 1.45, y: -60, rotation: -4.5 }, { scale: 0.965, y: 6, rotation: 0.6, duration: 2 * F, ease: "power2.in" }, tIn);
+        tl.to("#srig", { scale: 1, y: 0, rotation: 0, duration: 0.32, ease: "back.out(2.4)" }, tH);
+        tl.fromTo("#scard", { filter: "blur(12px)" }, { filter: "blur(0px)", duration: 2 * F, ease: "power1.in" }, tIn);
+        tl.fromTo("#sflash", { opacity: 0.95 }, { opacity: 0, duration: 0.26, ease: "power2.out", immediateRender: false }, tH);
+        // caret blinks (deterministic on/off)
+        for (var b = 0; b < 4; b++) {
+          tl.set("#caret", { opacity: b % 2 ? 1 : 0 }, tSl + 0.25 * (b + 1) - EPS);
+        }
+        // spinner turns, then "No results found" lands on 4.000 with a rejected-input shake
+        tl.fromTo("#spin", { rotation: 0 }, { rotation: 300, duration: 0.17, ease: "none" }, tH);
+        var tN = L(120 * F) - EPS; // 4.000
+        tl.set("#spin", { opacity: 0 }, tN);
+        tl.fromTo("#none", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, tN);
+        tl.fromTo("#none", { y: 12, scale: 0.88 }, { y: 0, scale: 1, duration: 0.24, ease: "back.out(2.2)" }, tN - 0.5 * F);
+        [[-16, 0], [13, 0], [-9, 0], [5, 0], [-2, 0], [0, 0]].forEach(function (p, k) {
+          tl.set("#sshake", { x: p[0] }, tN + k * F);
+        });
+
+        S.apply(0);
+        window.__stormLog = LOG;
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

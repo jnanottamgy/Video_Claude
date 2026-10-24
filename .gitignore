@@ -32,6 +32,8 @@ node_modules/
 out/
 dist/
 .cache/
+# HyperFrames CLI scratch (check reports, history ids, per-project state)
+.hyperframes/
 
 # Render outputs and frame sequences are reproducible from source (see each project's build script)
 **/renders/

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>founders / lowers</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* FRONT layer. Output 11.233 -> 15.200 (119 frames), t = out - 11.2333.
+         Lower thirds on the left (x 64-~560, y 1128-1252: above the caption band, faces are on the right):
+         navy glass card, blue edge glow, name Sora 700 caps, role Inter 600 letterspaced.
+           JNANOTTAM / CO-FOUNDER  wipes in from the left on 11.80 (0.3 s), wipes out 13.13-13.36
+           KARTIK    / CO-FOUNDER  wipes in from the left on 14.10 (0.3 s), wipes out 14.90-15.13 */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+
+      .lt { position: absolute; left: 64px; top: 1128px; height: 124px; }
+      .lt .clip-wrap {
+        position: absolute;
+        inset: -40px -60px -14px -40px;           /* room for the glow, but not into the caption band */
+        clip-path: inset(0 100% 0 0);
+      }
+      .card {
+        position: absolute;
+        left: 40px;
+        top: 40px;
+        height: 124px;
+        border-radius: 20px;
+        background:
+          radial-gradient(120% 140% at 0% 0%, rgba(110, 165, 255, 0.22) 0%, rgba(110, 165, 255, 0) 55%),
+          linear-gradient(102deg, rgba(36, 58, 100, 0.94) 0%, rgba(14, 24, 46, 0.9) 58%, rgba(9, 16, 32, 0.88) 100%);
+        border: 1.5px solid rgba(150, 195, 255, 0.42);
+        box-shadow: 0 0 26px rgba(var(--glow), 0.32), 0 10px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.24),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+      /* glossy top reflection */
+      .card::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 46%;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0));
+      }
+      .accent {
+        position: absolute;
+        left: 18px;
+        top: 22px;
+        width: 6px;
+        height: 80px;
+        border-radius: 3px;
+        background: linear-gradient(180deg, #b9dcff 0%, var(--shelf-blue) 45%, var(--shelf-blue-deep) 100%);
+        box-shadow: 0 0 14px rgba(var(--glow), 0.95), 0 0 30px rgba(var(--glow), 0.55);
+        transform-origin: 50% 0%;
+      }
+      .name {
+        position: absolute;
+        left: 46px;
+        top: 17px;
+        font: 700 56px/1 var(--font-brand);
+        letter-spacing: 0.035em;
+        white-space: nowrap;
+        background: linear-gradient(180deg, #ffffff 0%, #eef3fa 45%, #c3d0e2 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 0 10px rgba(var(--glow), 0.35));
+      }
+      .role {
+        position: absolute;
+        left: 48px;
+        top: 82px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        white-space: nowrap;
+        font: 600 28px/1 var(--font-ui);
+        letter-spacing: 0.26em;
+        color: #a9cdff;
+        text-shadow: 0 0 12px rgba(var(--glow), 0.6);
+      }
+      .rule {
+        position: absolute;
+        top: 95px;
+        height: 2px;
+        border-radius: 1px;
+        background: linear-gradient(90deg, rgba(150, 200, 255, 0.85), rgba(150, 200, 255, 0));
+        box-shadow: 0 0 8px rgba(var(--glow), 0.6);
+        transform-origin: 0% 50%;
+      }
+      .idx {
+        position: absolute;
+        top: 86px;
+        font: 700 20px/1 var(--font-mono);
+        letter-spacing: 0.08em;
+        color: rgba(169, 205, 255, 0.62);
+      }
+      /* one diagonal glass sheen across the card after it lands */
+      .gloss {
+        position: absolute;
+        top: -20px;
+        left: 0;
+        width: 120px;
+        height: 170px;
+        background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(200, 225, 255, 0.10) 35%, rgba(235, 245, 255, 0.30) 50%, rgba(200, 225, 255, 0.10) 65%, rgba(255, 255, 255, 0) 100%);
+        transform: skewX(-18deg);
+        opacity: 0;
+      }
+      /* the bright edge riding the wipe */
+      .edge {
+        position: absolute;
+        top: -10px;
+        left: -2px;
+        width: 4px;
+        height: 144px;
+        border-radius: 2px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 30%, #ffffff 70%, rgba(255, 255, 255, 0));
+        box-shadow: 0 0 16px rgba(170, 210, 255, 1), 0 0 40px rgba(var(--glow), 0.9);
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="3.966667" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="3.966667" data-track-index="0">
+        <div class="lt" id="ltJ" style="width: 506px" data-layout-allow-overflow>
+          <div class="clip-wrap" id="cwJ">
+            <div class="card" id="cardJ" style="width: 506px">
+              <div class="accent" id="accJ"></div>
+              <div class="name" id="nameJ">JNANOTTAM</div>
+              <div class="role" id="roleJ">CO-FOUNDER</div>
+              <div class="rule" id="ruleJ" style="left: 324px; width: 124px"></div>
+              <div class="idx" id="idxJ" style="right: 22px">01</div>
+              <div class="gloss" id="glossJ"></div>
+            </div>
+          </div>
+          <div class="edge" id="edgeJ"></div>
+        </div>
+        <div class="lt" id="ltK" style="width: 430px" data-layout-allow-overflow>
+          <div class="clip-wrap" id="cwK">
+            <div class="card" id="cardK" style="width: 430px">
+              <div class="accent" id="accK"></div>
+              <div class="name" id="nameK">KARTIK</div>
+              <div class="role" id="roleK">CO-FOUNDER</div>
+              <div class="rule" id="ruleK" style="left: 324px; width: 48px"></div>
+              <div class="idx" id="idxK" style="right: 22px">02</div>
+              <div class="gloss" id="glossK"></div>
+            </div>
+          </div>
+          <div class="edge" id="edgeK"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      var T0 = 11.2333;
+      function at(out) { return Math.round(out * 30) / 30 - T0 - 0.004; } // first frame shows the pose
+      var tl = gsap.timeline({ paused: true });
+
+      // one lower third: in (0.3 s wipe from the left with a bright edge), out (fast wipe back to the left)
+      function lower(id, cardW, tIn, tOut) {
+        var cw = "#cw" + id, edge = "#edge" + id;
+        var W = cardW + 100; // clip-wrap width (card + 40 left + 60 right margins)
+        // wipe: the clip opens left to right (fully closed before and after); the bright edge leads it
+        tl.fromTo(cw, { clipPath: "inset(0px " + W + "px 0px 0px)" }, { clipPath: "inset(0px 0px 0px 0px)", duration: 0.3, ease: "expo.out" }, tIn);
+        tl.set(edge, { opacity: 1 }, tIn);
+        tl.fromTo(edge, { x: 0 }, { x: cardW + 2, duration: 0.3, ease: "expo.out" }, tIn);
+        tl.to(edge, { opacity: 0, duration: 0.12, ease: "power2.in", immediateRender: false }, tIn + 0.1);
+        tl.set("#gloss" + id, { opacity: 1 }, tIn + 0.32);
+        tl.fromTo("#gloss" + id, { x: -140 }, { x: cardW + 40, duration: 0.55, ease: "power2.inOut" }, tIn + 0.32);
+        tl.fromTo("#acc" + id, { scaleY: 0 }, { scaleY: 1, duration: 0.26, ease: "expo.out" }, tIn + 0.02);
+        tl.fromTo("#name" + id, { x: -36, filter: "blur(10px)", opacity: 0 }, { x: 0, filter: "blur(0px)", opacity: 1, duration: 0.34, ease: "expo.out" }, tIn + 0.03);
+        tl.fromTo("#role" + id, { x: -28, filter: "blur(8px)", opacity: 0 }, { x: 0, filter: "blur(0px)", opacity: 1, duration: 0.34, ease: "expo.out" }, tIn + 0.09);
+        tl.fromTo("#rule" + id, { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "expo.out" }, tIn + 0.14);
+        tl.fromTo("#idx" + id, { opacity: 0, y: -6 }, { opacity: 1, y: 0, duration: 0.24, ease: "power3.out" }, tIn + 0.16);
+        // out: content blurs left, the card wipes away to the left
+        tl.to(["#name" + id, "#role" + id], { x: -30, filter: "blur(8px)", duration: 0.22, ease: "power3.in", immediateRender: false }, tOut);
+        tl.to(cw, { clipPath: "inset(0px " + W + "px 0px 0px)", duration: 0.22, ease: "power3.in", immediateRender: false }, tOut);
+      }
+      lower("J", 506, at(11.8), at(13.133));   // gone by 13.36
+      lower("K", 430, at(14.1), at(14.9));     // gone by 15.13
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

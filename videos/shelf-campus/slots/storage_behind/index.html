@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>storage_behind</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* storage_behind: BEHIND layer (under the person cut-out), output 0.000 -> 2.467 s (74 frames).
+         Jnanottam: "Your phone has 256 gigs of storage." An oversized iOS storage card on the wall,
+         its right part tucked behind his head.
+           0.133  "phone": the card rises from behind his head (card pop)
+           0.533-1.400  "two-fifty-six": odometer rolls 0 -> 255.9 GB (lands on 1.400); the bar fills
+           1.900  "storage": the bar slams 100 %, turns red, STORAGE FULL pill, short shake
+           2.400  bar downbeat: red alarm pulse. Holds to the hard cut at 2.467. */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+
+      /* card geometry: x 70-938 (868 wide), y 630-930 */
+      .rig { position: absolute; left: 70px; top: 630px; width: 868px; height: 300px; transform-origin: 434px 150px; }
+      .glow {
+        position: absolute;
+        inset: -6px;
+        border-radius: 44px;
+        background: rgba(255, 59, 48, 0.55);
+        filter: blur(34px);
+        opacity: 0;
+      }
+      .card {
+        position: absolute;
+        inset: 0;
+        border-radius: 40px;
+        overflow: hidden;
+        background:
+          radial-gradient(120% 140% at 0% -20%, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0) 55%),
+          linear-gradient(180deg, rgba(46, 46, 50, 0.95) 0%, rgba(30, 30, 33, 0.95) 48%, rgba(22, 22, 25, 0.96) 100%);
+        box-shadow:
+          inset 0 0 0 1.5px rgba(255, 255, 255, 0.1),
+          inset 0 2px 0 rgba(255, 255, 255, 0.08),
+          0 34px 70px rgba(0, 0, 0, 0.5),
+          0 10px 24px rgba(0, 0, 0, 0.32);
+      }
+      .alert-edge {
+        position: absolute;
+        inset: 0;
+        border-radius: 40px;
+        box-shadow: inset 0 0 0 3px rgba(255, 69, 58, 0.95), inset 0 0 30px rgba(255, 59, 48, 0.35);
+        opacity: 0;
+      }
+
+      .hdr { position: absolute; left: 40px; top: 24px; height: 46px; display: flex; align-items: center; gap: 14px; }
+      .hdr .gear { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(180deg, #9a9aa1, #6e6e75); display: grid; place-items: center; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+      .hdr .gear svg { width: 30px; height: 30px; display: block; }
+      .hdr .ttl { font: 700 33px/46px var(--font-ui); letter-spacing: -0.01em; color: #fff; }
+      .hdr .crumb { font: 500 27px/46px var(--font-ui); color: rgba(235, 235, 245, 0.45); margin-left: 4px; }
+
+      .pill-pos { position: absolute; left: 258px; top: 22px; height: 50px; }
+      .pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 50px;
+        padding: 0 20px 0 14px;
+        border-radius: 25px;
+        background: linear-gradient(180deg, #ff5a4f 0%, #ff3b30 55%, #e5322a 100%);
+        box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 8px 22px rgba(255, 59, 48, 0.5), 0 0 0 3px rgba(20, 20, 22, 0.9);
+        color: #fff;
+        font: 800 22px/1 var(--font-ui);
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        transform-origin: 50% 50%;
+      }
+      .pill svg { width: 27px; height: 27px; display: block; }
+      .pill span { display: block; margin-right: -0.08em; }
+
+      /* odometer */
+      .num { position: absolute; left: 36px; top: 74px; height: 108px; display: flex; align-items: flex-end; transform-origin: 0% 60%; }
+      .col { position: relative; height: 108px; overflow: hidden; flex: none; }
+      .strip { position: absolute; left: 0; top: 0; width: 100%; }
+      .dg { height: 108px; display: flex; align-items: center; justify-content: center; font: 800 106px/108px var(--font-brand); letter-spacing: -0.02em; color: #fff; }
+      .dot { flex: none; width: 28px; height: 108px; display: flex; align-items: center; justify-content: center; font: 800 106px/108px var(--font-brand); color: #fff; }
+      .unit { flex: none; margin-left: 12px; height: 108px; display: flex; align-items: center; padding-top: 20px; font: 800 54px/1 var(--font-brand); color: rgba(255, 255, 255, 0.92); }
+      .sub { position: absolute; left: 42px; top: 184px; font: 600 29px/34px var(--font-ui); color: rgba(235, 235, 245, 0.58); letter-spacing: -0.005em; white-space: nowrap; }
+      .sub b { color: rgba(235, 235, 245, 0.85); font-weight: 700; }
+
+      /* the segmented bar */
+      .bar { position: absolute; left: 40px; top: 228px; width: 788px; height: 0; }
+      .track { position: absolute; left: 0; top: -2px; width: 780px; height: 0; }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <!-- vertical motion blur for the spinning odometer columns -->
+      <filter id="vb0" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur id="vb0g" stdDeviation="0 0" /></filter>
+      <filter id="vb1" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur id="vb1g" stdDeviation="0 0" /></filter>
+      <filter id="vb2" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur id="vb2g" stdDeviation="0 0" /></filter>
+      <filter id="vb3" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur id="vb3g" stdDeviation="0 0" /></filter>
+    </svg>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="2.466667" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="2.466667" data-track-index="0">
+        <div class="rig" id="shake" data-layout-allow-overflow>
+          <div class="rig" id="enter" style="left: 0; top: 0" data-layout-allow-overflow>
+            <div class="glow" id="glow"></div>
+            <div class="card" id="card" data-layout-allow-overflow>
+              <div class="hdr">
+                <div class="gear">
+                  <svg viewBox="0 0 30 30" aria-hidden="true">
+                    <path fill="#fff" d="M13.2 3.4h3.6l.6 3a8.8 8.8 0 0 1 2.4 1.4l2.9-1 1.8 3.1-2.3 2a8.9 8.9 0 0 1 0 2.8l2.3 2-1.8 3.1-2.9-1a8.8 8.8 0 0 1-2.4 1.4l-.6 3h-3.6l-.6-3a8.8 8.8 0 0 1-2.4-1.4l-2.9 1-1.8-3.1 2.3-2a8.9 8.9 0 0 1 0-2.8l-2.3-2 1.8-3.1 2.9 1a8.8 8.8 0 0 1 2.4-1.4zM15 11a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" transform="translate(0 0)" />
+                  </svg>
+                </div>
+                <div class="ttl">Storage</div>
+              </div>
+              <div class="pill-pos"><div class="pill" id="pill">
+                <svg viewBox="0 0 30 30" aria-hidden="true"><path d="M15 4.2 27 25H3z" fill="#fff" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" /><path d="M15 11.6v6.4" stroke="#ff3b30" stroke-width="3" stroke-linecap="round" /><circle cx="15" cy="21.6" r="1.8" fill="#ff3b30" /></svg>
+                <span>STORAGE FULL</span>
+              </div></div>
+              <div class="num" id="num"></div>
+              <div class="sub">of <b>256 GB</b> used</div>
+              <div class="bar" id="bar"></div>
+              <div class="alert-edge" id="alertEdge"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        "use strict";
+        var D = 2.466667;
+        var F = 1 / 30;
+        var EPS = 0.0005;
+
+        function clamp(x, a, b) {
+          return Math.max(a, Math.min(b, x));
+        }
+        function lerp(a, b, u) {
+          return a + (b - a) * u;
+        }
+        function easeOutPow(u, p) {
+          return 1 - Math.pow(1 - clamp(u, 0, 1), p);
+        }
+        function smooth(u) {
+          u = clamp(u, 0, 1);
+          return u * u * (3 - 2 * u);
+        }
+
+        /* ---------- odometer DOM: [hundreds][tens][ones] . [tenths] GB ---------- */
+        var DIG_W = 66; // fixed digit cells: no width jitter while rolling
+        var DIG_H = 108;
+        var num = document.getElementById("num");
+        var cols = [];
+        function makeCol(i) {
+          var c = document.createElement("div");
+          c.className = "col";
+          c.style.width = DIG_W + "px";
+          var s = document.createElement("div");
+          s.className = "strip";
+          var h = "";
+          for (var d = 0; d <= 10; d++) h += '<div class="dg">' + (d % 10) + "</div>";
+          s.innerHTML = h;
+          c.appendChild(s);
+          s.style.filter = "url(#vb" + i + ")";
+          return { el: c, strip: s, blur: document.getElementById("vb" + i + "g"), last: null, lastB: null, lastW: null };
+        }
+        // columns in display order: hundreds, tens, ones, tenths (filters vb3..vb0 by place)
+        var cH = makeCol(3);
+        var cT = makeCol(2);
+        var cO = makeCol(1);
+        var cD = makeCol(0);
+        var dot = document.createElement("div");
+        dot.className = "dot";
+        dot.textContent = ".";
+        var unit = document.createElement("div");
+        unit.className = "unit";
+        unit.textContent = "GB";
+        [cH, cT, cO].forEach(function (c) {
+          num.appendChild(c.el);
+        });
+        num.appendChild(dot);
+        num.appendChild(cD.el);
+        num.appendChild(unit);
+        cols = [cD, cO, cT, cH]; // by place: 0.1, 1, 10, 100
+
+        /* ---------- bar DOM ---------- */
+        var BAR_W = 788;
+        var BAR_H = 52;
+        var SEGS = [
+          { k: "photos", frac: 21 / 256, col: "#ffd60a" },
+          { k: "apps", frac: 13 / 256, col: "#0a84ff" },
+          { k: "system", frac: 8 / 256, col: "#8e8e93" },
+          { k: "wa", frac: 214 / 256, col: "#25d366" },
+        ];
+        var bar = document.getElementById("bar");
+        bar.innerHTML =
+          '<div id="trk" style="position:absolute;left:0;top:0;width:' + BAR_W + "px;height:" + BAR_H + 'px;border-radius:14px;overflow:hidden;background:rgba(120,120,128,0.28);box-shadow:inset 0 1px 2px rgba(0,0,0,0.35)">' +
+          SEGS.map(function (s, i) {
+            return '<div class="seg" id="seg' + i + '" style="position:absolute;top:0;height:' + BAR_H + "px;left:0;width:0;background:" + s.col + ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,0.28), inset -2px 0 0 rgba(20,20,22,0.85)"></div>';
+          }).join("") +
+          '<div id="redfill" style="position:absolute;left:0;top:0;width:' + BAR_W + "px;height:" + BAR_H + 'px;background:linear-gradient(180deg,#ff5f55 0%,#ff3b30 55%,#d92b22 100%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,0.35);opacity:0"></div>' +
+          '<div id="hot" style="position:absolute;left:0;top:0;width:' + BAR_W + "px;height:" + BAR_H + 'px;background:#fff;opacity:0"></div>' +
+          '<div id="edge" style="position:absolute;top:-6px;left:0;width:6px;height:' + (BAR_H + 12) + 'px;border-radius:3px;background:#fff;box-shadow:0 0 14px 4px rgba(255,255,255,0.8);opacity:0"></div>' +
+          '<div id="walbl" style="position:absolute;top:0;height:' + BAR_H + 'px;left:0;display:flex;align-items:center;gap:10px;font:800 26px/1 var(--font-ui);color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,0.35);opacity:0">' +
+          '<svg viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><path d="M21 63.4A33 33 0 1 1 34.6 77L14.6 85.4Z" fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="round"/><path transform="translate(26.6 24.4) scale(1.95)" fill="#fff" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>' +
+          "<span>WhatsApp &middot; 214 GB</span></div>" +
+          "</div>";
+        var segEls = SEGS.map(function (s, i) {
+          return document.getElementById("seg" + i);
+        });
+        var redfill = document.getElementById("redfill");
+        var hot = document.getElementById("hot");
+        var edge = document.getElementById("edge");
+        var walbl = document.getElementById("walbl");
+
+        /* ---------- the plan (output seconds = local seconds: window starts at 0) ---------- */
+        var T_IN = 4 * F; // 0.133 "phone": the card's first visible frame
+        var R0 = 16 * F; // 0.533 the roll starts ("two-fifty-six" 0.54)
+        var R1 = 42 * F; // 1.400 lands
+        var T_FULL = 57 * F; // 1.900 "storage"
+        var T_BEAT = 72 * F; // 2.400 bar downbeat
+
+        // counter value
+        function value(t) {
+          if (t < R0) return 0;
+          if (t < T_FULL - 2 * F) return 255.9 * easeOutPow((t - R0) / (R1 - R0), 3.4);
+          // "storage": 255.9 -> 256.0 rolls over in 2 frames, landing on 1.900
+          return lerp(255.9, 256.0, smooth((t - (T_FULL - 2 * F)) / (2 * F)));
+        }
+        // bar fill (0..1): chases the counter, creeps, then slams full on 1.900
+        function fill(t) {
+          if (t < R0 + 0.02) return 0;
+          if (t < R1) return 0.955 * easeOutPow((t - R0 - 0.02) / (R1 - R0 - 0.02), 2.0);
+          if (t < T_FULL - 2 * F) return lerp(0.955, 0.982, smooth((t - R1) / (T_FULL - 2 * F - R1)));
+          return lerp(0.982, 1, clamp((t - (T_FULL - 2 * F)) / (2 * F), 0, 1) ** 2);
+        }
+
+        // odometer: each column's continuous position; a higher column turns only while the one
+        // below rolls from 9 to 0 (a mechanical carry)
+        function colPositions(v) {
+          var p = [];
+          var raw0 = v * 10;
+          p[0] = raw0 % 10; // tenths, continuous
+          for (var k = 1; k < 4; k++) {
+            var whole = Math.floor((v * 10) / Math.pow(10, k) + 1e-9); // floor(v / 10^(k-1))
+            var carry = clamp(p[k - 1] - 9, 0, 1);
+            p[k] = (whole % 10) + carry;
+          }
+          return p;
+        }
+        function setCol(c, pos, speed, visible) {
+          var y = (-pos * DIG_H).toFixed(2);
+          if (y !== c.last) {
+            c.strip.style.transform = "translateY(" + y + "px)";
+            c.last = y;
+          }
+          // vertical motion blur from the column speed (digit heights per frame): a short streak,
+          // capped so a spinning column reads as motion, never as a blob
+          var b = clamp((speed - 0.08) * 16, 0, 7.5);
+          var bs = b < 0.3 ? "0 0" : "0 " + b.toFixed(1);
+          if (bs !== c.lastB) {
+            c.blur.setAttribute("stdDeviation", bs);
+            c.lastB = bs;
+          }
+          var w = (DIG_W * visible).toFixed(1);
+          if (w !== c.lastW) {
+            c.el.style.width = w + "px";
+            c.el.style.opacity = visible < 0.02 ? "0" : String(Math.min(1, visible * 1.4).toFixed(3));
+            c.lastW = w;
+          }
+        }
+        var digitsRed = false;
+        function apply(t) {
+          var v = value(t);
+          var p = colPositions(v);
+          var dt = 0.002;
+          var pa = colPositions(value(t - dt));
+          var pb = colPositions(value(t + dt));
+          for (var k = 0; k < 4; k++) {
+            var d = pb[k] - pa[k];
+            if (d < -5) d += 10; // wrapped
+            d = (d / (2 * dt)) * F; // digits per frame, instantaneous
+            var vis = 1;
+            if (k === 3) vis = smooth((v - 92) / 12); // hundreds column grows in as the value passes 100
+            if (k === 2) vis = smooth((v - 8) / 3); // tens
+            setCol(cols[k], p[k] % 10.0000001, Math.abs(d), vis);
+          }
+          var red = t >= T_FULL - EPS;
+          if (red !== digitsRed) {
+            var c = red ? "#ff453a" : "#ffffff";
+            num.querySelectorAll(".dg, .dot").forEach(function (e) {
+              e.style.color = c;
+            });
+            unit.style.color = red ? "#ff6961" : "rgba(255,255,255,0.92)";
+            digitsRed = red;
+          }
+
+          // bar segments
+          var f = fill(t) * BAR_W;
+          var x = 0;
+          for (var i = 0; i < SEGS.length; i++) {
+            var w = SEGS[i].frac * BAR_W;
+            if (i === SEGS.length - 1) w = BAR_W - x;
+            var vis = clamp(f - x, 0, w);
+            segEls[i].style.left = x.toFixed(1) + "px";
+            segEls[i].style.width = vis.toFixed(1) + "px";
+            x += w;
+          }
+          // the filling edge glints while it moves
+          var fm = fill(t) - fill(t - F);
+          var eo = t >= R0 && t < T_FULL + F ? clamp(fm * 40, 0, 1) : 0;
+          edge.style.opacity = eo.toFixed(3);
+          edge.style.transform = "translateX(" + (f - 3).toFixed(1) + "px)";
+          // WhatsApp label rides the green segment once it is wide enough
+          var waX = (SEGS[0].frac + SEGS[1].frac + SEGS[2].frac) * BAR_W;
+          var waW = Math.max(0, f - waX);
+          walbl.style.transform = "translateX(" + (waX + 16).toFixed(1) + "px)";
+          walbl.style.opacity = clamp((waW - 250) / 60, 0, 1).toFixed(3);
+        }
+
+        /* ---------- timeline ---------- */
+        var tl = gsap.timeline({ paused: true });
+        var clock = { t: 0 };
+        tl.fromTo(clock, { t: 0 }, { t: D, duration: D, ease: "none", onUpdate: function () { apply(clock.t); } }, 0);
+
+        // 0.133 "phone": the card rises from behind his head (first visible frame already 35 % up)
+        var tIn = T_IN - EPS;
+        tl.fromTo("#enter", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, tIn);
+        tl.fromTo("#enter", { y: 120, scale: 0.9, rotation: -2.5 }, { y: 0, scale: 1, rotation: 0, duration: 0.55, ease: "expo.out" }, tIn - 0.035);
+        tl.fromTo("#card", { filter: "blur(9px)" }, { filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, tIn);
+
+        // 1.400 the counter lands: a small punch on the number
+        tl.fromTo("#num", { scale: 1.07 }, { scale: 1, duration: 0.28, ease: "power3.out", immediateRender: false }, R1 - EPS);
+
+        // 1.900 "storage": full. hot flash -> red, STORAGE FULL pill, short shake, alarm glow
+        var tF = T_FULL - EPS;
+        tl.set(redfill, { opacity: 1 }, tF);
+        tl.fromTo(hot, { opacity: 0.95 }, { opacity: 0, duration: 0.2, ease: "power2.out", immediateRender: false }, tF);
+        tl.fromTo("#pill", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, tF);
+        tl.fromTo("#pill", { scale: 0.45 }, { scale: 1, duration: 0.4, ease: "back.out(2.6)" }, tF - 0.6 * F);
+        tl.fromTo("#alertEdge", { opacity: 0 }, { opacity: 1, duration: 0.08, ease: "power2.out" }, tF);
+        tl.fromTo("#glow", { opacity: 0 }, { opacity: 0.85, duration: 0.1, ease: "power2.out" }, tF);
+        tl.to("#glow", { opacity: 0.5, duration: 0.35, ease: "sine.inOut" }, tF + 0.12);
+        [[16, 0.7], [-12, -0.5], [9, 0.35], [-5, -0.2], [2, 0.08], [0, 0]].forEach(function (s, k) {
+          tl.set("#shake", { x: s[0], rotation: s[1] }, tF + k * F);
+        });
+
+        // 2.400 bar downbeat: alarm pulse (glow + edge + pill)
+        var tB = T_BEAT - EPS;
+        tl.fromTo("#glow", { opacity: 0.95 }, { opacity: 0.55, duration: 0.3, ease: "power2.out", immediateRender: false }, tB);
+        tl.fromTo("#pill", { scale: 1.12 }, { scale: 1, duration: 0.25, ease: "power2.out", immediateRender: false }, tB);
+        tl.fromTo(hot, { opacity: 0.35 }, { opacity: 0, duration: 0.2, ease: "power2.out", immediateRender: false }, tB);
+
+        apply(0);
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

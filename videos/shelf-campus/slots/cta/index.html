@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>cta</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* FRONT layer, output 52.500 -> 56.967 (134 frames). Local t = output - 52.5, frame k = t * 30.
+         Kartik on the bright wall (head top ~y 740, x 600-990). Everything lives in the top band y 290-660.
+           k   3  52.600 "Built"     student-ID glass card swings in, BUILT rises
+           k  14  52.967 "by"        BY rises
+           k  21  53.200 "students"  STUDENTS. slams (letters, blue flash)
+           k  38  53.767 "for"       BUILT BY rolls out, FOR rolls in
+           k  50  54.167 "students"  STUDENTS. punches again + light sweep
+           k  58-63 54.433-54.600    the card swings out (gone by 54.60)
+           k  77  55.067 "semester"  update dialog pops: Semester 2.0 / Update available / [Update now]
+           k  80  55.167             the button is tapped; it collapses into the progress track
+           k  84-110 55.300-56.167   Installing... fill 0 -> 100 %
+           k 111  56.200 "upgrade"   Upgrade complete: check badge, light burst; calm hold to the cut */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      .rig { position: absolute; inset: 0; }
+
+      .glass {
+        position: absolute;
+        inset: 0;
+        border-radius: 42px;
+        overflow: hidden;
+        background:
+          radial-gradient(120% 140% at 0% 0%, rgba(120, 170, 255, 0.17) 0%, rgba(120, 170, 255, 0) 55%),
+          linear-gradient(160deg, #25395f 0%, #121f3d 52%, #0a1428 100%);
+        box-shadow:
+          inset 0 0 0 1.5px rgba(150, 195, 255, 0.38),
+          inset 0 2px 0 rgba(255, 255, 255, 0.2),
+          0 46px 84px -18px rgba(38, 26, 8, 0.5),
+          0 14px 28px rgba(28, 20, 8, 0.3),
+          0 0 46px rgba(79, 157, 255, 0.22);
+        color: #ffffff;
+      }
+      .sheen {
+        position: absolute;
+        top: -60px;
+        bottom: -60px;
+        left: 0;
+        width: 300px;
+        background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(190, 220, 255, 0.08) 35%, rgba(225, 238, 255, 0.28) 50%, rgba(190, 220, 255, 0.08) 65%, rgba(255, 255, 255, 0) 100%);
+        opacity: 0;
+      }
+
+      /* ---------- student ID card ---------- */
+      .idbox { position: absolute; left: 80px; top: 286px; width: 920px; height: 344px; perspective: 1600px; }
+      #id-move { transform-origin: 50% 50%; }
+      .id-head {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 66px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 36px;
+        background: linear-gradient(90deg, rgba(79, 157, 255, 0.2), rgba(79, 157, 255, 0.06));
+        border-bottom: 1.5px solid rgba(150, 195, 255, 0.22);
+      }
+      .id-head img { width: 32px; height: 37px; display: block; }
+      .id-brand { font: 700 24px/1 var(--font-brand); letter-spacing: 0.2em; color: #e3eaf4; }
+      .id-kind { margin-left: auto; font: 700 21px/1 var(--font-ui); letter-spacing: 0.24em; color: #6fb0ff; }
+      .id-photo { position: absolute; left: 36px; top: 98px; width: 168px; height: 210px; border-radius: 22px; overflow: hidden; box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4), inset 0 0 0 1.5px rgba(150, 195, 255, 0.3); }
+      .id-photo svg { display: block; width: 168px; height: 210px; }
+      .id-water { position: absolute; right: 26px; top: 92px; width: 196px; height: 224px; opacity: 0.075; }
+      .l1 { position: absolute; left: 244px; top: 104px; height: 74px; width: 560px; overflow: hidden; }
+      .l1 .w { position: absolute; top: 0; font: 700 58px/74px var(--font-brand); letter-spacing: 0.01em; color: #a9c6f0; white-space: nowrap; }
+      .l2 { position: absolute; left: 238px; top: 172px; height: 128px; display: flex; font: 800 106px/128px var(--font-brand); letter-spacing: -0.012em; white-space: nowrap; }
+      .l2 .ch {
+        display: inline-block;
+        background: linear-gradient(180deg, #ffffff 0%, #eef3fb 45%, #b9c9e0 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        transform-origin: 50% 70%;
+      }
+      .l2glow { position: absolute; left: 230px; top: 176px; width: 640px; height: 120px; border-radius: 60px; background: radial-gradient(closest-side, rgba(79, 157, 255, 0.55), rgba(79, 157, 255, 0)); opacity: 0; }
+
+      /* ---------- update dialog ---------- */
+      .dlgbox { position: absolute; left: 110px; top: 296px; width: 860px; height: 348px; perspective: 1600px; }
+      #dlg-move { transform-origin: 50% 60%; }
+      .tile {
+        position: absolute;
+        left: 40px;
+        top: 42px;
+        width: 150px;
+        height: 150px;
+        border-radius: 38px;
+        background: radial-gradient(90% 90% at 50% 40%, #27467f 0%, #10203f 70%, #0a1631 100%);
+        box-shadow: inset 0 0 0 1.5px rgba(150, 195, 255, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.2), 0 12px 26px rgba(0, 0, 0, 0.45), 0 0 30px rgba(79, 157, 255, 0.35);
+        display: grid;
+        place-items: center;
+      }
+      .tile img { width: 100px; height: 114px; display: block; filter: drop-shadow(0 0 14px rgba(120, 180, 255, 0.55)); }
+      .tick-badge {
+        position: absolute;
+        left: 160px;
+        top: 32px;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: linear-gradient(180deg, #4fe68a 0%, #25d366 55%, #1cb658 100%);
+        box-shadow: 0 0 0 5px #10203f, 0 6px 14px rgba(0, 0, 0, 0.4), 0 0 24px rgba(37, 211, 102, 0.7);
+        display: grid;
+        place-items: center;
+        opacity: 0;
+      }
+      .tick-badge svg { width: 36px; height: 36px; display: block; }
+      .d-title { position: absolute; left: 226px; top: 46px; font: 700 62px/76px var(--font-brand); letter-spacing: -0.015em; color: #ffffff; white-space: nowrap; }
+      .d-title b {
+        font-weight: 800;
+        background: linear-gradient(180deg, #9fd0ff 0%, #4f9dff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .d-sub { position: absolute; left: 228px; top: 126px; width: 600px; height: 48px; overflow: hidden; }
+      .d-sub .s { position: absolute; left: 0; top: 0; height: 48px; display: flex; align-items: center; gap: 12px; font: 500 34px/48px var(--font-ui); color: rgba(205, 220, 244, 0.82); white-space: nowrap; }
+      .d-sub .s.done { color: #ffffff; font-weight: 600; }
+      .d-sub .s.done svg { width: 34px; height: 34px; display: block; }
+      .btn {
+        position: absolute;
+        left: 40px;
+        top: 232px;
+        width: 780px;
+        height: 76px;
+        border-radius: 38px;
+        background: linear-gradient(180deg, #6db0ff 0%, #4f9dff 45%, #2f7ff0 100%);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 12px 24px rgba(20, 70, 160, 0.45), 0 0 28px rgba(79, 157, 255, 0.4);
+        display: grid;
+        place-items: center;
+        font: 700 34px/1 var(--font-ui);
+        letter-spacing: 0.01em;
+        color: #ffffff;
+        transform-origin: 50% 50%;
+      }
+      .ripple { position: absolute; left: 430px; top: 270px; width: 0; height: 0; display: flex; align-items: center; justify-content: center; }
+      .ripple i { flex: none; display: block; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0)); opacity: 0; }
+      .track {
+        position: absolute;
+        left: 40px;
+        top: 260px;
+        width: 640px;
+        height: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: rgba(150, 195, 255, 0.16);
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+        opacity: 0;
+        transform-origin: 50% 50%;
+      }
+      .fill {
+        position: absolute;
+        inset: 0;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #2f7ff0 0%, #4f9dff 60%, #8cc4ff 100%);
+        box-shadow: 0 0 14px rgba(79, 157, 255, 0.8);
+        transform: translateX(-100%);
+      }
+      .fill-ok { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(90deg, #1cb658, #25d366 60%, #6ff0a0); opacity: 0; }
+      .fill-shine { position: absolute; top: 0; bottom: 0; left: 0; width: 120px; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0)); }
+      .pct { position: absolute; left: 700px; top: 246px; width: 120px; height: 48px; text-align: right; font: 700 36px/48px var(--font-ui); font-variant-numeric: tabular-nums; color: #ffffff; opacity: 0; }
+
+      /* completion burst (behind the dialog, centred on the icon tile) */
+      .burst { position: absolute; left: 225px; top: 413px; width: 0; height: 0; }
+      .bloom { position: absolute; left: -420px; top: -420px; width: 840px; height: 840px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(190, 222, 255, 0.75) 16%, rgba(79, 157, 255, 0.42) 34%, rgba(79, 157, 255, 0.12) 52%, rgba(79, 157, 255, 0) 68%); opacity: 0; }
+      .ray { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+      .ray i {
+        position: absolute;
+        left: 0;
+        top: -3px;
+        display: block;
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 22%, rgba(150, 205, 255, 0.85) 55%, rgba(79, 157, 255, 0) 100%);
+        box-shadow: 0 0 12px rgba(79, 157, 255, 0.8);
+        transform-origin: 0% 50%;
+        opacity: 0;
+      }
+      .shock { position: absolute; left: -110px; top: -110px; width: 220px; height: 220px; border-radius: 50%; border: 6px solid rgba(170, 215, 255, 0.95); box-shadow: 0 0 26px rgba(79, 157, 255, 0.85), inset 0 0 18px rgba(79, 157, 255, 0.6); opacity: 0; }
+      .spk { position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; opacity: 0; }
+      .spk svg { display: block; width: 46px; height: 46px; filter: drop-shadow(0 0 8px rgba(79, 157, 255, 0.95)); }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="4.466667" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="4.466667" data-track-index="0">
+        <!-- ======== student ID card ======== -->
+        <div class="idbox" id="idbox">
+          <div class="rig" id="id-move">
+            <div class="rig" id="id-float">
+              <div class="rig" id="id-jolt">
+                <div class="glass" id="id-card">
+                  <div class="id-head">
+                    <img src="./assets/shelf-mark.png" alt="" />
+                    <span class="id-brand">SHELF CAMPUS</span>
+                    <span class="id-kind">STUDENT ID</span>
+                  </div>
+                  <img class="id-water" src="./assets/shelf-mark.png" alt="" />
+                  <div class="id-photo">
+                    <svg viewBox="0 0 168 210" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="phbg" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" stop-color="#2b4c8a" />
+                          <stop offset="1" stop-color="#132447" />
+                        </linearGradient>
+                        <linearGradient id="phsil" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" stop-color="#a8c6f4" />
+                          <stop offset="1" stop-color="#6e90cc" />
+                        </linearGradient>
+                      </defs>
+                      <rect width="168" height="210" fill="url(#phbg)" />
+                      <path d="M12 210 C16 162 50 142 84 142 C118 142 152 162 156 210 Z" fill="url(#phsil)" />
+                      <rect x="70" y="112" width="28" height="36" rx="10" fill="url(#phsil)" />
+                      <ellipse cx="84" cy="84" rx="40" ry="46" fill="url(#phsil)" />
+                      <path d="M43 82 C39 48 60 30 86 30 C113 30 131 50 126 80 C119 64 104 57 86 58 C66 58 51 66 43 82 Z" fill="#22345a" />
+                      <rect x="49" y="78" width="31" height="17" rx="8.5" fill="#15171d" stroke="#ffd60a" stroke-width="4" />
+                      <rect x="88" y="78" width="31" height="17" rx="8.5" fill="#15171d" stroke="#ffd60a" stroke-width="4" />
+                      <path d="M80 84 H88" stroke="#ffd60a" stroke-width="4" />
+                    </svg>
+                  </div>
+                  <div class="l2glow" id="l2glow"></div>
+                  <div class="l1" id="l1" data-layout-allow-overlap data-layout-allow-occlusion data-layout-allow-overflow>
+                    <span class="w" id="w-built" style="left: 0" data-layout-allow-overlap data-layout-allow-occlusion>BUILT</span>
+                    <span class="w" id="w-by" style="left: 222px" data-layout-allow-overlap data-layout-allow-occlusion>BY</span>
+                    <span class="w" id="w-for" style="left: 0" data-layout-allow-overlap data-layout-allow-occlusion>FOR</span>
+                  </div>
+                  <div class="l2" id="l2" data-layout-allow-occlusion></div>
+                  <div class="sheen" id="id-sheen"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== update dialog ======== -->
+        <div class="burst" id="burst" data-layout-allow-overflow>
+          <div class="bloom" id="bloom"></div>
+          <div class="shock" id="shock"></div>
+        </div>
+        <div class="dlgbox" id="dlgbox">
+          <div class="rig" id="dlg-move">
+            <div class="rig" id="dlg-float">
+              <div class="glass" id="dlg">
+                <div class="tile" id="tile"><img src="./assets/shelf-mark.png" alt="" /></div>
+                <div class="d-title" id="d-title">Semester <b>2.0</b></div>
+                <div class="d-sub" data-layout-allow-overlap data-layout-allow-overflow>
+                  <div class="s" id="s-avail" data-layout-allow-overlap data-layout-allow-overflow>Update available</div>
+                  <div class="s" id="s-inst" data-layout-allow-overlap data-layout-allow-overflow><span>Installing</span><span id="dots" style="margin-left: -12px; width: 40px">...</span></div>
+                  <div class="s done" id="s-done" data-layout-allow-overlap data-layout-allow-overflow>
+                    <svg viewBox="0 0 34 34" aria-hidden="true">
+                      <circle cx="17" cy="17" r="16" fill="#25d366" />
+                      <path d="M9.5 17.5 L15 23 L25 12" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span>Upgrade complete</span>
+                  </div>
+                </div>
+                <div class="track" id="track">
+                  <div class="fill" id="fill"><div class="fill-shine" id="shine"></div></div>
+                  <div class="fill-ok" id="fill-ok"></div>
+                </div>
+                <div class="pct" id="pct">0%</div>
+                <div class="btn" id="btn">Update now</div>
+                <div class="ripple"><i id="ripple"></i></div>
+                <div class="sheen" id="dlg-sheen"></div>
+              </div>
+              <div class="tick-badge" id="tick">
+                <svg viewBox="0 0 36 36" aria-hidden="true">
+                  <path d="M9 18.5 L15.5 25 L27.5 11.5" fill="none" stroke="#ffffff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var DUR = 4.466667;
+        var F = 1 / 30;
+        var E = 0.004;
+        function K(k) { return k * F - E; }
+        function hash(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+        function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+        function $(id) { return document.getElementById(id); }
+
+        var BUILT = 3, BY = 14, STUD1 = 21, FOR = 38, STUD2 = 50, ID_OUT = 58;
+        var DLG = 77, TAP = 80, FILL0 = 84, FILL1 = 110, DONE = 111;
+
+        // STUDENTS. as per-letter spans
+        var l2 = $("l2");
+        "STUDENTS.".split("").forEach(function (c) {
+          var s = document.createElement("span");
+          s.className = "ch";
+          s.textContent = c;
+          l2.appendChild(s);
+        });
+        var chars = Array.prototype.slice.call(l2.querySelectorAll(".ch"));
+
+        // burst rays + sparkles (built once, deterministic)
+        var burst = $("burst");
+        var rays = [];
+        for (var i = 0; i < 16; i++) {
+          var r = document.createElement("div");
+          r.className = "ray";
+          var ang = (i / 16) * 360 + (hash(i * 3.3) - 0.5) * 12;
+          r.style.transform = "rotate(" + ang.toFixed(1) + "deg)";
+          var bar = document.createElement("i");
+          var len = 190 + hash(i * 7.1) * 150;
+          bar.style.width = len.toFixed(0) + "px";
+          bar.style.height = (4 + hash(i * 2.7) * 4).toFixed(1) + "px";
+          r.appendChild(bar);
+          burst.appendChild(r);
+          rays.push(bar);
+        }
+        var SPK = '<svg viewBox="0 0 46 46" aria-hidden="true"><path d="M23 0 C25 15 31 21 46 23 C31 25 25 31 23 46 C21 31 15 25 0 23 C15 21 21 15 23 0 Z" fill="#ffffff"/></svg>';
+        var spkPos = [[600, -150], [700, 30], [-150, -170], [510, 175], [240, -190], [780, -100], [-170, 60], [380, 220]];
+        var sparks = spkPos.map(function (p, j) {
+          var d = document.createElement("div");
+          d.className = "spk";
+          d.innerHTML = SPK;
+          d.style.left = p[0] + "px";
+          d.style.top = p[1] + "px";
+          burst.appendChild(d);
+          return d;
+        });
+
+        // ---- pure functions of t, applied by one driver ----
+        var fillE1 = gsap.parseEase("power2.out"), fillE2 = gsap.parseEase("power1.inOut"), fillE3 = gsap.parseEase("power3.out");
+        // install progress: quick burst, a short hitch, a second burst, a careful finish
+        function fillAt(t) {
+          var a = (t - FILL0 * F);
+          if (a <= 0) return 0;
+          var segs = [[0.24, 0, 0.41, fillE1], [0.12, 0.41, 0.47, fillE2], [0.26, 0.47, 0.88, fillE1], [0.25, 0.88, 1, fillE3]];
+          for (var s = 0; s < segs.length; s++) {
+            var g = segs[s];
+            if (a < g[0]) return g[1] + (g[2] - g[1]) * g[3](a / g[0]);
+            a -= g[0];
+          }
+          return 1;
+        }
+        function floatTf(t, ph, amp) {
+          var TAU = Math.PI * 2;
+          var rx = amp * (3 + 1.0 * Math.sin(TAU * t / 3.1 + ph));
+          var ry = amp * (-3.4 + 1.3 * Math.sin(TAU * t / 3.9 + ph * 2.1));
+          var dy = 5 * Math.sin(TAU * t / 2.6 + ph * 0.7);
+          return "perspective(1600px) translateY(" + dy.toFixed(2) + "px) rotateX(" + rx.toFixed(3) + "deg) rotateY(" + ry.toFixed(3) + "deg)";
+        }
+        var fill = $("fill"), shine = $("shine"), pct = $("pct"), dots = $("dots");
+        var idFloat = $("id-float"), dlgFloat = $("dlg-float");
+        var last = {};
+        function put(key, el, prop, val) {
+          if (last[key] !== val) { last[key] = val; el.style[prop] = val; }
+        }
+        function render(t) {
+          put("idf", idFloat, "transform", floatTf(t, 0.6, 1));
+          put("dlf", dlgFloat, "transform", floatTf(t, 1.9, 1));
+          var p = fillAt(t);
+          put("fill", fill, "transform", "translateX(" + ((p - 1) * 100).toFixed(2) + "%)");
+          var sh = ((t * 1.6) % 1) * 900 - 180;
+          put("shine", shine, "transform", "translateX(" + sh.toFixed(1) + "px)");
+          var pc = Math.round(p * 100);
+          put("pct", pct, "textContent", t >= DONE * F - 0.001 ? "100%" : pc + "%");
+          var nd = Math.floor(t * 7) % 4;
+          put("dots", dots, "textContent", ["", ".", "..", "..."][nd]);
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        function show(sel, k) { tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, K(k)); }
+        function flash(sel, t0, peak, dur, s0, s1) {
+          tl.fromTo(sel, { opacity: 0 }, { opacity: peak, duration: 0.001, ease: "none" }, t0);
+          tl.fromTo(sel, { opacity: peak }, { opacity: 0, duration: dur, ease: "power2.out", immediateRender: false }, t0 + 0.001);
+          if (s0 !== undefined) tl.fromTo(sel, { scale: s0 }, { scale: s1, duration: dur, ease: "power2.out" }, t0);
+        }
+        var D = { t: 0 };
+        tl.fromTo(D, { t: 0 }, { t: DUR, duration: DUR, ease: "none", onUpdate: function () { render(D.t); } }, 0);
+
+        // ================= student ID card =================
+        show("#id-move", BUILT);
+        tl.fromTo("#id-move", { rotationY: 62, x: 170, scale: 0.84 }, { rotationY: 0, x: 0, scale: 1, duration: 0.6, ease: "expo.out" }, K(BUILT));
+        tl.fromTo("#id-move", { filter: "blur(16px)" }, { filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, K(BUILT));
+        // BUILT / BY rise through the line mask
+        tl.fromTo("#w-built", { yPercent: 105 }, { yPercent: 0, duration: 0.36, ease: "power4.out" }, K(BUILT + 1));
+        tl.fromTo("#w-by", { yPercent: 105 }, { yPercent: 0, duration: 0.34, ease: "power4.out" }, K(BY));
+        tl.set("#w-for", { yPercent: 105 }, 0);
+        // STUDENTS. slams letter by letter
+        chars.forEach(function (c, j) {
+          var t0 = K(STUD1) + j * 0.016;
+          tl.fromTo(c, { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, t0);
+          tl.fromTo(c, { scale: 1.9, y: -16, filter: "blur(10px)" }, { scale: 1, y: 0, filter: "blur(0px)", duration: 0.34, ease: "power4.out" }, t0);
+        });
+        flash("#l2glow", K(STUD1 + 1), 1, 0.5, 0.7, 1.15);
+        tl.fromTo("#id-jolt", { y: 0 }, { y: 8, duration: 0.05, ease: "power2.out" }, K(STUD1 + 1));
+        tl.fromTo("#id-jolt", { y: 8 }, { y: 0, duration: 0.3, ease: "back.out(2.6)", immediateRender: false }, K(STUD1 + 1) + 0.05);
+        // "for": BUILT BY whips out the top of the mask, FOR rises in
+        tl.fromTo(["#w-built", "#w-by"], { yPercent: 0 }, { yPercent: -110, duration: 0.14, ease: "power4.in", immediateRender: false }, K(FOR - 2));
+        tl.fromTo("#w-for", { yPercent: 105 }, { yPercent: 0, duration: 0.32, ease: "back.out(1.7)", immediateRender: false }, K(FOR));
+        // "students" again: a punch + a light sweep
+        tl.fromTo("#l2", { scale: 1 }, { scale: 1.1, duration: 0.06, ease: "power2.out" }, K(STUD2));
+        tl.fromTo("#l2", { scale: 1.1 }, { scale: 1, duration: 0.34, ease: "back.out(2.2)", immediateRender: false }, K(STUD2) + 0.06);
+        flash("#l2glow", K(STUD2), 0.9, 0.45);
+        tl.fromTo("#id-sheen", { x: -340, opacity: 1 }, { x: 1000, duration: 0.42, ease: "power2.inOut" }, K(STUD2));
+        tl.set("#id-sheen", { opacity: 0 }, K(STUD2) + 0.42);
+        // out by 54.60: swings away
+        tl.fromTo("#id-move", { rotationY: 0, x: 0, opacity: 1 }, { rotationY: -58, x: -150, opacity: 0, duration: 0.17, ease: "power3.in", immediateRender: false }, K(ID_OUT));
+        tl.fromTo("#id-move", { filter: "blur(0px)" }, { filter: "blur(14px)", duration: 0.17, ease: "power2.in", immediateRender: false }, K(ID_OUT));
+
+        // ================= update dialog =================
+        show("#dlg-move", DLG);
+        tl.fromTo("#dlg-move", { y: 60, scale: 0.82, rotationX: 24 }, { y: 0, scale: 1, rotationX: 0, duration: 0.55, ease: "back.out(1.4)" }, K(DLG));
+        tl.fromTo("#dlg-move", { filter: "blur(14px)" }, { filter: "blur(0px)", duration: 0.18, ease: "power2.out" }, K(DLG));
+        tl.fromTo("#tile", { scale: 0.4, rotation: -12 }, { scale: 1, rotation: 0, duration: 0.5, ease: "back.out(2)" }, K(DLG + 2));
+        tl.fromTo("#d-title", { opacity: 0, x: -36 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out" }, K(DLG + 3));
+        tl.fromTo("#s-avail", { yPercent: 100 }, { yPercent: 0, duration: 0.32, ease: "power4.out" }, K(DLG + 5));
+        tl.set(["#s-inst", "#s-done"], { yPercent: 100 }, 0);
+        tl.fromTo("#btn", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, K(DLG + 4));
+        // the tap: press, ripple, release, then the button collapses into the progress track
+        tl.fromTo("#btn", { scale: 1 }, { scale: 0.95, duration: 0.07, ease: "power2.out", immediateRender: false }, K(TAP));
+        flash("#ripple", K(TAP + 1), 1, 0.4, 0.4, 4.2);
+        tl.fromTo("#btn", { scale: 0.95, scaleY: 0.95, opacity: 1 }, { scale: 1, scaleY: 0.22, opacity: 0, duration: 0.16, ease: "power3.in", immediateRender: false }, K(TAP) + 0.07);
+        tl.fromTo("#track", { opacity: 0, scaleY: 3.2 }, { opacity: 1, scaleY: 1, duration: 0.22, ease: "power3.out" }, K(TAP + 3));
+        tl.fromTo("#pct", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.25, ease: "power3.out" }, K(FILL0));
+        tl.fromTo("#s-avail", { yPercent: 0 }, { yPercent: -100, duration: 0.16, ease: "power3.in", immediateRender: false }, K(FILL0 - 2));
+        tl.fromTo("#s-inst", { yPercent: 100 }, { yPercent: 0, duration: 0.3, ease: "power4.out", immediateRender: false }, K(FILL0));
+
+        // ================= "upgrade" (56.200): complete =================
+        tl.fromTo("#fill-ok", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "power1.out" }, K(DONE));
+        tl.fromTo("#s-inst", { yPercent: 0 }, { yPercent: -100, duration: 0.12, ease: "power3.in", immediateRender: false }, K(DONE - 2));
+        tl.fromTo("#s-done", { yPercent: 100 }, { yPercent: 0, duration: 0.36, ease: "back.out(1.8)", immediateRender: false }, K(DONE));
+        show("#tick", DONE);
+        tl.fromTo("#tick", { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: 0.45, ease: "back.out(3)" }, K(DONE));
+        tl.fromTo("#tile", { scale: 1 }, { scale: 1.1, duration: 0.08, ease: "power2.out", immediateRender: false }, K(DONE));
+        tl.fromTo("#tile", { scale: 1.1 }, { scale: 1, duration: 0.4, ease: "back.out(2.4)", immediateRender: false }, K(DONE) + 0.08);
+        // light burst behind the dialog, from the icon
+        tl.fromTo("#bloom", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.12, ease: "power2.out" }, K(DONE));
+        tl.fromTo("#bloom", { opacity: 1 }, { opacity: 0.32, duration: 0.6, ease: "power2.out", immediateRender: false }, K(DONE) + 0.12);
+        flash("#shock", K(DONE), 1, 0.55, 0.3, 3.2);
+        rays.forEach(function (bar, j) {
+          var t0 = K(DONE) + (j % 4) * 0.012;
+          tl.fromTo(bar, { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, t0);
+          tl.fromTo(bar, { scaleX: 0.15, x: 60 }, { scaleX: 1, x: 150 + hash(j * 4.4) * 60, duration: 0.5, ease: "expo.out" }, t0);
+          tl.fromTo(bar, { opacity: 1 }, { opacity: 0, duration: 0.36, ease: "power2.in", immediateRender: false }, t0 + 0.16);
+        });
+        sparks.forEach(function (sp, j) {
+          var t0 = K(DONE + 2 + (j % 4) * 2);
+          tl.fromTo(sp, { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, t0);
+          tl.fromTo(sp, { scale: 0, rotation: 0 }, { scale: 1 + hash(j * 9.1) * 0.5, rotation: 90, duration: 0.28, ease: "back.out(2)" }, t0);
+          tl.fromTo(sp, { opacity: 1 }, { opacity: 0, scale: 0.2, duration: 0.3, ease: "power2.in", immediateRender: false }, t0 + 0.3);
+        });
+        tl.fromTo("#dlg-sheen", { x: -340, opacity: 1 }, { x: 1000, duration: 0.5, ease: "power2.inOut" }, K(DONE + 1));
+        tl.set("#dlg-sheen", { opacity: 0 }, K(DONE + 1) + 0.5);
+        tl.fromTo("#dlg", { boxShadow: "inset 0 0 0 1.5px rgba(150,195,255,0.38), inset 0 2px 0 rgba(255,255,255,0.2), 0 46px 84px -18px rgba(38,26,8,0.5), 0 14px 28px rgba(28,20,8,0.3), 0 0 46px rgba(79,157,255,0.22)" },
+          { boxShadow: "inset 0 0 0 2.5px rgba(170,215,255,0.9), inset 0 2px 0 rgba(255,255,255,0.3), 0 46px 84px -18px rgba(38,26,8,0.5), 0 14px 28px rgba(28,20,8,0.3), 0 0 90px rgba(79,157,255,0.6)", duration: 0.12, ease: "power2.out" }, K(DONE));
+        tl.to("#dlg", { boxShadow: "inset 0 0 0 1.5px rgba(160,205,255,0.55), inset 0 2px 0 rgba(255,255,255,0.22), 0 46px 84px -18px rgba(38,26,8,0.5), 0 14px 28px rgba(28,20,8,0.3), 0 0 60px rgba(79,157,255,0.36)", duration: 0.5, ease: "power2.out" }, K(DONE) + 0.12);
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

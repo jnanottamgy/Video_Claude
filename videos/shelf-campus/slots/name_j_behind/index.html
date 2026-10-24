@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>founders / name_j_behind</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* BEHIND layer (under the person cut-out). Output 11.233 -> 13.433 (66 frames), t = out - 11.2333.
+         "I'm" 11.30 in silence: nothing. Drop 11.700 (frame 14): JNANOTTAM slams in letter by letter from
+         the centre out (1 frame apart), 1.35 -> 1 with blur -> sharp, white-hot for 3 frames, then chrome
+         silver. Light sweep on 12.284, glow pulses on 12.867 and on the freeze 13.267, slow zoom 1 -> 1.04.
+         Baseline y 864, Sora 800 150 px; his head (top ~735, x ~600-935) covers T T A. */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+
+      #word {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1080px;
+        height: 1920px;
+        transform-origin: 540px 806px;
+      }
+      .line {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        display: flex;
+        justify-content: center;
+        font: 800 var(--fs) / 1 var(--font-brand);
+        white-space: nowrap;
+        perspective: 900px;
+      }
+      .slot { position: relative; display: inline-block; transform-origin: 50% 62%; opacity: 0; }
+      .slot .in { position: relative; display: block; }
+      .slot .in > span { display: block; }
+      /* chrome face */
+      .slot .b {
+        position: relative;
+        background: linear-gradient(180deg, #ffffff 0%, #f3f7fc 30%, #d2dcea 47%, #8fa3bf 53%, #dfe7f2 66%, #b7c5d8 84%, #8396b3 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      /* steel extrusion under the face (gives the letters a few px of thickness) */
+      .slot .x {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #1a2c50;
+        text-shadow: 0 1px 0 #2f4c80, 0 2px 0 #2a4473, 0 3px 0 #243c67, 0 4px 0 #1f345b, 0 5px 0 #1a2c50, 0 6px 0 #152545,
+          0 7px 0 #111e3a, 0 12px 18px rgba(0, 0, 0, 0.55), 0 26px 40px rgba(0, 0, 0, 0.35);
+      }
+      /* lit top edge: a pale copy 2 px higher, peeking out above the face */
+      .slot .hl { position: absolute; left: 0; top: -2px; color: rgba(200, 225, 255, 0.85); }
+      /* blue bloom */
+      .slot .g { position: absolute; left: 0; top: 0; color: rgb(var(--glow)); filter: blur(26px); opacity: 0; }
+      /* white-hot copy (arrival) */
+      .slot .w {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #ffffff;
+        text-shadow: 0 0 14px rgba(255, 255, 255, 0.95), 0 0 38px rgba(170, 210, 255, 0.95), 0 0 80px rgba(var(--glow), 0.8);
+        opacity: 0;
+      }
+      /* specular sweep: one white copy of the word masked to a moving band */
+      .sheen {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        display: flex;
+        justify-content: center;
+        font: 800 var(--fs) / 1 var(--font-brand);
+        white-space: nowrap;
+        color: #ffffff;
+        --p: -20%;
+        -webkit-mask-image: linear-gradient(104deg, transparent calc(var(--p) - 13%), rgba(0, 0, 0, 0.45) calc(var(--p) - 4%), #000 calc(var(--p) - 1%), #000 calc(var(--p) + 1%), rgba(0, 0, 0, 0.45) calc(var(--p) + 4%), transparent calc(var(--p) + 13%));
+        mask-image: linear-gradient(104deg, transparent calc(var(--p) - 13%), rgba(0, 0, 0, 0.45) calc(var(--p) - 4%), #000 calc(var(--p) - 1%), #000 calc(var(--p) + 1%), rgba(0, 0, 0, 0.45) calc(var(--p) + 4%), transparent calc(var(--p) + 13%));
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.95), 0 0 34px rgba(170, 210, 255, 0.95), 0 0 70px rgba(var(--glow), 0.85);
+        opacity: 0;
+      }
+      .sheen span { display: inline-block; }
+
+      /* anamorphic streak through the word on the slam */
+      #streak {
+        position: absolute;
+        left: -100px;
+        width: 1280px;
+        height: 10px;
+        border-radius: 5px;
+        background: linear-gradient(90deg, rgba(79, 157, 255, 0) 0%, rgba(79, 157, 255, 0.75) 22%, #ffffff 50%, rgba(79, 157, 255, 0.75) 78%, rgba(79, 157, 255, 0) 100%);
+        box-shadow: 0 0 26px rgba(var(--glow), 0.95), 0 0 70px rgba(var(--glow), 0.6);
+        opacity: 0;
+      }
+      #halo {
+        position: absolute;
+        left: -60px;
+        width: 1200px;
+        height: 420px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at center, rgba(120, 180, 255, 0.55) 0%, rgba(79, 157, 255, 0.28) 34%, rgba(31, 95, 214, 0.08) 58%, rgba(31, 95, 214, 0) 72%);
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="2.2" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="2.2" data-track-index="0">
+        <div id="word" data-layout-allow-overflow>
+          <div id="halo" aria-hidden="true"></div>
+          <div class="line" id="l1" data-text="JNANOTTAM" aria-hidden="true" data-layout-allow-overflow></div>
+          <div class="sheen" id="sh1" aria-hidden="true" data-layout-allow-overflow></div>
+          <div id="streak" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // ---------- layout ----------
+      var FS = 150;            // px: ink spans x ~20-1060 at scale 1 (fits the frame; the 1.04 zoom just kisses the edges)
+      var BASE = 864;          // baseline y
+      var TOP = BASE - 0.835 * FS; // Sora: baseline sits 0.835 em under the top of a line-height:1 box
+      var MID = BASE - 0.36 * FS;  // optical centre of the caps
+      var KERN = { TA: -0.07 };
+      // Sora 800 advance widths (em), measured; used for timing so nothing depends on font-load order
+      var ADV = { J: 0.64, N: 0.89, A: 0.79, O: 0.87, T: 0.62, M: 0.99 };
+      var stage = document.getElementById("stage");
+      stage.style.setProperty("--fs", FS + "px");
+      var line = document.getElementById("l1");
+      var sheen = document.getElementById("sh1");
+      line.style.top = TOP + "px";
+      sheen.style.top = TOP + "px";
+      document.getElementById("streak").style.top = MID - 5 + "px";
+      document.getElementById("halo").style.top = MID - 210 + "px";
+      document.getElementById("word").style.transformOrigin = "540px " + MID + "px";
+
+      function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text) e.textContent = text;
+        return e;
+      }
+      function layered(e) {
+        e.setAttribute("data-layout-allow-overlap", "");
+        e.setAttribute("data-layout-allow-occlusion", "");
+        return e;
+      }
+      var text = line.getAttribute("data-text");
+      for (var i = 0; i < text.length; i++) {
+        var ch = text[i];
+        var k = KERN[(text[i - 1] || "") + ch] || 0;
+        var slot = el("span", "slot");
+        var inn = el("span", "in");
+        inn.appendChild(layered(el("span", "g", ch)));
+        inn.appendChild(layered(el("span", "x", ch)));
+        inn.appendChild(layered(el("span", "hl", ch)));
+        var b = el("span", "b", ch);
+        b.setAttribute("data-layout-allow-occlusion", "");
+        inn.appendChild(b);
+        inn.appendChild(layered(el("span", "w", ch)));
+        slot.appendChild(inn);
+        var s = layered(el("span", "", ch));
+        if (k) { slot.style.marginLeft = k + "em"; s.style.marginLeft = k + "em"; }
+        line.appendChild(slot);
+        sheen.appendChild(s);
+      }
+
+      // ---------- timeline ----------
+      var T0 = 11.2333;                        // window start (output s)
+      function at(out) { return Math.round(out * 30) / 30 - T0 - 0.004; } // first frame shows the pose
+      var tl = gsap.timeline({ paused: true });
+      var slots = gsap.utils.toArray("#l1 > .slot");
+      var inners = gsap.utils.toArray("#l1 > .slot > .in");
+      var n = slots.length, c = (n - 1) / 2;
+
+      var T_DROP = at(11.7);
+      // letters slam from the centre out, one frame apart
+      slots.forEach(function (sl, i) {
+        var d = Math.ceil(Math.abs(i - c));          // 0 for the centre letter
+        var t = T_DROP + d / 30;
+        var inn = inners[i];
+        var g = sl.querySelector(".g"), w = sl.querySelector(".w");
+        tl.set(sl, { opacity: 1 }, t);
+        tl.fromTo(sl, { scale: 1.35, rotationX: -28, y: -10 }, { scale: 0.975, rotationX: 0, y: 0, duration: 0.15, ease: "expo.out" }, t);
+        tl.to(sl, { scale: 1, duration: 0.22, ease: "sine.out" }, t + 0.15);
+        tl.fromTo(inn, { filter: "blur(14px)" }, { filter: "blur(0px)", duration: 0.17, ease: "power2.out" }, t);
+        // white-hot for 3 frames, then the chrome shows through
+        tl.set(w, { opacity: 1 }, t);
+        tl.to(w, { opacity: 0, duration: 0.14, ease: "power2.out" }, t + 3 / 30);
+        tl.fromTo(g, { opacity: 1 }, { opacity: 0.32, duration: 0.6, ease: "power2.out" }, t);
+      });
+
+      // slam extras: streak + halo
+      tl.fromTo("#streak", { opacity: 0, scaleX: 0.25 }, { opacity: 1, scaleX: 1, duration: 0.08, ease: "expo.out" }, T_DROP);
+      tl.to("#streak", { opacity: 0, scaleX: 1.15, scaleY: 0.4, duration: 0.18, ease: "power2.out" }, T_DROP + 0.08);
+      tl.fromTo("#halo", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "power2.out" }, T_DROP);
+      tl.to("#halo", { opacity: 0.22, duration: 0.7, ease: "power2.out" }, T_DROP + 0.06);
+
+      // slow zoom to the end
+      tl.fromTo("#word", { scale: 1 }, { scale: 1.04, duration: 2.2 - T_DROP, ease: "sine.out" }, T_DROP);
+
+      // light sweep on 12.284
+      var T_SW = at(12.284);
+      var SW_S = T_SW - 0.1, SW_D = 0.5, P0 = -8, P1 = 110;   // the band is on the J at the beat frame
+      tl.set("#sh1", { opacity: 1 }, SW_S);
+      tl.fromTo("#sh1", { "--p": P0 + "%" }, { "--p": P1 + "%", duration: SW_D, ease: "sine.inOut" }, SW_S);
+      tl.set("#sh1", { opacity: 0 }, SW_S + SW_D);
+      // each letter lights up as the band crosses its centre (timed to the band position)
+      var widths = text.split("").map(function (ch, i) { return (ADV[ch] + (KERN[(text[i - 1] || "") + ch] || 0)) * FS; });
+      var total = widths.reduce(function (s2, v) { return s2 + v; }, 0), acc = 540 - total / 2;
+      slots.forEach(function (sl, i) {
+        var xc = (acc + widths[i] / 2) / 10.8;                          // % of the 1080 px line
+        acc += widths[i];
+        var v = Math.min(1, Math.max(0, (xc - P0) / (P1 - P0)));
+        var u = Math.acos(1 - 2 * v) / Math.PI;                         // inverse of sine.inOut
+        var tc = SW_S + u * SW_D;
+        var w = sl.querySelector(".w");
+        tl.to(w, { opacity: 0.62, duration: 0.07, ease: "power2.out", immediateRender: false }, tc - 0.06);
+        tl.to(w, { opacity: 0, duration: 0.2, ease: "power2.out", immediateRender: false }, tc + 0.01);
+      });
+
+      // glow pulses on 12.867 and on the freeze 13.267
+      var glows = gsap.utils.toArray("#l1 .g"), faces = gsap.utils.toArray("#l1 .b");
+      [[at(12.867), 0.33], [at(13.267), 0.5]].forEach(function (p) {
+        var tp = p[0], dk = p[1];
+        tl.to(glows, { opacity: 0.95, duration: 0.05, ease: "power2.out", immediateRender: false }, tp);
+        tl.to(glows, { opacity: 0.32, duration: dk, ease: "power2.out", immediateRender: false }, tp + 0.05);
+        tl.fromTo(faces, { filter: "brightness(1.55)" }, { filter: "brightness(1)", duration: Math.min(0.38, dk), ease: "power2.out", immediateRender: false }, tp);
+        tl.to("#halo", { opacity: 0.6, duration: 0.05, ease: "power2.out", immediateRender: false }, tp);
+        tl.to("#halo", { opacity: 0.22, duration: dk, ease: "power2.out", immediateRender: false }, tp + 0.05);
+      });
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

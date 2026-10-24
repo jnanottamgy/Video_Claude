@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>payoff</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <link rel="stylesheet" href="./design/shelf.css" />
+    <style>
+      /* FRONT layer, output 45.500 -> 52.500 (210 frames). Local t = output - 45.5, frame k = t * 30.
+         Bright natural beige wall: navy-glass SHELF cards with big soft warm shadows, all inside the
+         top band (y 288-760), clear of both founders' heads (top ~740-770, x 560-990) and the caption band.
+           k   7  45.733 "notes"     found-file card pops (searching spinner)
+           k  31  46.533 "lost"      FOUND badge stamps onto the card (first visible k 29)
+           k  51  47.200 "deadlines" calendar card pushes the file card out; the alarm rings
+           k  74  47.967 "surprise"  alarm goes quiet (zzz), "On track" pill pops
+           k  89  48.467 "anymore"   soft light sweep over the card
+           k 114  49.300 "WhatsApp"  calendar card whips out; WhatsApp icon bounces in, red 999+ badge (k 118), shaking
+           k 137  50.067 "Finally"   shaking stops, the badge counts down to 0 (k 137-174)
+           k 175  51.333 "useful"    badge turns into a green check, calm green/blue halo
+           k 186  51.700 FREEZE      "FINALLY USEFUL." stamp slams (first visible k 184) with an RGB split; hold to the cut */
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      .rig { position: absolute; inset: 0; }
+
+      /* ---------- navy glass card ---------- */
+      .cardbox { position: absolute; left: 120px; top: 326px; width: 840px; height: 256px; perspective: 1400px; transform: scale(1.08); transform-origin: 50% 0%; }
+      #a-move { transform-origin: 50% 100%; }
+      #b-move { transform-origin: 50% 0%; }
+      #a-pdf { transform-origin: 50% 70%; }
+      #wa-move { transform-origin: 50% 100%; }
+      .card {
+        position: absolute;
+        inset: 0;
+        border-radius: 42px;
+        overflow: hidden;
+        background:
+          radial-gradient(120% 140% at 0% 0%, rgba(120, 170, 255, 0.16) 0%, rgba(120, 170, 255, 0) 55%),
+          linear-gradient(160deg, #24395f 0%, #121f3d 52%, #0b1529 100%);
+        box-shadow:
+          inset 0 0 0 1.5px rgba(150, 195, 255, 0.36),
+          inset 0 2px 0 rgba(255, 255, 255, 0.2),
+          0 44px 80px -18px rgba(38, 26, 8, 0.5),
+          0 14px 28px rgba(28, 20, 8, 0.3),
+          0 0 44px rgba(79, 157, 255, 0.2);
+        font-family: var(--font-ui);
+        color: #ffffff;
+      }
+      .card .row1 { position: absolute; left: 36px; right: 36px; top: 26px; height: 42px; display: flex; align-items: center; gap: 14px; }
+      .card .divider { position: absolute; left: 36px; right: 36px; top: 86px; height: 2px; border-radius: 1px; background: rgba(150, 195, 255, 0.16); }
+      .card .row2 { position: absolute; left: 36px; top: 108px; height: 124px; display: flex; align-items: center; gap: 30px; }
+      .q-ico { width: 30px; height: 30px; flex: none; }
+      .q-txt { font: 500 30px/42px var(--font-ui); color: rgba(226, 234, 248, 0.9); letter-spacing: -0.005em; }
+      .q-caret { width: 3px; height: 32px; border-radius: 2px; background: var(--shelf-blue); margin-left: -8px; }
+      .eyebrow { font: 600 26px/42px var(--font-brand); letter-spacing: 0.18em; color: rgba(165, 200, 255, 0.92); }
+      .eyebrow-r { margin-left: auto; font: 600 27px/42px var(--font-ui); color: rgba(220, 230, 246, 0.7); }
+      .pdf { width: 100px; height: 124px; flex: none; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35)); }
+      .doc-txt { display: flex; flex-direction: column; gap: 8px; }
+      .doc-name { font: 600 46px/54px var(--font-ui); letter-spacing: -0.015em; color: #ffffff; white-space: nowrap; }
+      .doc-meta { font: 500 30px/38px var(--font-ui); color: rgba(205, 218, 240, 0.74); white-space: nowrap; display: flex; align-items: center; gap: 16px; }
+
+      /* spinner (searching) */
+      .spin { position: absolute; right: 36px; top: 30px; width: 34px; height: 34px; }
+
+      /* card sheen (light sweep), clipped by the card */
+      .sheen {
+        position: absolute;
+        top: -40px;
+        bottom: -40px;
+        left: 0;
+        width: 260px;
+        background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(190, 220, 255, 0.07) 35%, rgba(220, 236, 255, 0.24) 50%, rgba(190, 220, 255, 0.07) 65%, rgba(255, 255, 255, 0) 100%);
+        opacity: 0;
+      }
+
+      /* ---------- FOUND badge (stamped onto card A) ---------- */
+      .anchor { position: absolute; width: 0; height: 0; display: flex; align-items: center; justify-content: center; }
+      .found {
+        position: relative;
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        height: 90px;
+        padding: 0 28px 0 20px;
+        border-radius: 22px;
+        background: linear-gradient(180deg, #4fe68a 0%, #25d366 48%, #1cb658 100%);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.45),
+          inset 0 -3px 0 rgba(0, 90, 40, 0.25),
+          0 14px 26px rgba(0, 70, 30, 0.38),
+          0 4px 8px rgba(0, 0, 0, 0.2);
+        font: 800 46px/1 var(--font-brand);
+        letter-spacing: 0.06em;
+        color: #ffffff;
+        text-shadow: 0 2px 0 rgba(0, 80, 35, 0.35);
+        transform-origin: 50% 50%;
+      }
+      .found::after {
+        content: "";
+        position: absolute;
+        inset: 7px;
+        border-radius: 16px;
+        border: 3px solid rgba(255, 255, 255, 0.85);
+        pointer-events: none;
+      }
+      .found svg { width: 46px; height: 46px; flex: none; }
+      .ring {
+        position: absolute;
+        flex: none;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        border: 6px solid rgba(37, 211, 102, 0.9);
+        box-shadow: 0 0 22px rgba(37, 211, 102, 0.55);
+        opacity: 0;
+      }
+      .sparks { position: absolute; width: 0; height: 0; }
+      .spark { position: absolute; left: 0; top: 0; border-radius: 50%; opacity: 0; }
+
+      /* ---------- calendar card (B) ---------- */
+      .cal {
+        width: 108px;
+        height: 124px;
+        flex: none;
+        border-radius: 26px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #ffffff 0%, #eef2f8 100%);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.32), inset 0 -2px 0 rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .cal-top { width: 100%; height: 36px; background: linear-gradient(180deg, #ff5a4f, #e8372c); color: #fff; font: 800 22px/36px var(--font-ui); letter-spacing: 0.12em; text-align: center; }
+      .cal-num { font: 700 62px/86px var(--font-ui); color: #111827; letter-spacing: -0.03em; }
+      .ontrack {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        height: 42px;
+        padding: 0 18px 0 14px;
+        border-radius: 21px;
+        background: #25d366;
+        color: #0b141a;
+        font: 700 25px/42px var(--font-ui);
+        letter-spacing: -0.005em;
+        box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+        transform-origin: 10% 50%;
+      }
+      .ontrack i { display: block; width: 12px; height: 12px; border-radius: 50%; background: #0b141a; opacity: 0.8; }
+      .alarm-anchor { position: absolute; left: 640px; top: 112px; width: 150px; height: 120px; }
+      .alarm-shake { position: absolute; inset: 0; transform-origin: 50% 60%; }
+      .alarm-shake svg { position: absolute; inset: 0; width: 150px; height: 120px; overflow: visible; }
+      .zzz { position: absolute; left: 0; top: 0; font: 700 30px/1 var(--font-brand); color: #9cc6ff; opacity: 0; text-shadow: 0 0 12px rgba(79, 157, 255, 0.6); }
+
+      /* ---------- WhatsApp icon (C) ---------- */
+      .wa-pos { position: absolute; left: 390px; top: 302px; width: 300px; height: 300px; }
+      .halo {
+        position: absolute;
+        left: -230px;
+        top: -230px;
+        width: 760px;
+        height: 760px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(37, 211, 102, 0.62) 0%, rgba(40, 205, 150, 0.46) 22%, rgba(79, 157, 255, 0.3) 40%, rgba(79, 157, 255, 0.1) 54%, rgba(79, 157, 255, 0) 68%);
+        opacity: 0;
+      }
+      .halo-ring {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 300px;
+        height: 300px;
+        border-radius: 27%;
+        border: 5px solid rgba(37, 211, 102, 0.85);
+        box-shadow: 0 0 26px rgba(37, 211, 102, 0.6), inset 0 0 16px rgba(79, 157, 255, 0.4);
+        opacity: 0;
+      }
+      .wa-glow {
+        position: absolute;
+        inset: 0;
+        border-radius: 24%;
+        box-shadow: 0 0 60px 16px rgba(37, 211, 102, 0.6), 0 0 130px 40px rgba(79, 157, 255, 0.34);
+        opacity: 0;
+      }
+      .wa-icon {
+        position: absolute;
+        inset: 0;
+        border-radius: 24%;
+        background:
+          radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 55%),
+          linear-gradient(180deg, #62f08f 0%, #2ad66a 46%, #18b257 100%);
+        box-shadow:
+          inset 0 3px 0 rgba(255, 255, 255, 0.35),
+          inset 0 -6px 12px rgba(0, 80, 30, 0.22),
+          0 40px 70px -14px rgba(10, 70, 30, 0.5),
+          0 14px 26px rgba(0, 0, 0, 0.22);
+        display: grid;
+        place-items: center;
+      }
+      .wa-icon svg { width: 226px; height: 226px; display: block; filter: drop-shadow(0 3px 4px rgba(0, 90, 40, 0.25)); }
+      .badge-anchor { position: absolute; left: 272px; top: 28px; width: 0; height: 0; display: flex; align-items: center; justify-content: center; }
+      .badge {
+        position: relative;
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 92px;
+        height: 92px;
+        padding: 0 24px;
+        border-radius: 46px;
+        background: linear-gradient(180deg, #ff5a52 0%, #ff3b30 55%, #e2251b 100%);
+        color: #ffffff;
+        font: 700 56px/1 var(--font-ui);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), 0 10px 22px rgba(120, 0, 0, 0.35), 0 0 0 5px rgba(255, 255, 255, 0.95);
+        transform-origin: 50% 50%;
+        white-space: nowrap;
+      }
+      .badge.green {
+        position: absolute;
+        padding: 0;
+        width: 92px;
+        background: linear-gradient(180deg, #4fe68a 0%, #25d366 55%, #1cb658 100%);
+        box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 10px 22px rgba(0, 90, 40, 0.35), 0 0 0 5px rgba(255, 255, 255, 0.95), 0 0 30px rgba(37, 211, 102, 0.6);
+      }
+      .badge.green svg { width: 56px; height: 56px; }
+      .ping {
+        position: absolute;
+        flex: none;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        border: 5px solid rgba(255, 59, 48, 0.85);
+        opacity: 0;
+      }
+
+      /* ---------- FINALLY USEFUL. stamp ---------- */
+      .fu-anchor { position: absolute; left: 540px; top: 650px; width: 0; height: 0; display: flex; align-items: center; justify-content: center; }
+      .fu {
+        position: relative;
+        flex: none;
+        height: 156px;
+        padding: 0 50px;
+        display: flex;
+        align-items: center;
+        border-radius: 30px;
+        background: linear-gradient(180deg, #3fdc7d 0%, #22c862 46%, #179f4e 100%);
+        font: 800 92px/1 var(--font-brand);
+        letter-spacing: -0.005em;
+        color: #ffffff;
+        white-space: nowrap;
+        transform-origin: 50% 50%;
+      }
+      .fu::after {
+        content: "";
+        position: absolute;
+        inset: 10px;
+        border-radius: 22px;
+        border: 4px solid rgba(255, 255, 255, 0.9);
+        pointer-events: none;
+      }
+      .fu .fx { position: absolute; inset: 0; border-radius: 30px; background: #ffffff; opacity: 0; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="7" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="7" data-track-index="0">
+        <!-- ======== A: the found file ======== -->
+        <div class="cardbox" id="cardA">
+          <div class="rig" id="a-move">
+            <div class="rig" id="a-float">
+            <div class="rig" id="a-jolt">
+              <div class="card" id="a-card">
+                <div class="row1" id="a-row1">
+                  <svg class="q-ico" viewBox="0 0 30 30" aria-hidden="true">
+                    <circle cx="12.5" cy="12.5" r="8.5" fill="none" stroke="rgba(200,220,250,0.9)" stroke-width="3.2" />
+                    <path d="M19 19 L26.5 26.5" stroke="rgba(200,220,250,0.9)" stroke-width="3.6" stroke-linecap="round" />
+                  </svg>
+                  <span class="q-txt">dbms unit 3 notes</span>
+                </div>
+                <svg class="spin" id="a-spin" viewBox="0 0 34 34" aria-hidden="true">
+                  <circle cx="17" cy="17" r="13" fill="none" stroke="rgba(150,195,255,0.18)" stroke-width="4" />
+                  <path d="M17 4 A13 13 0 0 1 30 17" fill="none" stroke="#4f9dff" stroke-width="4" stroke-linecap="round" />
+                </svg>
+                <div class="divider"></div>
+                <div class="row2" id="a-row2">
+                  <svg class="pdf" id="a-pdf" viewBox="0 0 100 124" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="pdfg" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#f06b62" />
+                        <stop offset="1" stop-color="#d8433a" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M12 0 H66 L100 34 V112 A12 12 0 0 1 88 124 H12 A12 12 0 0 1 0 112 V12 A12 12 0 0 1 12 0 Z" fill="url(#pdfg)" />
+                    <path d="M66 0 V22 A12 12 0 0 0 78 34 H100 Z" fill="#f9b8b3" />
+                    <rect x="16" y="44" width="50" height="7" rx="3.5" fill="#fff" fill-opacity=".92" />
+                    <rect x="16" y="58" width="66" height="7" rx="3.5" fill="#fff" fill-opacity=".92" />
+                    <rect x="16" y="72" width="40" height="7" rx="3.5" fill="#fff" fill-opacity=".92" />
+                    <text x="50" y="109" text-anchor="middle" font-family="Inter" font-weight="800" font-size="23" fill="#fff" letter-spacing="1">PDF</text>
+                  </svg>
+                  <div class="doc-txt" id="a-txt">
+                    <div class="doc-name">DBMS Unit 3.pdf</div>
+                    <div class="doc-meta">24 pages · PDF · 3.1 MB</div>
+                  </div>
+                </div>
+                <div class="sheen" id="a-sheen"></div>
+              </div>
+            </div>
+            <!-- the FOUND badge, stamped on the card's right side -->
+            <div class="anchor" style="left: 712px; top: 166px">
+              <div class="ring" id="found-ring"></div>
+              <div class="sparks" id="found-sparks" data-layout-allow-overflow></div>
+              <div class="found" id="found">
+                <svg viewBox="0 0 50 50" aria-hidden="true">
+                  <circle cx="25" cy="25" r="23" fill="#ffffff" />
+                  <path d="M14.5 25.5 L22 33 L36 18.5" fill="none" stroke="#1fbf5c" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>FOUND</span>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== B: the calendar card ======== -->
+        <div class="cardbox" id="cardB">
+          <div class="rig" id="b-move">
+            <div class="rig" id="b-float">
+            <div class="card" id="b-card">
+              <div class="row1">
+                <span class="eyebrow">NEXT DEADLINE</span>
+                <span class="eyebrow-r">in 3 days</span>
+              </div>
+              <div class="divider"></div>
+              <div class="row2">
+                <div class="cal" id="b-cal"><div class="cal-top">FRI</div><div class="cal-num">17</div></div>
+                <div class="doc-txt">
+                  <div class="doc-name">DAA Assignment</div>
+                  <div class="doc-meta">
+                    <span>Fri · 5:00 PM</span>
+                    <span class="ontrack" id="b-pill"><i></i>On track</span>
+                  </div>
+                </div>
+              </div>
+              <div class="alarm-anchor">
+                <div class="alarm-shake" id="alarm-shake">
+                  <!-- ringing (amber) -->
+                  <svg id="alarm-ring" viewBox="-20 0 160 128" aria-hidden="true">
+                    <g fill="none" stroke="#ffc531" stroke-width="5" stroke-linecap="round" id="alarm-arcs">
+                      <path d="M-2 50 Q-10 68 -2 86" />
+                      <path d="M-14 42 Q-25 68 -14 94" />
+                      <path d="M122 50 Q130 68 122 86" />
+                      <path d="M134 42 Q145 68 134 94" />
+                    </g>
+                    <path d="M-17 0 A17 17 0 0 1 17 0 Z" transform="translate(27 32) rotate(-38)" fill="#ffc531" />
+                    <path d="M-17 0 A17 17 0 0 1 17 0 Z" transform="translate(93 32) rotate(38)" fill="#ffc531" />
+                    <rect x="54" y="20" width="12" height="10" rx="3" fill="#ffc531" />
+                    <circle cx="60" cy="68" r="38" fill="#14213f" stroke="#ffc531" stroke-width="7" />
+                    <path d="M37 103 L28 116 M83 103 L92 116" stroke="#ffc531" stroke-width="7" stroke-linecap="round" />
+                    <path d="M60 68 V44 M60 68 L71 87" stroke="#ffffff" stroke-width="6" stroke-linecap="round" />
+                    <circle cx="60" cy="68" r="4.5" fill="#ffffff" />
+                  </svg>
+                  <!-- quiet (silver) -->
+                  <svg id="alarm-quiet" viewBox="-20 0 160 128" aria-hidden="true" style="opacity: 0">
+                    <path d="M-17 0 A17 17 0 0 1 17 0 Z" transform="translate(27 32) rotate(-38)" fill="#c9d8f2" />
+                    <path d="M-17 0 A17 17 0 0 1 17 0 Z" transform="translate(93 32) rotate(38)" fill="#c9d8f2" />
+                    <rect x="54" y="20" width="12" height="10" rx="3" fill="#c9d8f2" />
+                    <circle cx="60" cy="68" r="38" fill="#14213f" stroke="#c9d8f2" stroke-width="7" />
+                    <path d="M37 103 L28 116 M83 103 L92 116" stroke="#c9d8f2" stroke-width="7" stroke-linecap="round" />
+                    <path d="M60 68 V44 M60 68 L71 87" stroke="#ffffff" stroke-width="6" stroke-linecap="round" />
+                    <circle cx="60" cy="68" r="4.5" fill="#ffffff" />
+                  </svg>
+                </div>
+                <span class="zzz" id="z1" style="font-size: 24px">z</span>
+                <span class="zzz" id="z2" style="font-size: 31px">z</span>
+                <span class="zzz" id="z3" style="font-size: 38px">Z</span>
+              </div>
+              <div class="sheen" id="b-sheen"></div>
+            </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== C: the WhatsApp icon ======== -->
+        <div class="wa-pos" id="wa">
+          <div class="halo" id="halo"></div>
+          <div class="halo-ring" id="halo-ring1"></div>
+          <div class="halo-ring" id="halo-ring2"></div>
+          <div class="rig" id="wa-move">
+            <div class="rig" id="wa-shake">
+              <div class="rig" id="wa-knock">
+                <div class="wa-glow" id="wa-glow"></div>
+                <div class="wa-icon" id="wa-icon">
+                  <svg viewBox="0 0 100 100" aria-hidden="true">
+                    <path d="M21 63.4A33 33 0 1 1 34.6 77L14.6 85.4Z" fill="none" stroke="#fff" stroke-width="7.4" stroke-linejoin="round" />
+                    <path transform="translate(26.6 24.4) scale(1.95)" fill="#fff" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                  </svg>
+                </div>
+                <div class="badge-anchor">
+                  <div class="ping" id="ping1"></div>
+                  <div class="ping" id="ping2"></div>
+                  <div class="ping" id="ping3"></div>
+                  <div class="sparks" id="ok-sparks" data-layout-allow-overflow></div>
+                  <div class="rig-b" id="badge-pop" style="position: relative; display: flex; align-items: center; justify-content: center">
+                    <div class="badge" id="badge-red"><span id="badge-num">999+</span></div>
+                    <div class="badge green" id="badge-green">
+                      <svg viewBox="0 0 56 56" aria-hidden="true">
+                        <path d="M14 29 L24 39 L43 18" fill="none" stroke="#ffffff" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== FINALLY USEFUL. ======== -->
+        <div class="fu-anchor" id="fu-anchor">
+          <div class="fu" id="fu">
+            <span id="fu-txt">FINALLY USEFUL.</span>
+            <div class="fx" id="fu-flash"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var DUR = 7;
+        var F = 1 / 30;
+        var E = 0.004; // a tween that starts at K(k) shows its start pose on frame k
+        function K(k) { return k * F - E; }
+        function hash(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+        function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+        function env(t, a0, a1, b0, b1) {
+          if (t <= a0 || t >= b1) return 0;
+          if (t < a1) return (t - a0) / (a1 - a0);
+          if (t <= b0) return 1;
+          return 1 - (t - b0) / (b1 - b0);
+        }
+        function $(id) { return document.getElementById(id); }
+
+        // ---- cue frames ----
+        var A_IN = 7, FOUND_HIT = 31, B_IN = 51, QUIET = 74, ANYMORE = 89, C_IN = 114, BADGE_IN = 118;
+        var FINALLY = 137, COUNT_END = 174, USEFUL = 175, FU_HIT = 186;
+
+        // ---- particle pools (built once, deterministic) ----
+        function pool(container, n, seed, colors, sizeMin, sizeMax) {
+          var arr = [];
+          for (var i = 0; i < n; i++) {
+            var el = document.createElement("div");
+            el.className = "spark";
+            var s = sizeMin + hash(seed + i * 3.1) * (sizeMax - sizeMin);
+            el.style.width = s.toFixed(1) + "px";
+            el.style.height = s.toFixed(1) + "px";
+            el.style.marginLeft = (-s / 2).toFixed(1) + "px";
+            el.style.marginTop = (-s / 2).toFixed(1) + "px";
+            el.style.background = colors[i % colors.length];
+            el.style.boxShadow = "0 0 10px " + colors[i % colors.length];
+            container.appendChild(el);
+            var ang = (i / n) * Math.PI * 2 + (hash(seed + i * 7.7) - 0.5) * 0.5;
+            var sp = 380 + hash(seed + i * 5.3) * 420;
+            arr.push({ el: el, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp * 0.75 - 120, last: "" });
+          }
+          return arr;
+        }
+        var foundSparks = pool($("found-sparks"), 12, 11, ["#25d366", "#ffffff", "#7dffb0"], 7, 13);
+        var okSparks = pool($("ok-sparks"), 10, 47, ["#25d366", "#bfffd9", "#4f9dff"], 6, 11);
+        function burst(arr, t, t0, life, g) {
+          var dt = t - t0;
+          for (var i = 0; i < arr.length; i++) {
+            var p = arr[i];
+            var s;
+            if (dt <= 0 || dt >= life) s = "o0";
+            else {
+              var x = p.vx * dt * (1 - 0.45 * dt / life);
+              var y = p.vy * dt * (1 - 0.45 * dt / life) + 0.5 * g * dt * dt;
+              var o = 1 - Math.pow(dt / life, 2);
+              var sc = 1 - 0.6 * (dt / life);
+              s = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px) scale(" + sc.toFixed(3) + ")|" + o.toFixed(3);
+            }
+            if (s !== p.last) {
+              p.last = s;
+              if (s === "o0") p.el.style.opacity = "0";
+              else {
+                var parts = s.split("|");
+                p.el.style.transform = parts[0];
+                p.el.style.opacity = parts[1];
+              }
+            }
+          }
+        }
+
+        var alarmShake = $("alarm-shake"), arcs = $("alarm-arcs");
+        var aFloat = $("a-float"), bFloat = $("b-float");
+        var lastAF = "", lastBF = "";
+        // idle float: a held card is never dead-still; slight 3D tilt for depth
+        function floatTf(t, ph) {
+          var TAU = Math.PI * 2;
+          var rx = 3.2 + 1.1 * Math.sin(TAU * t / 3.3 + ph);
+          var ry = -3.6 + 1.4 * Math.sin(TAU * t / 4.1 + ph * 2.1);
+          var dy = 5 * Math.sin(TAU * t / 2.7 + ph * 0.7);
+          return "perspective(1400px) translateY(" + dy.toFixed(2) + "px) rotateX(" + rx.toFixed(3) + "deg) rotateY(" + ry.toFixed(3) + "deg)";
+        }
+        var waShake = $("wa-shake"), badgeRed = $("badge-red"), badgeNum = $("badge-num");
+        var fu = $("fu"), fuTxt = $("fu-txt");
+        var lastNum = "", lastAlarm = "", lastWa = "", lastBadge = "", lastFu = "";
+        var FU_SHADOW = "inset 0 3px 0 rgba(255,255,255,0.45), inset 0 -4px 0 rgba(0,90,40,0.28), 0 22px 40px rgba(0,70,30,0.4), 0 6px 12px rgba(0,0,0,0.2)";
+
+        // ---- the one procedural driver: every per-frame value is a pure function of t ----
+        function render(t) {
+          // alarm: rings from the card's landing to "surprise", then the vibration dies out
+          var A = env(t, (B_IN + 4) * F, (B_IN + 6) * F, QUIET * F, QUIET * F + 0.16);
+          var st = Math.round(t * 30);
+          var sgn = st % 2 ? 1 : -1;
+          var rot = A * sgn * (8 + 6 * hash(st));
+          var ax = A * sgn * 1.8;
+          var sA = "rotate(" + rot.toFixed(2) + "deg) translateX(" + ax.toFixed(2) + "px)|" + (A > 0.05 ? (st % 2 ? 1 : 0.35) * A : 0).toFixed(2);
+          if (sA !== lastAlarm) {
+            lastAlarm = sA;
+            var pa = sA.split("|");
+            alarmShake.style.transform = pa[0];
+            arcs.style.opacity = pa[1];
+          }
+
+          var fa = floatTf(t, 0.4);
+          if (fa !== lastAF) { lastAF = fa; aFloat.style.transform = fa; }
+          var fb = floatTf(t, 2.2);
+          if (fb !== lastBF) { lastBF = fb; bFloat.style.transform = fb; }
+
+          // WhatsApp chaos: trembles from the badge pop to "Finally", then settles
+          var B = env(t, BADGE_IN * F, (BADGE_IN + 3) * F, FINALLY * F, FINALLY * F + 0.12);
+          var s1 = Math.floor(t * 15);
+          var wr = B * (hash(s1) * 2 - 1) * 2.6;
+          var wx = B * (hash(s1 + 31) * 2 - 1) * 6;
+          var wy = B * (hash(s1 + 57) * 2 - 1) * 3.5;
+          // after the calm: a slow, gentle bob
+          var calm = clamp01((t - USEFUL * F) / 0.6);
+          wy += calm * 5 * Math.sin(Math.PI * 2 * (t - USEFUL * F) / 2.6);
+          var sW = "translate(" + wx.toFixed(2) + "px," + wy.toFixed(2) + "px) rotate(" + wr.toFixed(2) + "deg)";
+          if (sW !== lastWa) { lastWa = sW; waShake.style.transform = sW; }
+          var s2 = Math.floor(t * 20);
+          var br = B * (hash(s2 + 101) * 2 - 1) * 11;
+          var bx = B * (hash(s2 + 7) * 2 - 1) * 6;
+          var by = B * (hash(s2 + 19) * 2 - 1) * 5;
+          var bs = 1 + B * 0.08 * hash(s2 + 3);
+          var sB = "translate(" + bx.toFixed(2) + "px," + by.toFixed(2) + "px) rotate(" + br.toFixed(2) + "deg) scale(" + bs.toFixed(3) + ")";
+          if (sB !== lastBadge) { lastBadge = sB; badgeRed.style.transform = sB; }
+
+          // count-down 999+ -> 0 (fast, decelerating into 0)
+          var num;
+          if (t < FINALLY * F - 0.001) num = "999+";
+          else {
+            var p = clamp01((t - FINALLY * F) / ((COUNT_END - FINALLY) * F));
+            num = String(Math.round(999 * Math.pow(1 - p, 3.2)));
+          }
+          if (num !== lastNum) { lastNum = num; badgeNum.textContent = num; }
+
+          // sparks
+          burst(foundSparks, t, FOUND_HIT * F, 0.5, 900);
+          burst(okSparks, t, USEFUL * F, 0.55, 500);
+
+          // FINALLY USEFUL. arrival: RGB split that jitters on quantized time and dies to a clean plate
+          var g = 0;
+          var dtf = t - (FU_HIT - 1) * F;
+          if (dtf > 0 && dtf < 0.24) g = Math.pow(1 - dtf / 0.24, 1.4);
+          var sF;
+          if (g <= 0.001) sF = "clean";
+          else {
+            var q = Math.floor(t * 30);
+            var dx = g * (9 + 9 * hash(q + 5)) * (hash(q + 9) > 0.25 ? 1 : -1);
+            var dy = g * (hash(q + 13) * 2 - 1) * 4;
+            sF = dx.toFixed(1) + "|" + dy.toFixed(1) + "|" + (g * (hash(q + 21) * 2 - 1) * 10).toFixed(1);
+          }
+          if (sF !== lastFu) {
+            lastFu = sF;
+            if (sF === "clean") {
+              fu.style.boxShadow = FU_SHADOW;
+              fuTxt.style.textShadow = "0 4px 0 rgba(0,70,30,0.34), 0 0 18px rgba(0,60,25,0.22)";
+              fu.style.translate = "0px 0px";
+            } else {
+              var v = sF.split("|");
+              fu.style.boxShadow = (-v[0]) + "px " + v[1] + "px 0 rgba(255,30,80,0.8), " + v[0] + "px " + (-v[1]) + "px 0 rgba(0,225,255,0.8), " + FU_SHADOW;
+              fuTxt.style.textShadow = (-v[0] * 0.8) + "px 0 0 rgba(255,30,80,0.95), " + (v[0] * 0.8) + "px 0 0 rgba(0,225,255,0.95)";
+              fu.style.translate = v[2] + "px 0px";
+            }
+          }
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        // a ring that flashes in at t0 and expands out; invisible before t0 under any seek order
+        function ringPulse(sel, t0, s0, s1, peak, dur) {
+          tl.fromTo(sel, { opacity: 0 }, { opacity: peak, duration: 0.001, ease: "none" }, t0);
+          tl.fromTo(sel, { opacity: peak }, { opacity: 0, duration: dur, ease: "power2.out", immediateRender: false }, t0 + 0.001);
+          tl.fromTo(sel, { scale: s0 }, { scale: s1, duration: dur, ease: "power2.out" }, t0);
+        }
+        var D = { t: 0 };
+        tl.fromTo(D, { t: 0 }, { t: DUR, duration: DUR, ease: "none", onUpdate: function () { render(D.t); } }, 0);
+
+        // ================= A: found-file card (45.733) =================
+        tl.fromTo("#a-move", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, K(A_IN));
+        tl.fromTo("#a-move", { y: 90, scale: 0.8, rotationX: 28 },
+          { y: 0, scale: 1, rotationX: 0, duration: 0.5, ease: "back.out(1.5)" }, K(A_IN));
+        tl.fromTo("#a-move", { filter: "blur(16px)" }, { filter: "blur(0px)", duration: 0.18, ease: "power2.out" }, K(A_IN));
+        tl.fromTo("#a-row1", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, K(A_IN + 3));
+        tl.fromTo("#a-pdf", { scale: 0.4, rotation: -14 }, { scale: 1, rotation: 0, duration: 0.45, ease: "back.out(2.2)" }, K(A_IN + 4));
+        tl.fromTo("#a-txt", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.35, ease: "expo.out" }, K(A_IN + 6));
+        // searching: the spinner turns until the stamp, a light sweep scans the card
+        tl.fromTo("#a-spin", { rotation: 0 }, { rotation: 820, duration: (FOUND_HIT - A_IN) * F, ease: "none" }, K(A_IN));
+        tl.fromTo("#a-spin", { scale: 1, opacity: 1 }, { scale: 0, opacity: 0, duration: 0.12, ease: "power2.in" }, K(FOUND_HIT - 2));
+        tl.fromTo("#a-sheen", { x: -300, opacity: 1 }, { x: 900, duration: 0.6, ease: "power2.inOut" }, K(A_IN + 10));
+        tl.set("#a-sheen", { opacity: 0 }, K(A_IN + 10) + 0.6);
+
+        // FOUND stamp: drops from the air (k 29-30), impact on "lost" (k 31), squash and settle
+        tl.fromTo("#found", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, K(FOUND_HIT - 2));
+        tl.fromTo("#found", { scale: 2.1, rotation: -18, filter: "blur(6px)" },
+          { scale: 1, rotation: -9, filter: "blur(0px)", duration: 2 * F, ease: "power2.in" }, K(FOUND_HIT - 2));
+        tl.fromTo("#found", { scale: 1 }, { scale: 0.9, duration: 1.5 * F, ease: "power2.out", immediateRender: false }, K(FOUND_HIT));
+        tl.fromTo("#found", { scale: 0.9 }, { scale: 1, duration: 0.32, ease: "back.out(3)", immediateRender: false }, K(FOUND_HIT) + 1.5 * F);
+        tl.fromTo("#a-jolt", { y: 0, scale: 1 }, { y: 9, scale: 0.985, duration: 1.5 * F, ease: "power2.out" }, K(FOUND_HIT));
+        tl.fromTo("#a-jolt", { y: 9, scale: 0.985 }, { y: 0, scale: 1, duration: 0.34, ease: "back.out(2.5)", immediateRender: false }, K(FOUND_HIT) + 1.5 * F);
+        ringPulse("#found-ring", K(FOUND_HIT), 0.7, 2.3, 0.95, 0.45);
+
+        // ================= B: calendar card (47.200) pushes A out =================
+        tl.fromTo("#a-move", { y: 0, scale: 1, opacity: 1 },
+          { y: -150, scale: 0.88, opacity: 0, duration: 0.24, ease: "power3.in", immediateRender: false }, K(B_IN - 2));
+        tl.fromTo("#a-move", { filter: "blur(0px)" }, { filter: "blur(12px)", duration: 0.24, ease: "power2.in", immediateRender: false }, K(B_IN - 2));
+
+        tl.fromTo("#b-move", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, K(B_IN));
+        tl.fromTo("#b-move", { y: 170, scale: 0.86, rotationX: -26 },
+          { y: 0, scale: 1, rotationX: 0, duration: 0.55, ease: "expo.out" }, K(B_IN));
+        tl.fromTo("#b-move", { filter: "blur(14px)" }, { filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, K(B_IN));
+        tl.fromTo("#b-cal", { scale: 0.5, rotation: 12 }, { scale: 1, rotation: 0, duration: 0.45, ease: "back.out(2)" }, K(B_IN + 3));
+        // "surprise": the alarm goes quiet, zzz floats up, the On-track pill pops
+        tl.fromTo("#alarm-ring", { opacity: 1 }, { opacity: 0, duration: 0.14, ease: "power1.out" }, K(QUIET));
+        tl.fromTo("#alarm-quiet", { opacity: 0 }, { opacity: 1, duration: 0.14, ease: "power1.out" }, K(QUIET));
+        [["#z1", 0, 96, 30, 70, -6], ["#z2", 4, 112, 18, 92, -2], ["#z3", 8, 130, 2, 116, 4]].forEach(function (z) {
+          tl.fromTo(z[0], { opacity: 0, x: z[2], y: z[3] + 26, scale: 0.6 },
+            { opacity: 1, x: z[4] - 6, y: z[3], scale: 1, rotation: z[5], duration: 0.3, ease: "power2.out" }, K(QUIET + z[1]));
+          tl.to(z[0], { opacity: 0.0, y: z[3] - 30, x: z[4] + 4, duration: 0.7, ease: "power1.in" }, K(QUIET + z[1]) + 0.55);
+        });
+        tl.fromTo("#b-pill", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.42, ease: "back.out(2.4)" }, K(QUIET));
+        tl.fromTo("#b-pill", { boxShadow: "0 0 0 0px rgba(37,211,102,0.7)" },
+          { boxShadow: "0 0 0 16px rgba(37,211,102,0)", duration: 0.6, ease: "power2.out" }, K(QUIET + 3));
+        // "anymore": one calm light sweep across the card
+        tl.fromTo("#b-sheen", { x: -300, opacity: 1 }, { x: 900, duration: 0.55, ease: "power2.inOut" }, K(ANYMORE));
+        tl.set("#b-sheen", { opacity: 0 }, K(ANYMORE) + 0.55);
+
+        // ================= C: WhatsApp (49.300) =================
+        // the calendar card whips out to the left
+        tl.fromTo("#b-move", { x: 0, opacity: 1, rotation: 0 },
+          { x: -520, opacity: 0, rotation: -6, duration: 0.22, ease: "power3.in", immediateRender: false }, K(C_IN - 3));
+        tl.fromTo("#b-move", { filter: "blur(0px)" }, { filter: "blur(18px)", duration: 0.22, ease: "power2.in", immediateRender: false }, K(C_IN - 3));
+        // the icon bounces up from below: stretch on the way up, squash at the top, settle
+        tl.fromTo("#wa-move", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, K(C_IN));
+        tl.fromTo("#wa-move", { y: 210, scaleX: 0.8, scaleY: 1.22, rotation: -14 },
+          { y: -34, scaleX: 1.07, scaleY: 0.93, rotation: 3, duration: 0.2, ease: "power2.out" }, K(C_IN));
+        tl.fromTo("#wa-move", { y: -34, scaleX: 1.07, scaleY: 0.93, rotation: 3 },
+          { y: 0, scaleX: 0.97, scaleY: 1.04, rotation: 0, duration: 0.16, ease: "power2.in", immediateRender: false }, K(C_IN) + 0.2);
+        tl.fromTo("#wa-move", { scaleX: 0.97, scaleY: 1.04 },
+          { scaleX: 1, scaleY: 1, duration: 0.3, ease: "back.out(3)", immediateRender: false }, K(C_IN) + 0.36);
+        tl.fromTo("#wa-move", { filter: "blur(14px)" }, { filter: "blur(0px)", duration: 0.16, ease: "power2.out" }, K(C_IN));
+        // the 999+ badge pops in, then pings like a notification storm
+        tl.fromTo("#badge-pop", { scale: 0 }, { scale: 1, duration: 0.36, ease: "back.out(3.2)" }, K(BADGE_IN));
+        [[BADGE_IN, "#ping1"], [BADGE_IN + 9, "#ping2"], [BADGE_IN + 17, "#ping3"]].forEach(function (pg) {
+          ringPulse(pg[1], K(pg[0]), 0.8, 2.4, 0.9, 0.42);
+        });
+        // "useful": the badge snaps from 0 to a green check, the icon exhales, a calm halo blooms
+        tl.fromTo("#badge-green", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, K(USEFUL));
+        tl.fromTo("#badge-red", { opacity: 1 }, { opacity: 0, duration: 0.001, ease: "none" }, K(USEFUL));
+        tl.fromTo("#badge-pop", { scale: 0.55 }, { scale: 1, duration: 0.4, ease: "back.out(3.4)", immediateRender: false }, K(USEFUL));
+        tl.fromTo("#wa-knock", { scale: 1 }, { scale: 1.07, duration: 0.12, ease: "power2.out" }, K(USEFUL));
+        tl.fromTo("#wa-knock", { scale: 1.07 }, { scale: 1, duration: 0.42, ease: "power2.inOut", immediateRender: false }, K(USEFUL) + 0.12);
+        tl.fromTo("#halo", { opacity: 0, scale: 0.55 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" }, K(USEFUL));
+        ringPulse("#halo-ring1", K(USEFUL), 1, 1.75, 0.95, 0.7);
+        ringPulse("#halo-ring2", K(USEFUL + 6), 1, 1.5, 0.7, 0.7);
+        tl.fromTo("#wa-glow", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, K(USEFUL));
+
+        // ================= FINALLY USEFUL. (51.700, freeze + bass) =================
+        tl.fromTo("#fu", { opacity: 0 }, { opacity: 1, duration: 0.001, ease: "none" }, K(FU_HIT - 2));
+        tl.fromTo("#fu", { scale: 1.9, rotation: -13, filter: "blur(9px)" },
+          { scale: 1, rotation: -6, filter: "blur(0px)", duration: 2 * F, ease: "power2.in" }, K(FU_HIT - 2));
+        tl.fromTo("#fu", { scale: 1 }, { scale: 0.94, duration: 1.5 * F, ease: "power2.out", immediateRender: false }, K(FU_HIT));
+        tl.fromTo("#fu", { scale: 0.94 }, { scale: 1, duration: 0.34, ease: "back.out(3)", immediateRender: false }, K(FU_HIT) + 1.5 * F);
+        tl.fromTo("#fu-flash", { opacity: 0.75 }, { opacity: 0, duration: 0.2, ease: "power2.out" }, K(FU_HIT));
+        // the icon takes the hit: knocked back a touch, the halo flares
+        tl.fromTo("#wa-knock", { scale: 1, y: 0 }, { scale: 0.93, y: -10, duration: 0.07, ease: "power2.out", immediateRender: false }, K(FU_HIT));
+        tl.fromTo("#wa-knock", { scale: 0.93, y: -10 }, { scale: 0.96, y: -12, duration: 0.4, ease: "power2.out", immediateRender: false }, K(FU_HIT) + 0.07);
+        tl.fromTo("#halo", { opacity: 1, scale: 1 }, { opacity: 0.8, scale: 1.08, duration: 0.5, ease: "power2.out", immediateRender: false }, K(FU_HIT));
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>
