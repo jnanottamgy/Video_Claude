@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Rebuild the Jayashree D Jain event reel (v2: 39.1 s, 1080x1920, 30 fps) from the client's event footage.
+# Rebuild the Jayashree D Jain event reel (v5: 39.1 s, 1080x1920, 30 fps) from the client's event footage.
 #
 # Inputs (kept OUT of git: the repo is public):
 #   renders/src/drive/IMG_*.MOV               the client's 58 event clips (their Google Drive folder)
 #   renders/src/song_chanakya.mp3             the track they chose ("Chanakya", Rishab Rikhiram Sharma, edit audio)
 #   library/sfx/nikovax/*.wav                 the SFX library (restore: python3 library/tools/sfx.py check)
-# Output: renders/deliver/JAYASHREE_event_reel_v2.mp4 (+ _nomusic.mp4, the covers)
+# Output: renders/deliver/JAYASHREE_event_reel_v5.mp4 (+ _nomusic.mp4, the covers)
 #
 # Tools: ffmpeg (with zscale), python3 (numpy scipy opencv pillow+raqm soundfile librosa fonttools+brotli), npm.
 set -euo pipefail

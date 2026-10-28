@@ -15,11 +15,13 @@ VFX and sound design.
   everywhere except her shots, and for the title, role, place and date on screen.
 - **v3** replaces the v2 hook ("This is not a concert. / it's a prayer."), which they didn't like. Of four
   options previewed on the frames, they chose "Jai Jinendra / an evening of pure bhakti.".
-- **v4** (this one) fixes the intro: the cuts there felt off the beat, and the transitions were
+- **v4** fixes the intro: the cuts there felt off the beat, and the transitions were
   unnecessary. The two intro cuts are now hard cuts on the sitar's two strongest accents (frames 50 and
   128, onsets measured at 1.681 s and 4.274 s). The cross-dissolves, the opening frame's flash, the
   drifting light leak and the swells under the dissolves are gone. "JAI JINENDRA" is held across the first
   cut so it still reads. From her name card on, nothing changed.
+- **v5** (this one): the client asked for the v2 hook back. THIS IS NOT / A CONCERT. is over her
+  singing and "it's a prayer." over the aarti flames, on top of v4's clean intro cuts.
 - **Output:** 39.1 s, 1080x1920, 30 fps.
 
 ## The cut (tools/edl.py)
@@ -29,7 +31,7 @@ builds with no percussion, the beat comes in at 11.84 s and the bass a bar later
 
 | Output | Music | Picture |
 |---|---|---|
-| 0-7.7 | the sitar build | **hook**: her mid-phrase, a bell on frame one: JAI / JINENDRA (the Jain greeting). Hard cut on the sitar's accent at 1.67 to aarti flames in slow motion: "an evening of pure bhakti." Hard cut on the next accent at 4.27 to her close-up in slow motion: JINA GAANA VISHARADE / JAYASHREE D JAIN / JAIN DEVOTIONAL VOCALIST |
+| 0-7.7 | the sitar build | **hook**: her mid-phrase, a bell on frame one: THIS IS NOT / A CONCERT. Hard cut on the sitar's accent at 1.67 to aarti flames in slow motion: "it's a prayer." Hard cut on the next accent at 4.27 to her close-up in slow motion: JINA GAANA VISHARADE / JAYASHREE D JAIN / JAIN DEVOTIONAL VOCALIST |
 | 7.71 | **the beat comes in** | flash, zoom burst, shake: the hall's hands go up |
 | 7.7-35.1 | the beat | the event, quick. B-roll runs 2 pulses (0.86 s), or a 3-3-2 burst on the song's accents (bar + 0, 1.5, 3, 4). Her shots are held for 4 pulses (1.7 s), every fourth or fifth shot. The event card (Kannada title, English, PALACE GROUNDS, BANGALORE, SUNDAY · 25 OCTOBER 2026) rides over four quick shots of the idols and aarti. Then the dignitaries: the chief guest at the podium, the dais in pink turbans, a garlanding on the big screen. The climax is the dance, the dholak, the whole hall |
 | 35.1-39.1 | the last phrase and the fade | her in slow motion; end card: the honorific, her name, her role, follow for more |

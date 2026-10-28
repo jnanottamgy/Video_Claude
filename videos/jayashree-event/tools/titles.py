@@ -192,8 +192,8 @@ def stagger(t, t0, n, step, dur):
 
 
 # ---------------------------------------------------------------- the titles
-HOOK = ("JAI", "JINENDRA")                   # over her singing: the Jain greeting
-SECOND = ("an evening of", "pure bhakti.")   # over the aarti flames
+HOOK = ("THIS IS NOT", "A CONCERT.")         # over her singing (the client's pick; v3-v4 tried JAI JINENDRA)
+SECOND = ("it\u2019s a prayer.",)              # over the aarti flames
 HONORIFIC = "JINA GAANA VISHARADE"           # the title conferred on her
 NAME = "JAYASHREE D JAIN"
 ROLE = "JAIN DEVOTIONAL VOCALIST"
@@ -205,7 +205,8 @@ class Titles:
     def __init__(self):
         self.hook_a = Line(HOOK[0], MARCELLUS, 50, tracking=14, stops=IVORY_STOPS)
         self.hook_b = Line(HOOK[1], CINZEL, 124, tracking=6)
-        self.second = [Line(ln, ITALIC, 118, tracking=1, stops=IVORY_STOPS) for ln in SECOND]
+        self.second = [Line(ln, ITALIC, 132 if len(SECOND) == 1 else 118, tracking=1, stops=IVORY_STOPS)
+                       for ln in SECOND]
         self.hon = Line(HONORIFIC, MARCELLUS, 42, tracking=12)
         self.name = Line(NAME, CINZEL, 80, tracking=7)
         self.role = Line(ROLE, MARCELLUS, 33, tracking=9, stops=IVORY_STOPS)
