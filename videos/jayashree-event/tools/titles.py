@@ -192,6 +192,8 @@ def stagger(t, t0, n, step, dur):
 
 
 # ---------------------------------------------------------------- the titles
+HOOK = ("JAI", "JINENDRA")                   # over her singing: the Jain greeting
+SECOND = ("an evening of", "pure bhakti.")   # over the aarti flames
 HONORIFIC = "JINA GAANA VISHARADE"           # the title conferred on her
 NAME = "JAYASHREE D JAIN"
 ROLE = "JAIN DEVOTIONAL VOCALIST"
@@ -201,9 +203,9 @@ DATE = "SUNDAY \u00b7 25 OCTOBER 2026"
 
 class Titles:
     def __init__(self):
-        self.hook_a = Line("THIS IS NOT", MARCELLUS, 50, tracking=14, stops=IVORY_STOPS)
-        self.hook_b = Line("A CONCERT.", CINZEL, 124, tracking=6)
-        self.prayer = Line("it\u2019s a prayer.", ITALIC, 132, tracking=1, stops=IVORY_STOPS)
+        self.hook_a = Line(HOOK[0], MARCELLUS, 50, tracking=14, stops=IVORY_STOPS)
+        self.hook_b = Line(HOOK[1], CINZEL, 124, tracking=6)
+        self.second = [Line(ln, ITALIC, 118, tracking=1, stops=IVORY_STOPS) for ln in SECOND]
         self.hon = Line(HONORIFIC, MARCELLUS, 42, tracking=12)
         self.name = Line(NAME, CINZEL, 80, tracking=7)
         self.role = Line(ROLE, MARCELLUS, 33, tracking=9, stops=IVORY_STOPS)
@@ -231,16 +233,17 @@ class Titles:
                 spread=spread, centre=540)
         return cv.apply(fr, glow=0.55)
 
-    def prayer_line(self, fr, t, t0, t1):
+    def second_lines(self, fr, t, t0, t1):
         a_in = ease_in_out((t - t0) / 0.5)
         a_all = a_in * (1 - ease_in_out((t - (t1 - 0.3)) / 0.3))
-        ln = self.prayer
-        y = 420
-        scrim(fr, 540, y + 75, 600, 230, 0.55 * a_all)
+        y0, step = 420, 118
+        scrim(fr, 540, y0 + 60 * len(self.second) + 20, 620, 150 + 70 * len(self.second), 0.55 * a_all)
         cv = Canvas()
-        pa = stagger(t, t0, ln.n, 0.035, 0.55)
-        spread = 1.0 + 0.04 * ease_in_out((t - t0) / (t1 - t0))
-        cv.line(ln, 540 - ln.w / 2, y, [p * a_all for p in pa], [10 * (1 - p) for p in pa], spread=spread, centre=540)
+        spread = 1.0 + 0.03 * ease_in_out((t - t0) / (t1 - t0))
+        for j, ln in enumerate(self.second):
+            pa = stagger(t, t0 + 0.15 * j, ln.n, 0.035, 0.55)
+            cv.line(ln, 540 - ln.w / 2, y0 + j * step, [p * a_all for p in pa], [10 * (1 - p) for p in pa],
+                    spread=spread, centre=540)
         return cv.apply(fr, glow=0.5, glow_sigma=18)
 
     def _name_block(self, cv, t, t0, y, a_all, spread_k):
@@ -294,6 +297,6 @@ class Titles:
     def draw(self, fr, t, spans):
         for t0, t1, kind in spans:
             if t0 <= t < t1:
-                fr = {"hook": self.hook, "prayer": self.prayer_line, "name": self.name_card,
+                fr = {"hook": self.hook, "second": self.second_lines, "name": self.name_card,
                       "event": self.event, "end": self.end}[kind](fr, t, t0, t1)
         return fr

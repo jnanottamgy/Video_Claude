@@ -5,8 +5,9 @@ The music is "Chanakya" (Rishab Rikhiram Sharma), the client's 45 s edit audio, 
 beat comes in at song 11.844 (the drop) and the bass a bar later (13.556). The rhythm runs on to the last
 hit at song ~41.4 and the track fades out.
 
-The intro carries the hook, "it's a prayer." and her name in slow motion. From the drop the event is cut
-quick: B-roll on 2 pulses, or the song's 3-3-2 accents (bar + 0, 1.5, 3, 4). Her shots are held for 4.
+The intro carries the hook (JAI JINENDRA, then "an evening of pure bhakti.") and her name in slow motion.
+From the drop the event is cut quick: B-roll on 2 pulses, or the song's 3-3-2 accents (bar + 0, 1.5, 3, 4).
+Her shots are held for 4.
 
 Reel time t = song time - SONG_IN; pulse k sits at k * PULSE (pulse 18 is the drop, bars of 4 from there).
   python3 tools/edl.py     # print the shot list
@@ -42,9 +43,9 @@ END = p(82)                      # the last phrase: the end card (song 39.27)
 SHOTS = [
     # ---- INTRO: the sitar builds; slow, warm, three lines of type ----
     dict(t=p(0), clip="3397", src=1.90, x="cut", z=(1.0, 1.10), c=(0.38, 0.56), her=True,
-         note="HOOK: her mid-phrase, hand rising: THIS IS NOT A CONCERT."),
+         note="HOOK: her mid-phrase, hand rising: JAI JINENDRA"),
     dict(t=p(5), clip="3393", src=4.00, speed=0.55, x="dissolve", z=(1.05, 1.12), c=(0.6, 0.6), look="candle",
-         rays=(0.5, 0.08, 0.5), note="aarti flames, slow: it's a prayer."),
+         rays=(0.5, 0.08, 0.5), note="aarti flames, slow: an evening of pure bhakti."),
     dict(t=p(10), clip="3407", src=0.15, speed=0.5, x="dissolve", z=(1.04, 1.14), c=(0.48, 0.5), look="candle",
          her=True, note="her warm close-up, slow: JINA GAANA VISHARADE / JAYASHREE D JAIN"),
     # ---- DROP: the beat comes in; the event, quick ----
@@ -107,7 +108,7 @@ for i, s in enumerate(SHOTS):
 # text: (start, end, kind)
 TEXT = [
     (0.00, p(5) - 0.10, "hook"),
-    (p(5) + 0.20, p(10) - 0.15, "prayer"),
+    (p(5) + 0.20, p(10) - 0.15, "second"),
     (p(10) + 0.20, DROP, "name"),
     (p(34) + 0.05, p(42) + 0.30, "event"),
     (END + 0.30, DURATION + 0.1, "end"),

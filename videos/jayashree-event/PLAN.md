@@ -10,9 +10,11 @@ VFX and sound design.
 - **The event:** the Siddha Navagraha Tirthankara Maha Aradhana (ಸಿದ್ಧ ನವಗ್ರಹ ತೀರ್ಥಂಕರ ಮಹಾ ಆರಾಧನ),
   as read from the on-site banner. It was held at Palace Grounds, Bangalore, on Sunday 25 October 2026.
 - **Her:** Jina Gaana Visharade (the title conferred on her) Jayashree D Jain, Jain Devotional Vocalist.
-- **v1** (commit 6202701) ran 65 s on "BLEND OF RAAG". **v2** (this one) moves to the song they chose
-  next, "Chanakya" by Rishab Rikhiram Sharma, the 45 s edit audio. They also asked for a quicker pace
+- **v1** (commit 6202701) ran 65 s on "BLEND OF RAAG". **v2** moves to the song they chose next,
+  "Chanakya" by Rishab Rikhiram Sharma, the 45 s edit audio. They also asked for a quicker pace
   everywhere except her shots, and for the title, role, place and date on screen.
+- **v3** (this one) replaces the v2 hook ("This is not a concert. / it's a prayer."), which they didn't
+  like. Of four options previewed on the frames, they chose "Jai Jinendra / an evening of pure bhakti.".
 - **Output:** 39.1 s, 1080x1920, 30 fps.
 
 ## The cut (tools/edl.py)
@@ -22,7 +24,7 @@ builds with no percussion, the beat comes in at 11.84 s and the bass a bar later
 
 | Output | Music | Picture |
 |---|---|---|
-| 0-7.7 | the sitar build | **hook**: her mid-phrase, a bell on frame one: THIS IS NOT / A CONCERT. Then aarti flames in slow motion: "it's a prayer." Then her close-up in slow motion: JINA GAANA VISHARADE / JAYASHREE D JAIN / JAIN DEVOTIONAL VOCALIST |
+| 0-7.7 | the sitar build | **hook**: her mid-phrase, a bell on frame one: JAI / JINENDRA (the Jain greeting). Then aarti flames in slow motion: "an evening of pure bhakti." Then her close-up in slow motion: JINA GAANA VISHARADE / JAYASHREE D JAIN / JAIN DEVOTIONAL VOCALIST |
 | 7.71 | **the beat comes in** | flash, zoom burst, shake: the hall's hands go up |
 | 7.7-35.1 | the beat | the event, quick. B-roll runs 2 pulses (0.86 s), or a 3-3-2 burst on the song's accents (bar + 0, 1.5, 3, 4). Her shots are held for 4 pulses (1.7 s), every fourth or fifth shot. The event card (Kannada title, English, PALACE GROUNDS, BANGALORE, SUNDAY · 25 OCTOBER 2026) rides over four quick shots of the idols and aarti. Then the dignitaries: the chief guest at the podium, the dais in pink turbans, a garlanding on the big screen. The climax is the dance, the dholak, the whole hall |
 | 35.1-39.1 | the last phrase and the fade | her in slow motion; end card: the honorific, her name, her role, follow for more |
