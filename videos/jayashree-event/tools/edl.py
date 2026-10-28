@@ -59,12 +59,11 @@ SHOTS = [
     dict(t=p(29), clip="3399", src=1.50, x="cut", z=(1.10, 1.06), c=(0.5, 0.35), note="the hall: scale"),
     dict(t=p(30), clip="3449", src=0.80, x="whip", z=(1.0, 1.08), c=(0.28, 0.60), rays=(0.5, 0.30, 0.30), her=True,
          note="her in the chandelier hall"),
-    # the event card rides over four quick shots
+    # the event card rides over four quick shots (the aarti couple appears once only, in the intro)
     dict(t=p(34), clip="3395", src=0.40, x="flash", rays=(0.5, 0.0, 0.25), note="the stage of idols: EVENT CARD"),
-    dict(t=p(36), clip="3393", src=2.60, x="cut", rays=(0.5, 0.08, 0.3), note="aarti lamps"),
+    dict(t=p(36), clip="3386", src=1.00, x="cut", z=(1.0, 1.06), c=(0.5, 0.6), note="the hall full of devotees"),
     dict(t=p(38), clip="3388", src=0.80, x="cut", note="saffron and yellow sarees, puja"),
-    dict(t=p(40), clip="3451", src=2.00, x="cut", z=(1.08, 1.14), c=(0.5, 0.55), rays=(0.5, 0.33, 0.3),
-         note="aarti under the chandelier"),
+    dict(t=p(40), clip="3374", src=0.40, x="cut", z=(1.04, 1.10), c=(0.5, 0.62), note="women at puja, in a row"),
     dict(t=p(42), clip="3371", src=1.00, x="whip", z=(1.05, 1.14), c=(0.5, 0.78), her=True,
          note="her with the musicians, the logo on screen"),
     dict(t=p(46), clip="3384", src=1.60, x="cut", note="sadhvis in white"),
