@@ -192,21 +192,29 @@ def stagger(t, t0, n, step, dur):
 
 
 # ---------------------------------------------------------------- the titles
+HONORIFIC = "JINA GAANA VISHARADE"           # the title conferred on her
+NAME = "JAYASHREE D JAIN"
+ROLE = "JAIN DEVOTIONAL VOCALIST"
+PLACE = "PALACE GROUNDS, BANGALORE"
+DATE = "SUNDAY \u00b7 25 OCTOBER 2026"
+
+
 class Titles:
     def __init__(self):
         self.hook_a = Line("THIS IS NOT", MARCELLUS, 50, tracking=14, stops=IVORY_STOPS)
         self.hook_b = Line("A CONCERT.", CINZEL, 124, tracking=6)
-        self.name_lt = Line("JAYASHREE D JAIN", CINZEL, 62, tracking=7)
-        self.role_lt = Line("CLASSICAL VOCALIST", MARCELLUS, 30, tracking=9, stops=IVORY_STOPS)
-        self.prayer = Line("it’s a prayer.", ITALIC, 132, tracking=1, stops=IVORY_STOPS)
-        self.kn1 = Line("ಸಿದ್ಧ ನವಗ್ರಹ "
-                        "ತೀರ್ಥಂಕರ", KANNADA_M, 62, per_char=False,
+        self.prayer = Line("it\u2019s a prayer.", ITALIC, 132, tracking=1, stops=IVORY_STOPS)
+        self.hon = Line(HONORIFIC, MARCELLUS, 42, tracking=12)
+        self.name = Line(NAME, CINZEL, 80, tracking=7)
+        self.role = Line(ROLE, MARCELLUS, 33, tracking=9, stops=IVORY_STOPS)
+        self.kn1 = Line("\u0cb8\u0cbf\u0ca6\u0ccd\u0ca7 \u0ca8\u0cb5\u0c97\u0ccd\u0cb0\u0cb9 "
+                        "\u0ca4\u0cc0\u0cb0\u0ccd\u0ca5\u0c82\u0c95\u0cb0", KANNADA_M, 62, per_char=False,
                         stops=IVORY_STOPS)
-        self.kn2 = Line("ಮಹಾ ಆರಾಧನ", KANNADA, 96, per_char=False)
+        self.kn2 = Line("\u0cae\u0cb9\u0cbe \u0c86\u0cb0\u0cbe\u0ca7\u0ca8", KANNADA, 96, per_char=False)
         self.en = Line("Siddha Navagraha Tirthankara Maha Aradhana", ITALIC, 43, tracking=0.5, stops=IVORY_STOPS)
-        self.end_name = Line("JAYASHREE D JAIN", CINZEL, 80, tracking=8)
-        self.end_role = Line("CLASSICAL VOCALIST", MARCELLUS, 34, tracking=11, stops=IVORY_STOPS)
-        self.end_cta = Line("follow for more", ITALIC, 50, tracking=0.5, stops=IVORY_STOPS)
+        self.place = Line(PLACE, MARCELLUS, 36, tracking=8)
+        self.date = Line(DATE, MARCELLUS, 31, tracking=8, stops=IVORY_STOPS)
+        self.cta = Line("follow for more", ITALIC, 50, tracking=0.5, stops=IVORY_STOPS)
 
     def hook(self, fr, t, t0, t1):
         u_out = ease_in_out((t - (t1 - 0.22)) / 0.22)
@@ -223,67 +231,69 @@ class Titles:
                 spread=spread, centre=540)
         return cv.apply(fr, glow=0.55)
 
-    def lower_third(self, fr, t, t0, t1):
-        a_all = 1 - ease_in_out((t - (t1 - 0.3)) / 0.3)
-        x, y = 78, 880
-        scrim(fr, 360, 957, 470, 150, 0.55 * a_all * ease_out((t - t0) / 0.3))
-        cv = Canvas()
-        pn = stagger(t, t0 + 0.12, self.name_lt.n, 0.028, 0.32)
-        cv.line(self.name_lt, x, y, [p * a_all for p in pn], [12 * (1 - p) for p in pn])
-        lw = ease_out((t - t0) / 0.5) * 230
-        # a hairline that draws itself out from the left
-        m = np.zeros((10, 600), np.float32)
-        cv2.line(m, (4, 5), (4 + int(lw), 5), 1.0, 2, cv2.LINE_AA)
-        cv.put(m, np.broadcast_to(np.array([1.0, 0.82, 0.48], np.float32), (10, 1, 3)), x + 2, y + 92, a_all)
-        pr = ease_out((t - t0 - 0.45) / 0.45)
-        cv.line(self.role_lt, x + 2, y + 112, pr * a_all, 8 * (1 - pr))
-        return cv.apply(fr, glow=0.4)
-
     def prayer_line(self, fr, t, t0, t1):
-        a_in = ease_in_out((t - t0) / 0.9)
-        a_all = a_in * (1 - ease_in_out((t - (t1 - 0.45)) / 0.45))
+        a_in = ease_in_out((t - t0) / 0.5)
+        a_all = a_in * (1 - ease_in_out((t - (t1 - 0.3)) / 0.3))
         ln = self.prayer
-        y = 1290
-        scrim(fr, 540, y + 60, 560, 190, 0.45 * a_all)
+        y = 420
+        scrim(fr, 540, y + 75, 600, 230, 0.55 * a_all)
         cv = Canvas()
-        pa = stagger(t, t0, ln.n, 0.05, 0.8)
+        pa = stagger(t, t0, ln.n, 0.035, 0.55)
         spread = 1.0 + 0.04 * ease_in_out((t - t0) / (t1 - t0))
         cv.line(ln, 540 - ln.w / 2, y, [p * a_all for p in pa], [10 * (1 - p) for p in pa], spread=spread, centre=540)
         return cv.apply(fr, glow=0.5, glow_sigma=18)
 
-    def event(self, fr, t, t0, t1):
-        a_all = 1 - ease_in_out((t - (t1 - 0.35)) / 0.35)
-        scrim(fr, 540, 430, 640, 290, 0.66 * a_all * ease_out((t - t0) / 0.3))
+    def _name_block(self, cv, t, t0, y, a_all, spread_k):
+        """The honorific, her name, an ornament and her role, building in that order from t0."""
+        ph = stagger(t, t0, self.hon.n, 0.018, 0.35)
+        cv.line(self.hon, 540 - self.hon.w / 2, y, [p * a_all for p in ph], [10 * (1 - p) for p in ph])
+        pn = stagger(t, t0 + 0.22, self.name.n, 0.032, 0.42)
+        cv.line(self.name, 540 - self.name.w / 2, y + 56, [p * a_all for p in pn], [18 * (1 - p) for p in pn],
+                spread=1.0 + spread_k, centre=540)
+        po = ease_out((t - t0 - 0.75) / 0.6)
+        ornament(cv, 540, y + 182, 210 * po, po * a_all)
+        pr = ease_out((t - t0 - 0.95) / 0.5)
+        cv.line(self.role, 540 - self.role.w / 2, y + 204, pr * a_all, 8 * (1 - pr), spread=1 + 0.5 * spread_k,
+                centre=540)
+        return po
+
+    def name_card(self, fr, t, t0, t1):
+        a_all = 1 - ease_in_out((t - (t1 - 0.12)) / 0.12)           # cut away by the drop's flash
+        scrim(fr, 540, 455, 650, 300, 0.66 * a_all * ease_out((t - t0) / 0.35))
         cv = Canvas()
-        p1 = ease_in_out((t - t0) / 0.8)
+        self._name_block(cv, t, t0, 330, a_all, 0.04 * ease_out((t - t0) / (t1 - t0)))
+        return cv.apply(fr, glow=0.55)
+
+    def event(self, fr, t, t0, t1):
+        a_all = 1 - ease_in_out((t - (t1 - 0.3)) / 0.3)
+        scrim(fr, 540, 505, 680, 385, 0.76 * a_all * ease_out((t - t0) / 0.25))
+        cv = Canvas()
+        p1 = ease_in_out((t - t0) / 0.7)
         cv.wipe(self.kn1, 540 - self.kn1.w / 2, 278, p1, a_all)
-        p2 = ease_in_out((t - t0 - 0.35) / 0.8)
+        p2 = ease_in_out((t - t0 - 0.25) / 0.7)
         cv.wipe(self.kn2, 540 - self.kn2.w / 2, 360, p2, a_all)
-        pe = ease_out((t - t0 - 0.9) / 0.6)
+        pe = ease_out((t - t0 - 0.7) / 0.5)
         ornament(cv, 540, 520, 150 * pe, a_all * pe)
         cv.line(self.en, 540 - self.en.w / 2, 548, pe * a_all, 8 * (1 - pe))
+        pp = stagger(t, t0 + 1.05, self.place.n, 0.015, 0.35)
+        cv.line(self.place, 540 - self.place.w / 2, 630, [p * a_all for p in pp], [8 * (1 - p) for p in pp])
+        pd = ease_out((t - t0 - 1.35) / 0.4)
+        cv.line(self.date, 540 - self.date.w / 2, 688, pd * a_all, 8 * (1 - pd))
         return cv.apply(fr, glow=0.5)
 
     def end(self, fr, t, t0, t1):
         a = ease_out((t - t0) / 0.4)
-        scrim(fr, 540, 560, 640, 330, 0.66 * a)
+        scrim(fr, 540, 520, 660, 330, 0.66 * a)
         cv = Canvas()
-        ln = self.end_name
-        pn = stagger(t, t0 + 0.05, ln.n, 0.035, 0.45)
-        spread = 1.0 + 0.05 * ease_out((t - t0) / (t1 - t0))
-        cv.line(ln, 540 - ln.w / 2, 430, pn, [18 * (1 - p) for p in pn], spread=spread, centre=540)
-        po = ease_out((t - t0 - 0.55) / 0.7)
-        ornament(cv, 540, 548, 200 * po, po)
-        pr = ease_out((t - t0 - 0.75) / 0.5)
-        cv.line(self.end_role, 540 - self.end_role.w / 2, 572, pr, 8 * (1 - pr), spread=1 + 0.03 * po, centre=540)
+        self._name_block(cv, t, t0 + 0.05, 340, 1.0, 0.05 * ease_out((t - t0) / (t1 - t0)))
         pc = ease_out((t - t0 - 1.35) / 0.6)
         pulse = 0.85 + 0.15 * math.sin(2 * math.pi * 0.9 * max(0.0, t - t0 - 1.95))
-        cv.line(self.end_cta, 540 - self.end_cta.w / 2, 650, pc * pulse, 10 * (1 - pc))
+        cv.line(self.cta, 540 - self.cta.w / 2, 626, pc * pulse, 10 * (1 - pc))
         return cv.apply(fr, glow=0.55)
 
     def draw(self, fr, t, spans):
         for t0, t1, kind in spans:
             if t0 <= t < t1:
-                fr = {"hook": self.hook, "lower": self.lower_third, "prayer": self.prayer_line,
+                fr = {"hook": self.hook, "prayer": self.prayer_line, "name": self.name_card,
                       "event": self.event, "end": self.end}[kind](fr, t, t0, t1)
         return fr

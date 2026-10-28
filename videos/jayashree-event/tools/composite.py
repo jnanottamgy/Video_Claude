@@ -24,34 +24,31 @@ import titles as T  # noqa: E402
 
 FPS, W, H = edl.FPS, edl.W, edl.H
 SHOTS = edl.SHOTS
-DISSOLVE = 0.9                   # s, the breath's cross-dissolves
+DISSOLVE = 1.0                   # s, the longest cross-dissolve (edl.DISSOLVES sets each one)
 WHIP = 4 / FPS                   # each half of a whip pan
-BEATS = [k * edl.BEAT for k in range(0, 97)]
+D, B, E = edl.DROP, edl.BASS, edl.END
 
 # ---------------------------------------------------------------- the direction
-# punches on cuts: (time, extra zoom, decay s)
-PUNCH = []
-for s in SHOTS[1:]:
-    if s["x"] in ("cut", "whip", "flash"):
-        PUNCH.append((s["t"], 0.065 if s["t"] >= edl.DROP2 else 0.035, 0.16 if s["t"] >= edl.DROP2 else 0.22))
-PUNCH.append((edl.DROP2, 0.12, 0.30))
+# punches on cuts after the drop: (time, extra zoom, decay s)
+PUNCH = [(s["t"], 0.06, 0.14) for s in SHOTS if s["t"] > D + 0.01 and s["x"] in ("cut", "whip", "flash")]
+PUNCH.append((D, 0.12, 0.30))
 # flashes of warm light at a cut: (time, peak, attack s, decay s, leak seed)
-LEAKS = [(s["t"], 0.70, 0.10, 0.32, 100 + s["i"]) for s in SHOTS if s["x"] == "flash"]
-LEAKS += [(0.0, 0.55, 0.0, 0.40, 11), (edl.DROP2, 0.8, 0.12, 0.30, 12), (edl.STOP, 0.9, 0.10, 0.6, 13)]
+LEAKS = [(s["t"], 0.70, 0.10, 0.30, 100 + s["i"]) for s in SHOTS if s["x"] == "flash" and s["t"] < E - 0.01]
+LEAKS += [(0.0, 0.55, 0.0, 0.40, 11), (D, 0.8, 0.12, 0.30, 12), (E, 0.9, 0.10, 0.6, 13)]
 # white flashes: (time, alpha, decay s)
-WHITE = [(edl.DROP2, 0.80, 0.10), (edl.STOP, 0.50, 0.15), (0.0, 0.35, 0.10)]
+WHITE = [(D, 0.80, 0.10), (B, 0.30, 0.08), (E, 0.50, 0.15), (0.0, 0.35, 0.10)]
 # shakes: (time, px, decay s, Hz)
-SHAKE = [(edl.DROP2, 20, 0.30, 15), (edl.STOP, 10, 0.25, 13)]
+SHAKE = [(D, 20, 0.30, 15), (B, 10, 0.20, 16), (E, 8, 0.25, 13)]
 # zoom-blur bursts and chromatic kicks: (time, amount, decay s)
-ZBLUR = [(edl.DROP2, 0.10, 0.16)]
-CHROMA = [(edl.DROP2, 9, 0.14), (edl.STOP, 5, 0.14)]
-# a subtle exposure pulse on every beat of the climax
-PULSE = [(b, 0.045) for b in BEATS if edl.DROP2 <= b < edl.STOP - 0.01]
+ZBLUR = [(D, 0.10, 0.16), (B, 0.05, 0.12)]
+CHROMA = [(D, 9, 0.14), (B, 5, 0.12), (E, 5, 0.14)]
+# a subtle exposure pulse on the song's accents (bar + 0, 1.5, 3 pulses) through the montage
+PULSE = [(D + (4 * k + a) * edl.PULSE, 0.035) for k in range(0, 20) for a in edl.ACCENTS]
+PULSE = [(t, v) for t, v in PULSE if D <= t < E - 0.01]
 # golden dust: (time, level) keyframes, linear between
-DUST = [(0.0, 0.55), (2.6, 0.55), (2.9, 0.22), (edl.BREATH - 0.3, 0.22), (edl.BREATH + 0.4, 1.0),
-        (edl.DROP2 - 0.2, 1.0), (edl.DROP2 + 0.3, 0.35), (edl.STOP - 0.1, 0.35), (edl.STOP + 0.4, 1.0), (99, 1.0)]
-# slow drifting leaks through the breath and the end card: (t0, t1, level, seed)
-DRIFT = [(edl.BREATH, edl.DROP2, 0.16, 21), (edl.STOP, edl.DURATION + 1, 0.20, 22)]
+DUST = [(0.0, 0.9), (D - 0.2, 0.9), (D + 0.3, 0.3), (E - 0.1, 0.3), (E + 0.4, 1.0), (99, 1.0)]
+# slow drifting leaks through the intro and the end card: (t0, t1, level, seed)
+DRIFT = [(0.0, D, 0.16, 21), (E, edl.DURATION + 1, 0.20, 22)]
 
 
 def env(t, t0, attack, decay):
@@ -248,11 +245,13 @@ class Comp:
         nxt = SHOTS[i + 1] if i + 1 < len(SHOTS) else None
         prv = SHOTS[i - 1] if i > 0 else None
         # ---- the picture, with whips and dissolves
-        if nxt and nxt["x"] == "dissolve" and t >= nxt["t"] - DISSOLVE / 2:
-            w = smooth((t - (nxt["t"] - DISSOLVE / 2)) / DISSOLVE)
+        dn = edl.DISSOLVES.get(nxt["i"], 0.8) if nxt else 0.0
+        dc = edl.DISSOLVES.get(cur["i"], 0.8)
+        if nxt and nxt["x"] == "dissolve" and t >= nxt["t"] - dn / 2:
+            w = smooth((t - (nxt["t"] - dn / 2)) / dn)
             x = self.shot(cur, t) * (1 - w) + self.shot(nxt, t) * w
-        elif cur["x"] == "dissolve" and prv and t < cur["t"] + DISSOLVE / 2:
-            w = smooth((t - (cur["t"] - DISSOLVE / 2)) / DISSOLVE)
+        elif cur["x"] == "dissolve" and prv and t < cur["t"] + dc / 2:
+            w = smooth((t - (cur["t"] - dc / 2)) / dc)
             x = self.shot(prv, t) * (1 - w) + self.shot(cur, t) * w
         elif nxt and nxt["x"] == "whip" and t >= nxt["t"] - WHIP:
             u = (t - (nxt["t"] - WHIP)) / WHIP

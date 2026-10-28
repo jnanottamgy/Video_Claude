@@ -1,13 +1,19 @@
-"""Synthesised temple sounds, tuned to the song (its Sa is C#): brass bells, the aarti hand bell,
+"""Synthesised temple sounds, tuned to the song's Sa (edl.SA): brass bells, the aarti hand bell,
 ghungroo, and a shankh. All return stereo float64 (N, 2) at 48 kHz, peak-normalised to 1.
 
   python3 tools/sounds.py OUT_DIR      # write each sound as a wav, plus a spectrogram sheet
 """
+import os
+import sys
+
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(__file__))
+import edl  # noqa: E402
+
 SR = 48000
-SA = 277.18                       # C#4, the song's tonic
-PA = SA * 1.5                     # G#4
+SA = edl.SA                       # the song's tonic, in the 4th octave
+PA = SA * 1.5
 
 # a brass temple bell's modes: (ratio to the prime, amplitude, decay multiplier)
 BELL_MODES = [(0.50, 0.55, 1.6), (1.00, 1.00, 1.0), (1.19, 0.55, 0.85), (1.50, 0.30, 0.70), (2.00, 0.65, 0.60),
@@ -120,7 +126,7 @@ def shankh(f0=SA, dur=2.4, seed=5):
 
 
 def big_bell(seed=1):
-    """The deep temple bell: Sa an octave below the hand bells' range, ringing ~6 s."""
+    """The deep temple bell on Sa, ringing ~6 s."""
     return bell(SA, 7.0, 3.2, seed=seed, strike=0.18)
 
 
