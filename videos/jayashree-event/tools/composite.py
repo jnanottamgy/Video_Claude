@@ -34,9 +34,9 @@ PUNCH = [(s["t"], 0.06, 0.14) for s in SHOTS if s["t"] > D + 0.01 and s["x"] in 
 PUNCH.append((D, 0.12, 0.30))
 # flashes of warm light at a cut: (time, peak, attack s, decay s, leak seed)
 LEAKS = [(s["t"], 0.70, 0.10, 0.30, 100 + s["i"]) for s in SHOTS if s["x"] == "flash" and s["t"] < E - 0.01]
-LEAKS += [(0.0, 0.55, 0.0, 0.40, 11), (D, 0.8, 0.12, 0.30, 12), (E, 0.9, 0.10, 0.6, 13)]
+LEAKS += [(D, 0.8, 0.12, 0.30, 12), (E, 0.9, 0.10, 0.6, 13)]
 # white flashes: (time, alpha, decay s)
-WHITE = [(D, 0.80, 0.10), (B, 0.30, 0.08), (E, 0.50, 0.15), (0.0, 0.35, 0.10)]
+WHITE = [(D, 0.80, 0.10), (B, 0.30, 0.08), (E, 0.50, 0.15)]
 # shakes: (time, px, decay s, Hz)
 SHAKE = [(D, 20, 0.30, 15), (B, 10, 0.20, 16), (E, 8, 0.25, 13)]
 # zoom-blur bursts and chromatic kicks: (time, amount, decay s)
@@ -47,8 +47,8 @@ PULSE = [(D + (4 * k + a) * edl.PULSE, 0.035) for k in range(0, 20) for a in edl
 PULSE = [(t, v) for t, v in PULSE if D <= t < E - 0.01]
 # golden dust: (time, level) keyframes, linear between
 DUST = [(0.0, 0.9), (D - 0.2, 0.9), (D + 0.3, 0.3), (E - 0.1, 0.3), (E + 0.4, 1.0), (99, 1.0)]
-# slow drifting leaks through the intro and the end card: (t0, t1, level, seed)
-DRIFT = [(0.0, D, 0.16, 21), (E, edl.DURATION + 1, 0.20, 22)]
+# a slow drifting leak through the end card: (t0, t1, level, seed)
+DRIFT = [(E, edl.DURATION + 1, 0.20, 22)]
 
 
 def env(t, t0, attack, decay):

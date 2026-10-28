@@ -6,8 +6,8 @@ the picture's events.
                                                             Instagram mutes the song and it is re-added from
                                                             Instagram's own library)
 Effects: synthesised bells, aarti bell, ghungroo and shankh (tools/sounds.py, tuned to the song's Sa, D), and
-the library (library/sfx: a riser and bass hit into the drop, swells into the intro's dissolves, whooshes on
-the whips, the fire bed under the aarti flames).
+the library (library/sfx: a riser and bass hit into the drop, whooshes on the whips, the fire bed under the
+aarti flames).
 """
 import json
 import os
@@ -81,14 +81,11 @@ def effects():
     # the opening: a bell struck on frame one, ankle bells under it
     put(fxb, S.mid_bell(seed=2), 0.0, -9); ev("mid bell (D5)", 0.0, -9)
     put(fxb, S.ghungroo(seed=31), 0.0, -17); ev("ghungroo", 0.0, -17)
-    # the intro's dissolves: a soft swell into each
-    for s in sh[1:3]:
-        lib(fxb, "slow-woosh", s["t"], -20); ev("slow-woosh", s["t"], -20)
     # the aarti: the hand bell rung over the flames, and the flames themselves
     aarti = sh[1]
-    put(fxb, S.aarti(dur=aarti["end"] - aarti["t"] + 0.3), aarti["t"] - 0.3, -20); ev("aarti hand bell", aarti["t"] - 0.3, -20)
-    lib(fxb, "fire", aarti["t"] - 0.35, -16, length=aarti["end"] - aarti["t"] + 0.4, hp=120, fade_in=0.4)
-    ev("fire bed", aarti["t"] - 0.35, -16)
+    put(fxb, S.aarti(dur=aarti["end"] - aarti["t"]), aarti["t"], -20); ev("aarti hand bell", aarti["t"], -20)
+    lib(fxb, "fire", aarti["t"], -16, length=aarti["end"] - aarti["t"] - 0.21, hp=120, fade_in=0.15)
+    ev("fire bed", aarti["t"], -16)
     # her name: a small bell as the honorific writes on
     put(fxb, S.ting(seed=4), edl.TEXT[2][0] + 0.05, -15); ev("ting (D6)", edl.TEXT[2][0] + 0.05, -15)
     # the DROP: a riser into it, then the bass hit, the deep bell and the shankh together

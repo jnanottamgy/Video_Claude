@@ -41,12 +41,13 @@ END = p(82)                      # the last phrase: the end card (song 39.27)
 #   (x, y, strength), look = grade (gold | candle), hires = decode the 4K original (heavy crops),
 #   her = a shot of Jayashree (held longer, never cut quick)
 SHOTS = [
-    # ---- INTRO: the sitar builds; slow, warm, three lines of type ----
+    # ---- INTRO: the sitar builds; slow, warm, three lines of type. Hard cuts on the sitar's two strongest
+    #      accents (song 5.810 and 8.404: frames 50 and 128), no dissolves, no flashes ----
     dict(t=p(0), clip="3397", src=1.90, x="cut", z=(1.0, 1.10), c=(0.38, 0.56), her=True,
          note="HOOK: her mid-phrase, hand rising: JAI JINENDRA"),
-    dict(t=p(5), clip="3393", src=4.00, speed=0.55, x="dissolve", z=(1.05, 1.12), c=(0.6, 0.6), look="candle",
+    dict(t=50 / FPS, clip="3393", src=4.00, speed=0.55, x="cut", z=(1.05, 1.12), c=(0.6, 0.6), look="candle",
          rays=(0.5, 0.08, 0.5), note="aarti flames, slow: an evening of pure bhakti."),
-    dict(t=p(10), clip="3407", src=0.15, speed=0.5, x="dissolve", z=(1.04, 1.14), c=(0.48, 0.5), look="candle",
+    dict(t=128 / FPS, clip="3407", src=0.15, speed=0.5, x="cut", z=(1.04, 1.14), c=(0.48, 0.5), look="candle",
          her=True, note="her warm close-up, slow: JINA GAANA VISHARADE / JAYASHREE D JAIN"),
     # ---- DROP: the beat comes in; the event, quick ----
     dict(t=DROP, clip="3403", src=1.00, x="drop", z=(1.18, 1.24), c=(0.5, 0.74), note="the hall lifts its hands"),
@@ -92,7 +93,7 @@ SHOTS = [
     dict(t=END, clip="3376", src=5.10, speed=0.5, x="flash", z=(1.02, 1.08), c=(0.45, 0.55), look="candle",
          rays=(0.12, 0.15, 0.30), her=True, note="her, slow: END CARD"),
 ]
-DISSOLVES = {1: 0.5, 2: 0.8}     # shot index -> cross-dissolve length (s) into it
+DISSOLVES = {}                   # shot index -> cross-dissolve length (s) into it (none: the intro cuts hard)
 for i, s in enumerate(SHOTS):
     s["end"] = SHOTS[i + 1]["t"] if i + 1 < len(SHOTS) else DURATION
     s["i"] = i
@@ -107,9 +108,9 @@ for i, s in enumerate(SHOTS):
 
 # text: (start, end, kind)
 TEXT = [
-    (0.00, p(5) - 0.10, "hook"),
-    (p(5) + 0.20, p(10) - 0.15, "second"),
-    (p(10) + 0.20, DROP, "name"),
+    (0.00, 2.30, "hook"),                                     # held across the first cut, so it reads
+    (2.32, 128 / FPS - 0.12, "second"),
+    (128 / FPS + 0.15, DROP, "name"),
     (p(34) + 0.05, p(42) + 0.30, "event"),
     (END + 0.30, DURATION + 0.1, "end"),
 ]

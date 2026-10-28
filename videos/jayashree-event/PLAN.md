@@ -13,8 +13,13 @@ VFX and sound design.
 - **v1** (commit 6202701) ran 65 s on "BLEND OF RAAG". **v2** moves to the song they chose next,
   "Chanakya" by Rishab Rikhiram Sharma, the 45 s edit audio. They also asked for a quicker pace
   everywhere except her shots, and for the title, role, place and date on screen.
-- **v3** (this one) replaces the v2 hook ("This is not a concert. / it's a prayer."), which they didn't
-  like. Of four options previewed on the frames, they chose "Jai Jinendra / an evening of pure bhakti.".
+- **v3** replaces the v2 hook ("This is not a concert. / it's a prayer."), which they didn't like. Of four
+  options previewed on the frames, they chose "Jai Jinendra / an evening of pure bhakti.".
+- **v4** (this one) fixes the intro: the cuts there felt off the beat, and the transitions were
+  unnecessary. The two intro cuts are now hard cuts on the sitar's two strongest accents (frames 50 and
+  128, onsets measured at 1.681 s and 4.274 s). The cross-dissolves, the opening frame's flash, the
+  drifting light leak and the swells under the dissolves are gone. "JAI JINENDRA" is held across the first
+  cut so it still reads. From her name card on, nothing changed.
 - **Output:** 39.1 s, 1080x1920, 30 fps.
 
 ## The cut (tools/edl.py)
@@ -24,7 +29,7 @@ builds with no percussion, the beat comes in at 11.84 s and the bass a bar later
 
 | Output | Music | Picture |
 |---|---|---|
-| 0-7.7 | the sitar build | **hook**: her mid-phrase, a bell on frame one: JAI / JINENDRA (the Jain greeting). Then aarti flames in slow motion: "an evening of pure bhakti." Then her close-up in slow motion: JINA GAANA VISHARADE / JAYASHREE D JAIN / JAIN DEVOTIONAL VOCALIST |
+| 0-7.7 | the sitar build | **hook**: her mid-phrase, a bell on frame one: JAI / JINENDRA (the Jain greeting). Hard cut on the sitar's accent at 1.67 to aarti flames in slow motion: "an evening of pure bhakti." Hard cut on the next accent at 4.27 to her close-up in slow motion: JINA GAANA VISHARADE / JAYASHREE D JAIN / JAIN DEVOTIONAL VOCALIST |
 | 7.71 | **the beat comes in** | flash, zoom burst, shake: the hall's hands go up |
 | 7.7-35.1 | the beat | the event, quick. B-roll runs 2 pulses (0.86 s), or a 3-3-2 burst on the song's accents (bar + 0, 1.5, 3, 4). Her shots are held for 4 pulses (1.7 s), every fourth or fifth shot. The event card (Kannada title, English, PALACE GROUNDS, BANGALORE, SUNDAY · 25 OCTOBER 2026) rides over four quick shots of the idols and aarti. Then the dignitaries: the chief guest at the podium, the dais in pink turbans, a garlanding on the big screen. The climax is the dance, the dholak, the whole hall |
 | 35.1-39.1 | the last phrase and the fade | her in slow motion; end card: the honorific, her name, her role, follow for more |
@@ -43,7 +48,7 @@ She is on screen for 51% of the reel.
   - After the LUT: clarity, bloom on the lamps and chandeliers, red halation, a warm vignette and fine
     grain.
 - **Light:** god rays streaming from the chandeliers, windows and the idols' canopy; rising golden dust
-  and bokeh; procedural light leaks on flash cuts and drifting through the intro and end card.
+  and bokeh; procedural light leaks on flash cuts after the drop and drifting through the end card.
 - **Motion:**
   - slow push-ins framed per shot, and punch-ins on every cut after the drop;
   - whip pans with motion blur;
@@ -62,7 +67,6 @@ She is on screen for 51% of the reel.
   - the aarti hand bell over the flames, a shankh on the drop, ghungroo on the light flashes.
 - **Library (library/sfx):**
   - a riser and bass hit into the drop;
-  - swells into the intro's dissolves;
   - whooshes on the whips;
   - the fire bed under the aarti.
 - **Master:** -14 LUFS, then a 4x-oversampled limiter at -1.2 dBFS for the track's own 0 dBFS peaks. A
