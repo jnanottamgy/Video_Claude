@@ -64,29 +64,29 @@ lands on his words:
   skipped during his name card, which is its own caption.
 - **Finishing:** vignette and grain.
 
-## Sound (tools/dialogue.py, tools/mix.py)
-- **Voice (v2, after "the audio is muffled, heavy echo"):** classical DSP only, no trained models. The phone
-  recorded him from about a metre away in a hard-walled room: the raw voice is only ~10 dB down 100 ms after a
-  phrase, and almost nothing above 5 kHz.
-  - Both capsules high-passed at 80 Hz (AC hum).
-  - **WPE dereverberation** (weighted prediction error), per take: multichannel linear prediction in the STFT
-    domain. The room's echo is predicted from the past 16-304 ms of both mics and subtracted, and the direct
-    sound stays. Then a band-split mono, spectral denoise (40 ms release) and a residual late-reverb
-    suppression (T60 0.7 s, -11 dB floor).
-  - Broadcast EQ, a harmonic exciter (new 5-12 kHz harmonics from his own 1.8-4.5 kHz band) and a de-esser.
-  - **In the mix:** each line levelled. v1's fader ride is gone, because it lifted the echo tails with the
-    quiet syllables. A gentle 2.2:1 compressor, and a downward expander that pulls what is left of the tails
-    down between phrases.
-  - **Result**, at clean phrase ends 200 ms after the last word:
-    - the voice is 25-35 dB down, against 15-20 dB raw and less than that in v1;
-    - presence (2.4-4.8 kHz) is +3.6 dB and air (4.8-9.6 kHz) +4.8 dB brighter than v1.
-- **Song:** ducked in the speech band only under his voice (the kick, bass and shimmer stay), and lifted where
-  he is silent. The drop is the loudest moment.
-- **Sound design:** about 350 cues from the graphics builders' cue lists.
-  - From the library: 27 of its 28 effects. The gun reload was dropped for a professional tone.
-  - Synthesised: glints, pops, ticks, sparks, comets and sub hits, tuned to the song (B minor).
-  - Effects sit 8-12 LU under his voice.
-- **Master:** -14 LUFS, -1 dBTP. Voice-to-bed is about 16 dB in the speech band.
+## Sound (tools/dialogue.py, tools/mix.py), v3
+- **History:** v1 and v2 processed the phone recording heavily:
+  - v1: denoise, dereverb, a fader ride and 3:1 compression;
+  - v2: WPE dereverberation, a harmonic exciter and a downward expander.
+  The client heard it as muffled and echoey, then as "very very wrong". v3 starts fresh with the opposite
+  approach: keep his voice as recorded.
+- **Voice:** his original stereo recording from the team's reel, kept stereo (summing the two phone capsules to
+  mono comb-filters the highs). Only linear processing:
+  - a 75 Hz high-pass;
+  - -2 dB at 250 Hz, +2.5 dB presence at 3.5 kHz, +2 dB air from 8 kHz;
+  - the room's width narrowed a little (side x 0.7).
+  In the mix, every line is set to the same integrated loudness, then a light stereo-linked 2:1 compressor
+  (about 1.5 dB while talking) and a peak catcher. Lip sync is checked by cross-correlation against the
+  original: within 0.3 ms on every line.
+- **Song:**
+  - a smooth broadband duck under his voice (-7 dB), held 0.5 s so it doesn't pump in short pauses;
+  - lifted where he is silent;
+  - no ducking through the drop, so the beat hits at full level on "SINGAPORE".
+- **Effects:** 71 curated cues from the library (whooshes on the transitions and the type, the drop's bass hit,
+  risers into the drop, the lift and the bloom, the logo's sting) plus a few glints tuned to the song (B minor).
+- **Balance:** his voice is about 16 dB over the music and effects in the speech band, and the music bed sits
+  about 10 LU under him. The drop is the loudest moment.
+- **Master:** -14 LUFS, -1 dBTP.
 
 ## Rebuild
 `./build.sh` (see it for the inputs, which are kept out of git).
