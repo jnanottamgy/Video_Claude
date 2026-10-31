@@ -73,8 +73,22 @@ The room's echo is baked into the phone recording. The client ran the original
 - Lip sync is exact on every line.
 - The mix chain below is unchanged.
 - An offline transcription of Adobe's version mishears a few words ("ambitions", "horizons", "payroll",
-  "trust us"). That can be Adobe blurring consonants at high strength, or just the recogniser. If they sound off,
-  the fix is a re-export at a lower Strength.
+  "trust us"). The client confirmed they sound off: Adobe blurs consonants at high strength. The fix is a
+  re-record (below).
+
+## Re-recording the voice (tools/karaoke_timing.py, tools/karaoke.py)
+- **The guide:** a 58 s karaoke video (renders/deliver/TAXWISE_VO_karaoke_*.mp4):
+  - the reel plays at the top, so he can match his lips on the on-camera lines;
+  - his lines are below it, and every word fills with gold at the moment he said it in the reel;
+  - before the first line, a 3-2-1 count-in with beeps;
+  - before every other line, three dots fill;
+  - the next line is previewed.
+- **The timing:** the word times come from the ASR. Each script word maps one to one onto an ASR word. The 28
+  phrase-initial starts that the ASR put early are snapped to the onset of his voice.
+- **Two versions:** one has his original voice, to hear in earphones. The other is silent, for when the guide
+  plays in the same room as the microphone.
+- **Next:** he records on a phone while the guide plays. Each line is then aligned onto the reel's timeline and
+  mixed with the chain below.
 
 ## Sound (tools/dialogue.py, tools/mix.py), v3
 - **History:** v1 and v2 processed the phone recording heavily:
