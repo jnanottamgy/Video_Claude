@@ -522,38 +522,54 @@ def effects():
     L("alien-digital-glitch", 14.20, -23, hp=400, length=0.22, start=0.0)
     P(swell(0.5, 900, 12000), 14.17, -20, hit=0.5, name="swell (into the lens)")
 
-    # ===== THE TEAM 14.22-25.47 =====
-    L("rain", 14.25, -15, hp=4500, lp=12000, length=1.25, fade_in=0.3, start=0.21)   # gold points stream in (fizz)
+    # ===== THE TEAM 14.22-25.47 (cues from the team builder's report) =====
+    P(thump(64, 0.3, 0.5), 14.50, -22, name="thump (gold points burst from the centre)")
+    P(glint(NOTE["B6"], 0.9), 14.51, -26, name="glint (the burst)")
+    L("rain", 14.50, -15, hp=4500, lp=12000, length=1.0, fade_in=0.25, start=0.21)   # the points spiral out (fizz)
     pent = ["B5", "D6", "E6", "F#6", "A6", "B6", "D7", "E7", "F#7", "A7"]
-    for k in range(30):                                                 # 30 people pop into formation
-        u = k / 29
-        t = 14.55 + 0.90 * (1 - (1 - u) ** 1.6)
-        P(pop(NOTE[pent[k % len(pent)]] * (0.5 if k % 3 == 0 else 1.0), 0.06), t, -31 + 4 * u,
+    for k in range(33):                                                 # 33 people trace in, centre outward
+        u = k / 32
+        t = 14.92 + 0.52 * u
+        P(pop(NOTE[pent[k % len(pent)]] * (0.5 if k % 3 == 0 else 1.0), 0.06), t, -32 + 4 * u,
           pan=float(np.sin(k * 2.4)) * 0.6, name="pop (a person)")
-    P(glint(NOTE["B6"], 1.0), 15.46, -22, name="glint (the team complete)")
-    for t in counter_ticks(15.46, 16.34, 30):                          # the counter runs 0 -> 30
-        P(tick(2300, 0.03), t, -23, name="tick (counter)")
+    P(tick(3200, 0.03), 15.46, -24, name="tick (the formation locks)")
+    P(glint(NOTE["B6"], 1.0), 15.46, -23, name="glint (the team complete)")
+    for t in counter_ticks(15.46, 16.25, 29):                          # the odometer rolls 0 -> 29, decelerating
+        P(tick(2300, 0.03), t, -24, name="tick (counter)")
+    P(tick(1900, 0.04), 16.27, -20, name="tick (the last digit clicks 29 -> 30)")
     L("sword-impact", 16.34, -21, hp=150, length=1.2)                   # 30+ slams
     P(thump(56, 0.5), 16.34, -14, name="thump (30+)")
     P(sub_drop(1.2, 90, 36), 16.34, -15, name="sub drop (30+ ring pulse)")
+    P(sheen(0.5), 16.50, -25, hit=0.2, name="sheen (across 30)")
+    P(tick(2500), 16.74, -21, name="tick (the hairline draws)")
     L("woosh-3", 16.84, -17, hp=300)                                    # IN-HOUSE SPECIALISTS
-    P(tick(2500), 16.90, -21, name="tick (hairline)")
-    L("slow-woosh", 18.75, -18, hp=120)                                 # the people swirl into the hub
-    L("woosh-4", 19.05, -21, hp=150, rate=1.12)
-    P(thump(60, 0.4), 19.22, -18, name="thump (the TW mark condenses)")
-    P(glint(NOTE["D7"], 1.3), 19.24, -20, name="glint D7 (the hub)")
+    P(sheen(0.8), 17.38, -27, hit=0.35, name="sheen (a ripple of light through the crowd)")
+    L("fast-swoosh", 18.08, -25, hp=400, rate=0.85)                     # 30+ spins down into the centre
+    L("slow-woosh", 18.50, -18, hp=120)                                 # the vortex: the people swirl inward
+    P(swell(0.55, 600, 9000, 1.8), 18.74, -22, hit=0.55, name="swell (into the mark)")
+    P(thump(60, 0.45), 18.74, -16, name="thump (the TW mark condenses)")
+    P(sub_drop(1.0, 80, 34), 18.74, -19, name="sub drop (the mark's shockwave)")
+    P(chord_glint(["B6", "D7", "F#7"], 1.5), 18.76, -21, name="glint chord (the mark's white-hot flash)")
     L("fast-swoosh", 19.22, -23, hp=400)                                # EXPERTISE ACROSS
+    P(sheen(0.6), 19.30, -25, hit=0.25, name="sheen (across the mark)")
+    for k, t in enumerate((20.18, 20.23, 20.28, 20.33, 20.38)):        # five ports pop around the hub
+        P(pop(NOTE[["B6", "D7", "E7", "F#7", "B7"][k]], 0.05), t, -29, pan=-0.5 + 0.25 * k, name="pop (a port)")
+    P(pop(NOTE["B5"], 0.09), 20.50, -26, name="pop (the hub's pulse ring)")
     services = [(20.66, "FINANCE", "B6", -0.55), (21.38, "TAXATION", "D7", 0.55), (22.50, "PAYROLL", "E7", -0.45),
                 (23.38, "COMPLIANCE", "F#7", 0.45), (24.18, "ADVISORY", "B7", 0.0)]
-    for k, (t, name, note, pan) in enumerate(services):
-        L("woosh-3" if k % 2 == 0 else "fast-swoosh", t - 0.05, -22, hp=250, pan=pan)
-        P(thump(64, 0.3, 0.5), t, -22, pan=pan * 0.5, name=f"thump ({name})")
-        P(glint(NOTE[note], 0.9), t + 0.04, -24, pan=pan, name=f"glint {note} ({name})")
-        P(tick(2800, 0.035), t + 0.20, -22, pan=pan, name=f"tick ({name} icon draws)")
+    for k, (t, name, note, pan) in enumerate(services):                 # launch on the word, land 0.24 s later
+        L("woosh-3" if k % 2 == 0 else "fast-swoosh", t + 0.12, -22, hp=250, pan=pan)
+        P(thump(64, 0.3, 0.5), t + 0.24, -22, pan=pan * 0.5, name=f"thump ({name} lands)")
+        P(glint(NOTE[note], 0.9), t + 0.25, -24, pan=pan, name=f"glint {note} ({name}: a tick of light)")
+        P(tick(2800, 0.035), t + 0.32, -22, pan=pan, name=f"tick ({name} icon draws)")
+    P(sheen(0.4), 24.44, -27, hit=0.2, name="sheen (the tagline rises)")
     L("build-up-1", LIFT, -21, hp=150, at=1.55)                         # climaxes on the lift
-    L("cinematic-electric-hit", LIFT, -18, hp=55, length=3.5, start=0.6)  # the network glows
+    L("cinematic-electric-hit", LIFT, -18, hp=55, length=3.5, start=0.6)  # pulses race out, the network glows
     P(chord_glint(["B6", "D7", "F#7", "B7"], 2.2, 0.05), LIFT + 0.02, -21, name="glint chord (ONE CONNECTED...)")
-    L("woosh-1", 25.25, -19, hp=120)                                    # the network folds into a sphere
+    for k, note in enumerate(["B6", "D7", "E7", "F#7", "B7"]):           # the pulses land: all five cards flash
+        P(pop(NOTE[note], 0.05), 24.78 + 0.008 * k, -29, pan=-0.5 + 0.25 * k, name="pop (a card flashes)")
+    L("woosh-1", 25.10, -19, hp=120)                                    # the network folds into a sphere
+    P(sheen(0.5), 25.15, -27, hit=0.25, name="sheen (the sphere draws in)")
 
     # ===== THE GLOBE 25.47-35.57 =====
     P(sub_drop(1.4, 70, 30), 25.47, -19, name="sub drop (the sphere fills with Earth)")

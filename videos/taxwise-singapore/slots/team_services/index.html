@@ -48,7 +48,7 @@
       #subMask { position: absolute; left: 0; top: 30px; width: 1080px; height: 62px; overflow: hidden; }
       #subText { position: absolute; left: 0; top: 7px; width: 1080px; text-align: center; white-space: nowrap;
         font-family: var(--tw-sans); font-weight: 600; font-size: 38px; line-height: 48px;
-        letter-spacing: 0.3em; text-indent: 0.3em; color: var(--tw-ivory); }
+        letter-spacing: 0.24em; text-indent: 0.24em; color: var(--tw-ivory); }
 
       /* ---------- Act 2: the network ---------- */
       #net { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 820px; }
@@ -907,7 +907,7 @@
         // IN-HOUSE SPECIALISTS (16.82) with a gold hairline (16.74)
         tl.fromTo("#hair", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.5, ease: "expo.out" }, Q.HAIR);
         tl.fromTo("#subText", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "expo.out" }, Q.SUB);
-        trackIn("#subText", 38 * 0.2, Q.SUB, 0.8);
+        trackIn("#subText", 38 * 0.12, Q.SUB, 0.8);
         // "specialists" (17.38): a glint runs along the hairline
         tl.fromTo("#hairGlint", { x: 0, opacity: 0 }, { x: 420, duration: 0.5, ease: "power2.inOut" }, Q.RIPPLE);
         tl.to("#hairGlint", { opacity: 1, duration: 0.1, ease: "none" }, Q.RIPPLE);
