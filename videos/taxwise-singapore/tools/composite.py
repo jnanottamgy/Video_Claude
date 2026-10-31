@@ -339,6 +339,7 @@ def main():
     ap.add_argument("--part")
     ap.add_argument("--join", type=int)
     ap.add_argument("--range")
+    ap.add_argument("--nocaps", action="store_true", help="stills without captions (for covers)")
     a = ap.parse_args()
     os.makedirs(PIC, exist_ok=True)
     if a.join:
@@ -354,6 +355,8 @@ def main():
         print("->", out, n, "frames")
         return
     c = Comp()
+    if a.nocaps:
+        c.caps.render = lambda t: None
     if a.stills:
         vd = os.path.join(ROOT, "renders/verify")
         os.makedirs(vd, exist_ok=True)

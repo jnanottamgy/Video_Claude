@@ -32,8 +32,17 @@ enc() {  # video audio out
 }
 enc "$P" renders/audio/mix.wav "$D/TAXWISE_Singapore_reel.mp4"
 enc "$P" renders/audio/mix_nomusic.wav "$D/TAXWISE_Singapore_reel_nomusic.mp4"
-# covers, straight from the picture: the hook with A NEW HORIZON up (3.6 s), and the logo end card (51.0 s)
-ffmpeg -y -v error -ss 3.6 -i "$P" -frames:v 1 -q:v 2 "$D/TAXWISE_cover.jpg"
+# covers:
+# - the hook with A NEW HORIZON over the skyline (3.55 s), rendered without the caption and moved down 90 px
+#   (the top rows of plain navy wall stretched to fill) so the title sits inside the profile grid's 3:4 crop;
+# - the logo end card (51.0 s), straight from the picture.
+python3 tools/composite.py --stills 3.55 --nocaps
+python3 - "$D/TAXWISE_cover.jpg" <<'PY'
+import sys, cv2, numpy as np
+im = cv2.imread("renders/verify/still_003.55.jpg")
+top = cv2.resize(im[:12], (im.shape[1], 90), interpolation=cv2.INTER_LINEAR)
+cv2.imwrite(sys.argv[1], np.vstack([top, im[:-90]]), [cv2.IMWRITE_JPEG_QUALITY, 95])
+PY
 ffmpeg -y -v error -ss 51.0 -i "$P" -frames:v 1 -q:v 2 "$D/TAXWISE_cover_end.jpg"
 ffmpeg -y -v error -i "$D/TAXWISE_cover.jpg" -vf "crop=1080:1440:0:240" -q:v 2 "$D/TAXWISE_cover_grid_preview.jpg"
 ls -la "$D"
