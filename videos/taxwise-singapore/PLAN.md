@@ -65,19 +65,28 @@ lands on his words:
 - **Finishing:** vignette and grain.
 
 ## Sound (tools/dialogue.py, tools/mix.py)
-- **Voice:** classical DSP only:
-  - a band-split mono (the two phone capsules summed below 1.5 kHz, the left one above);
-  - an 80 Hz high-pass, per-take spectral denoise and late-reverb suppression;
-  - broadcast EQ and a de-esser.
-  - Background noise is 15 dB lower (SNR 23.8 dB to 38.4 dB).
-  - Every line is levelled to the same loudness, then a fader ride, a 3:1 compressor and a peak catcher.
-- **Song:** ducked in the speech band only under his voice (the kick, bass and shimmer stay), and lifted
-  where he is silent. The drop is the loudest moment.
-- **Sound design:** about 290 effects, on every cue the graphics builders reported:
-  - all 28 effects of the library (risers, bass whooshes, sword slashes and impacts, electric hit,
-    lightning, glitches, tape stop, slow-mo, radio, reload, fire and rain beds);
-  - plus synthesised glints, pops, ticks, sparks, comets and sub hits, tuned to the song (B minor).
-- **Master:** -14 LUFS, -1 dBTP. Voice-to-bed is about 15 dB in the speech band.
+- **Voice (v2, after "the audio is muffled, heavy echo"):** classical DSP only, no trained models. The phone
+  recorded him from about a metre away in a hard-walled room: the raw voice is only ~10 dB down 100 ms after a
+  phrase, and almost nothing above 5 kHz.
+  - Both capsules high-passed at 80 Hz (AC hum).
+  - **WPE dereverberation** (weighted prediction error), per take: multichannel linear prediction in the STFT
+    domain. The room's echo is predicted from the past 16-304 ms of both mics and subtracted, and the direct
+    sound stays. Then a band-split mono, spectral denoise (40 ms release) and a residual late-reverb
+    suppression (T60 0.7 s, -11 dB floor).
+  - Broadcast EQ, a harmonic exciter (new 5-12 kHz harmonics from his own 1.8-4.5 kHz band) and a de-esser.
+  - **In the mix:** each line levelled. v1's fader ride is gone, because it lifted the echo tails with the
+    quiet syllables. A gentle 2.2:1 compressor, and a downward expander that pulls what is left of the tails
+    down between phrases.
+  - **Result**, at clean phrase ends 200 ms after the last word:
+    - the voice is 25-35 dB down, against 15-20 dB raw and less than that in v1;
+    - presence (2.4-4.8 kHz) is +3.6 dB and air (4.8-9.6 kHz) +4.8 dB brighter than v1.
+- **Song:** ducked in the speech band only under his voice (the kick, bass and shimmer stay), and lifted where
+  he is silent. The drop is the loudest moment.
+- **Sound design:** about 350 cues from the graphics builders' cue lists.
+  - From the library: 27 of its 28 effects. The gun reload was dropped for a professional tone.
+  - Synthesised: glints, pops, ticks, sparks, comets and sub hits, tuned to the song (B minor).
+  - Effects sit 8-12 LU under his voice.
+- **Master:** -14 LUFS, -1 dBTP. Voice-to-bed is about 16 dB in the speech band.
 
 ## Rebuild
 `./build.sh` (see it for the inputs, which are kept out of git).

@@ -353,6 +353,34 @@ def peak_catch(x, ceil_db=-3.0, look=0.0015, rel=0.060, hop=24):
     return x * np.minimum(g, need)
 
 
+def expand(x, below_db=12.0, ratio=2.5, range_db=-18.0, att=0.001, hold=0.040, rel=0.090, look=0.005, hop=48):
+    """Downward expander for the room's tails between phrases: once the voice falls `below_db` under its speech
+    level, every dB down becomes `ratio` dB down (to at most `range_db`). It opens fast and 5 ms early (look-
+    ahead), so no word onset is clipped; it holds 40 ms, then closes over 90 ms."""
+    from numpy.lib.stride_tricks import sliding_window_view
+    k = len(x) // hop
+    lvl = 10 * np.log10(np.convolve(x ** 2, np.ones(240) / 240, "same")[:k * hop].reshape(k, hop).max(1) + 1e-14)
+    thr = np.percentile(lvl[lvl > -80], 90) - below_db
+    gr = np.clip((lvl - thr) * (ratio - 1), range_db, 0.0)
+    la = max(1, int(look * SR / hop))
+    gr = sliding_window_view(np.pad(gr, (0, la), mode="edge"), la + 1).max(1)
+    a, r = 1 - np.exp(-hop / (att * SR)), 1 - np.exp(-hop / (rel * SR))
+    hold_n, cnt = int(hold * SR / hop), 0
+    g = np.zeros(k)
+    for i in range(k):
+        p = g[i - 1] if i else 0.0
+        if gr[i] >= p:
+            g[i] = p + a * (gr[i] - p)
+            cnt = hold_n
+        elif cnt > 0:
+            cnt -= 1
+            g[i] = p
+        else:
+            g[i] = p + r * (gr[i] - p)
+    gain = np.interp(np.arange(len(x)), np.arange(k) * hop + hop / 2, 10 ** (g / 20))
+    return x * gain, g
+
+
 def voice():
     x, sr = sf.read(DLG)
     assert sr == SR
@@ -369,8 +397,9 @@ def voice():
         D[i:i + len(y)] += y
         report.append((s["id"], round(lv, 1), round(g, 1)))
     D = D[:N]
-    D = ride(D, target)
-    D, gr = compress(D)
+    # no fader ride: lifting the quiet moments lifted the room's echo tails with them
+    D, gr = compress(D, thr_db=-24.0, ratio=2.2, knee=8.0, att=0.010, rel=0.150)
+    D, _ = expand(D)
     D = peak_catch(D, -2.5)
     return D, report, gr
 
