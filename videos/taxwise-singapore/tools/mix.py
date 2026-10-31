@@ -507,13 +507,20 @@ def effects():
     L("sword-impact", DROP + 0.01, -24, hp=220, length=1.4)              # gold metal rings
     P(sub_drop(1.8, 85, 30), DROP, -15, name="sub drop (the drop)")
     L("sword-slash-2", DROP + 0.03, -26, hp=600, lp=7000)               # SINGAPORE slams in, letter by letter
-    P(chord_glint(["B6", "D7", "F#7"], 1.8), DROP + 0.36, -21, name="glint chord (all letters landed)")
+    for k, t in enumerate((12.57, 12.60, 12.64, 12.67, 12.71, 12.74, 12.77, 12.81, 12.84)):   # S-I-N-G-A-P-O-R-E land
+        P(thump(70 + 4 * k, 0.12, 0.6), t, -28, pan=-0.5 + 0.125 * k, name="thump (a letter lands)")
+        P(tick(2200 + 120 * k, 0.025), t, -31, pan=-0.5 + 0.125 * k, name="tick (a letter lands)")
+    P(chord_glint(["B6", "D7", "F#7"], 1.8), 12.86, -21, name="glint chord (the diamond completes the mark)")
+    P(glint(NOTE["B7"], 0.8), 12.92, -27, name="glint (on the diamond)")
     L("woosh-3", 13.00, -19, hp=300, pan=0.2)                           # NOW IN snaps in
     P(tick(2600), 13.02, -20, name="tick (NOW IN)")
-    P(sheen(0.6), 13.50, -21, hit=0.25, name="sheen (light sweep across the type)")
-    L("glitchy-woosh", 14.22, -16, hp=80)                               # everything rushes into the lens (RGB split)
+    P(pop(NOTE["D7"], 0.08), 13.00, -24, name="pop (the pin lands)")
+    P(pop(NOTE["F#7"], 0.06), 13.14, -28, name="pop (pulse ring 2)")
+    P(sheen(0.5), 13.71, -21, hit=0.25, name="sheen (light sweep across SINGAPORE)")
+    P(pop(NOTE["B6"], 0.06), 13.50, -28, name="pop (pulse ring 3)")
+    L("glitchy-woosh", 14.17, -16, hp=80)                               # the shield flies through the lens
     L("alien-digital-glitch", 14.20, -23, hp=400, length=0.22, start=0.0)
-    P(swell(0.5, 900, 12000), 14.22, -20, hit=0.5, name="swell (into the lens)")
+    P(swell(0.5, 900, 12000), 14.17, -20, hit=0.5, name="swell (into the lens)")
 
     # ===== THE TEAM 14.22-25.47 =====
     L("rain", 14.25, -15, hp=4500, lp=12000, length=1.25, fade_in=0.3, start=0.21)   # gold points stream in (fizz)
@@ -595,14 +602,16 @@ def effects():
     L("woosh-4", 35.95, -19, hp=110)
     P(sub_drop(1.2, 75, 32), 35.57, -14, name="sub drop (aura)")
     L("fast-swoosh", 36.30, -22, hp=350, pan=-0.4)                      # OUR COMMITMENT
-    P(tick(2400), 36.40, -22, pan=-0.4, name="tick (hairline)")
-    for t, sid, note in ((38.24, "sword-slash-1", "B6"), (39.20, "sword-slash-3", "D7"), (40.96, "sword-slash-1", "F#7")):
+    P(tick(2400), 36.48, -22, pan=-0.4, name="tick (the hairline draws)")
+    P(pop(NOTE["B6"], 0.06), 37.60, -26, pan=-0.2, name="pop (the diamond tick lands)")
+    for t, sid, note, tg in ((38.24, "sword-slash-1", "B6", 38.36), (39.20, "sword-slash-3", "D7", 39.32),
+                             (40.96, "sword-slash-1", "F#7", 41.08)):
         L(sid, t, -26, hp=450, lp=7000, pan=-0.35)
         P(thump(60, 0.35), t, -19, name="thump (a value lands)")
-        P(glint(NOTE[note], 1.0), t + 0.05, -25, pan=-0.35, name=f"glint {note} (the diamond bullet)")
+        P(glint(NOTE[note], 1.0), tg, -25, pan=-0.35, name=f"glint {note} (the diamond bullet)")
     P(thump(52, 0.45), 41.52, -18, name="thump (relationships: the punch-in)")
-    P(sheen(0.8), 41.90, -22, hit=0.35, name="sheen (all three glow)")
-    P(chord_glint(["B6", "D7", "F#7"], 1.8), 41.62, -25, name="glint chord (all three glow)")
+    P(sheen(0.6), 42.00, -23, hit=0.3, name="sheen (all three glow)")
+    P(chord_glint(["B6", "D7", "F#7"], 1.8), 41.92, -25, name="glint chord (all three glow)")
 
     # ===== THE FINALE 42.37-48.25 =====
     L("radio-switch", 42.37, -17, hp=400, length=0.30)                  # cut to the last shot
@@ -635,14 +644,21 @@ def effects():
     # ===== THE END CARD 48.25-52.00: the drums stop, one chord rings =====
     P(sub_drop(2.4, 70, 30), END, -14, name="sub drop (the mark assembles)")
     L("cinematic-electric-hit", END, -20, hp=60, length=3.2, start=0.15)
-    L("sword-impact", END + 0.30, -23, hp=300, length=2.6)               # the shield locks
-    P(glint(NOTE["F#7"], 2.2), END + 0.45, -19, name="glint F#7 (the diamond's glint)")
-    P(sheen(0.8), 49.30, -21, hit=0.35, name="sheen (shine across the mark)")
-    L("slow-woosh", 49.25, -23, hp=200)                                  # TAXWISE / CONSULTANTS
-    for k, t in enumerate((49.85, 50.00, 50.15)):                        # BANGALORE | CHENNAI | SINGAPORE
+    L("woosh-3", END, -24, hp=300, rate=0.85)                           # the T drops in
+    L("fast-swoosh", END + 0.02, -26, hp=400, rate=0.9)                  # the W rises
+    L("sword-impact", 49.00, -23, hp=300, length=2.6)                    # the diamond lands: the shield locks
+    P(glint(NOTE["F#7"], 2.2), 49.02, -19, name="glint F#7 (the diamond's glint)")
+    for k in range(7):                                                   # T-A-X-W-I-S-E rise
+        P(tick(2600 + 90 * k, 0.02), 49.03 + 0.045 * k, -31, name="tick (a letter of TAXWISE)")
+    L("slow-woosh", 49.40, -24, hp=200)                                  # CONSULTANTS closes in
+    P(sheen(0.8), 49.67, -22, hit=0.4, name="sheen (shine across the mark)")
+    L("fast-swoosh", 49.95, -29, hp=500, pan=-0.4)                      # the hairline draws out both ways
+    L("fast-swoosh", 49.97, -29, hp=500, pan=0.4, rate=1.05)
+    for k, t in enumerate((50.00, 50.09, 50.18)):                        # BANGALORE | CHENNAI | SINGAPORE
         P(tick(2400 + 200 * k, 0.035), t, -22, name="tick (an office)")
-    P(pop(NOTE["F#6"]), 50.15, -24, name="pop (the Singapore pin)")
-    P(glint(NOTE["B6"], 1.5), 50.52, -23, name="glint (TWCHARTERED.COM)")
+    P(pop(NOTE["F#6"]), 50.18, -24, name="pop (the Singapore pin)")
+    L("fast-swoosh", 50.62, -29, hp=500, rate=0.85)                     # TWCHARTERED.COM wipes in
+    P(glint(NOTE["B6"], 1.5), 50.75, -24, name="glint (TWCHARTERED.COM)")
     P(sheen(1.6), 51.0, -30, hit=0.8, name="sheen (gold dust)")
     x = B.x[:N]
     k = int(0.4 * SR)
