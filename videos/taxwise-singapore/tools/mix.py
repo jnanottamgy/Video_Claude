@@ -464,7 +464,7 @@ def effects():
         P(tick(3400 + 40 * k, 0.02), 2.60 + k * 0.022, -32, pan=0.15, name="tick (a Flyer capsule)")
     P(swell(1.0, 700, 10000), 3.07, -22, hit=1.0, name="swell (skyline draws on)")
     L("woosh-3", 3.00, -16, hp=200)                                     # A NEW HORIZON rises
-    L("sword-impact", 3.07, -23, hp=600, length=1.6)                    # the skyline's glint rings
+    L("sword-impact", 3.07, -26, hp=600, length=1.6)                    # the skyline's glint rings
     P(glint(NOTE["F#7"], 1.6), 3.08, -20, pan=-0.2, name="glint F#7 (skyline complete)")
     L("slow-woosh", 3.20, -21, hp=150)                                  # the sunrise glow swells
     L("woosh-1", 4.40, -23, hp=150, pan=0.15)                           # the globe spins up
@@ -479,14 +479,14 @@ def effects():
     L("cinematic-electric-hit", 6.10, -14, hp=45, length=3.0, start=0.9)  # the cut: the aura
     L("slow-motion", 6.10, -16, hp=90)
     L("woosh-4", 6.55, -18, hp=100)                                     # the pull-out (1.45x -> 1.00x)
-    L("sword-slash-1", 6.66, -22, hp=500, pan=-0.35)                    # HK rises
-    L("sword-slash-3", 7.12, -21, hp=500, pan=-0.2)                     # VINAY
+    L("sword-slash-1", 6.66, -25, hp=500, lp=7000, pan=-0.35)           # HK rises (the swish only, no metal)
+    L("sword-slash-3", 7.12, -24, hp=500, lp=7000, pan=-0.2)            # VINAY
     P(thump(55, 0.4), 7.12, -19, name="thump (VINAY lands)")
     L("woosh-3", 7.70, -17, hp=300, pan=-0.3)                           # MANAGING PARTNER slides in
     P(sheen(0.6), 7.50, -25, hit=0.25, name="sheen (light sweep across HK)")
     P(tick(2400), 7.74, -22, pan=-0.3, name="tick (MANAGING PARTNER drops in)")
     # the drums leave on "TaxWise": the beat slows into the break, a muffled swell opens it
-    L("beat-slowing", BREAK, -22, hp=120, length=0.55, start=0.12)
+    L("beat-slowing", BREAK, -26, hp=120, length=0.55, start=0.12)
     L("lowpass-woosh", BREAK + 0.25, -24)
     for t, note in ((8.56, "B6"), (8.62, "D7"), (8.80, "F#7")):        # T, W, diamond draw on
         P(pop(NOTE[note], 0.05), t, -27, pan=0.35, name="pop (the TW mark draws on)")
@@ -495,25 +495,24 @@ def effects():
     for k, t in enumerate((9.49, 9.81, 10.13, 10.61, 10.77, 11.33, 11.65, 12.37)):   # the loading line steps, a spark each
         P(spark(1500 + 260 * k), t, -27 + 0.6 * k, pan=-0.6 + 0.17 * k, name="spark (the loading line steps)")
     # the build: a loading line burns across the wall like a fuse, a reload, the riser
-    L("gun-reload", 9.52, -31, hp=250)
     L("fire", 9.49, -10, hp=1800, lp=9000, length=2.76, fade_in=2.4, start=0.21)   # the fuse crackles, growing
     L("build-up-2", GAP[0], -22, hp=90, at=2.85)                        # climaxes where the silence begins
-    L("sword-slash-3", 11.65, -20, hp=400)                              # EXPANSION cut in outline
+    L("sword-slash-3", 11.65, -23, hp=400, lp=7000)                     # EXPANSION cut in outline
     P(thump(62, 0.35), 11.65, -21, name="thump (EXPANSION)")
     L("bass-woosh-2", GAP[0], -23, hp=60, length=0.02)                  # its sweep rises into the silence
 
     # ===== THE DROP 12.50 on "SINGAPORE" =====
     L("bass-woosh-1", DROP, -11, hp=35, start=0.0)               # the burst only: the silence stays silent
-    L("lightning-strike", DROP, -22, hp=500, length=1.6)                # the white-gold flash cracks
-    L("sword-impact", DROP + 0.01, -21, hp=220, length=2.4)              # gold metal rings
+    L("lightning-strike", DROP, -27, hp=500, length=1.2)                # the white-gold flash: a touch of crack
+    L("sword-impact", DROP + 0.01, -24, hp=220, length=1.4)              # gold metal rings
     P(sub_drop(1.8, 85, 30), DROP, -15, name="sub drop (the drop)")
-    L("sword-slash-2", DROP + 0.03, -23, hp=600)                        # SINGAPORE slams in, letter by letter
+    L("sword-slash-2", DROP + 0.03, -26, hp=600, lp=7000)               # SINGAPORE slams in, letter by letter
     P(chord_glint(["B6", "D7", "F#7"], 1.8), DROP + 0.36, -21, name="glint chord (all letters landed)")
     L("woosh-3", 13.00, -19, hp=300, pan=0.2)                           # NOW IN snaps in
     P(tick(2600), 13.02, -20, name="tick (NOW IN)")
     P(sheen(0.6), 13.50, -21, hit=0.25, name="sheen (light sweep across the type)")
     L("glitchy-woosh", 14.22, -16, hp=80)                               # everything rushes into the lens (RGB split)
-    L("alien-digital-glitch", 14.20, -16, hp=400, length=0.28, start=0.0)
+    L("alien-digital-glitch", 14.20, -23, hp=400, length=0.22, start=0.0)
     P(swell(0.5, 900, 12000), 14.22, -20, hit=0.5, name="swell (into the lens)")
 
     # ===== THE TEAM 14.22-25.47 =====
@@ -527,7 +526,7 @@ def effects():
     P(glint(NOTE["B6"], 1.0), 15.46, -22, name="glint (the team complete)")
     for t in counter_ticks(15.46, 16.34, 30):                          # the counter runs 0 -> 30
         P(tick(2300, 0.03), t, -23, name="tick (counter)")
-    L("sword-impact", 16.34, -18, hp=150, length=1.2)                   # 30+ slams
+    L("sword-impact", 16.34, -21, hp=150, length=1.2)                   # 30+ slams
     P(thump(56, 0.5), 16.34, -14, name="thump (30+)")
     P(sub_drop(1.2, 90, 36), 16.34, -15, name="sub drop (30+ ring pulse)")
     L("woosh-3", 16.84, -17, hp=300)                                    # IN-HOUSE SPECIALISTS
@@ -567,7 +566,7 @@ def effects():
     P(thump(50, 0.6), 29.92, -15, name="thump (Singapore pin)")
     P(chord_glint(["F#6", "B6", "D7"], 1.6), 29.94, -23, pan=0.3, name="glint chord (SINGAPORE)")
     P(pop(NOTE["B6"], 0.08), 30.04, -25, pan=0.3, name="pop (second pulse ring)")
-    L("radio-beep", 30.19, -26, hp=600, lp=7000, pan=0.35)               # NEW OFFICE: a message in
+    L("radio-beep", 30.19, -30, hp=600, lp=7000, pan=0.35)               # NEW OFFICE: a message in
     P(tick(3000, 0.03), 30.33, -24, pan=0.35, name="tick (the tick draws)")
     L("fast-swoosh", 30.62, -27, hp=500, pan=-0.4, rate=0.9)             # the India labels exit
     for t in (28.77, 28.89, 30.27, 30.39, 31.17, 31.77, 31.89, 32.67, 33.27, 33.39):   # soft pin pings
@@ -580,7 +579,7 @@ def effects():
     P(chord_glint(["B6", "D7", "F#7"], 1.6), 33.25, -20, name="glint chord (all arcs glow)")
     P(thump(56, 0.35), 33.25, -20, name="thump (the bloom and zoom punch)")
     L("woosh-4", 33.85, -22, hp=150)                                    # the camera pulls back
-    L("sword-slash-1", 33.74, -23, hp=400)                              # INDIA x SINGAPORE
+    L("sword-slash-1", 33.74, -26, hp=400, lp=7000)                     # INDIA x SINGAPORE
     P(thump(58, 0.4), 33.74, -18, name="thump (INDIA x SINGAPORE)")
     L("woosh-3", 34.38, -17, hp=300)                                    # CROSS-BORDER FINANCE
     for k, t in enumerate((34.60, 34.72, 34.84)):                       # TAX . COMPLIANCE . ADVISORY
@@ -598,7 +597,7 @@ def effects():
     L("fast-swoosh", 36.30, -22, hp=350, pan=-0.4)                      # OUR COMMITMENT
     P(tick(2400), 36.40, -22, pan=-0.4, name="tick (hairline)")
     for t, sid, note in ((38.24, "sword-slash-1", "B6"), (39.20, "sword-slash-3", "D7"), (40.96, "sword-slash-1", "F#7")):
-        L(sid, t, -23, hp=450, pan=-0.35)
+        L(sid, t, -26, hp=450, lp=7000, pan=-0.35)
         P(thump(60, 0.35), t, -19, name="thump (a value lands)")
         P(glint(NOTE[note], 1.0), t + 0.05, -25, pan=-0.35, name=f"glint {note} (the diamond bullet)")
     P(thump(52, 0.45), 41.52, -18, name="thump (relationships: the punch-in)")
@@ -606,7 +605,7 @@ def effects():
     P(chord_glint(["B6", "D7", "F#7"], 1.8), 41.62, -25, name="glint chord (all three glow)")
 
     # ===== THE FINALE 42.37-48.25 =====
-    L("radio-switch", 42.37, -10, hp=400, length=0.35)                  # cut to the last shot
+    L("radio-switch", 42.37, -17, hp=400, length=0.30)                  # cut to the last shot
     L("woosh-2", 42.40, -21, hp=100)
     P(swell(0.55, 400, 5000, 1.8), 43.05, -27, hit=0.55, name="swell (light gathers where the mark lands)")
     L("woosh-3", 42.95, -17, hp=300, rate=0.9)                          # the T drops
@@ -636,7 +635,7 @@ def effects():
     # ===== THE END CARD 48.25-52.00: the drums stop, one chord rings =====
     P(sub_drop(2.4, 70, 30), END, -14, name="sub drop (the mark assembles)")
     L("cinematic-electric-hit", END, -20, hp=60, length=3.2, start=0.15)
-    L("sword-impact", END + 0.30, -20, hp=300, length=2.6)               # the shield locks
+    L("sword-impact", END + 0.30, -23, hp=300, length=2.6)               # the shield locks
     P(glint(NOTE["F#7"], 2.2), END + 0.45, -19, name="glint F#7 (the diamond's glint)")
     P(sheen(0.8), 49.30, -21, hit=0.35, name="sheen (shine across the mark)")
     L("slow-woosh", 49.25, -23, hp=200)                                  # TAXWISE / CONSULTANTS
@@ -681,7 +680,7 @@ def main():
     Bx, log = effects()
     env = speech_env(D)
     Mc = music_up(carve(M, env)) * 10 ** (MUSIC_DB / 20)
-    Bc = carve(Bx, env, -8.0, -2.5)
+    Bc = carve(Bx, env, -8.0, -2.5) * 10 ** (FX_DB / 20)
     Ds = stereo(D)
     for name, x in (("D", Ds), ("M", Mc), ("B", Bc)):
         sf.write(os.path.join(OUT, f"stem_{name}.wav"), x.astype(np.float32), SR, subtype="FLOAT")
@@ -701,6 +700,7 @@ def main():
     print(f"library effects used: {len(used)}/28", used)
 
 
+FX_DB = -1.5                                              # the sound design supports; voice and song lead
 MUSIC_DB = -12.0                                          # the song is mastered at -8.7 dB RMS
 
 if __name__ == "__main__":
