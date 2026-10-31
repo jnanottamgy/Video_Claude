@@ -64,6 +64,18 @@ lands on his words:
   skipped during his name card, which is its own caption.
 - **Finishing:** vignette and grain.
 
+## Sound, v4: the voice
+The room's echo is baked into the phone recording. The client ran the original
+(renders/deliver/TAXWISE_voice_for_Adobe_Enhance.wav) through Adobe Podcast "Enhance Speech" and sent it back.
+- dialogue.py aligns it to the original by FFT cross-correlation (the offset was 1 sample) and high-passes it at
+  70 Hz. Nothing else.
+- Echo: 200 ms after a phrase the voice is now 43-46 dB down (the original was 14-19 dB down).
+- Lip sync is exact on every line.
+- The mix chain below is unchanged.
+- An offline transcription of Adobe's version mishears a few words ("ambitions", "horizons", "payroll",
+  "trust us"). That can be Adobe blurring consonants at high strength, or just the recogniser. If they sound off,
+  the fix is a re-export at a lower Strength.
+
 ## Sound (tools/dialogue.py, tools/mix.py), v3
 - **History:** v1 and v2 processed the phone recording heavily:
   - v1: denoise, dereverb, a fader ride and 3:1 compression;

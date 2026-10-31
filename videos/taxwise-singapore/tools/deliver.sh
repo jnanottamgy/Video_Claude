@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # The deliverables: the picture (renders/picture/picture.mp4) muxed with the soundtrack, encoded for upload.
-# v3: the soundtrack rebuilt simply: his original stereo recording with gentle EQ only, every line at the same
-# loudness, a light compressor; the song smoothly ducked under him; 71 curated effects. The picture is v1's.
+# v4: his voice is the client's Adobe Podcast "Enhance Speech" version of the original recording (the room's echo
+# removed; renders/src/voice_enhanced.wav, aligned by tools/dialogue.py); otherwise as v3: every line at the same
+# loudness, a light compressor, the song smoothly ducked under him, 71 curated effects. The picture is v1's.
 #
-#   tools/deliver.sh  ->  renders/deliver/TAXWISE_Singapore_reel_v3.mp4           the post (song + voice + sound design)
-#                         renders/deliver/TAXWISE_Singapore_reel_nomusic_v3.mp4   voice + sound design only, for a
+#   tools/deliver.sh  ->  renders/deliver/TAXWISE_Singapore_reel_v4.mp4           the post (song + voice + sound design)
+#                         renders/deliver/TAXWISE_Singapore_reel_nomusic_v4.mp4   voice + sound design only, for a
 #                                                                              platform that mutes the song
 #                         renders/deliver/TAXWISE_cover.jpg                    cover: the hook ("A NEW HORIZON")
 #                         renders/deliver/TAXWISE_cover_end.jpg                alternative cover: the logo end card
@@ -32,8 +33,8 @@ enc() {  # video audio out
   rm -f "$log"*
   echo "$3 $(du -h "$3" | cut -f1)"
 }
-enc "$P" renders/audio/mix.wav "$D/TAXWISE_Singapore_reel_v3.mp4"
-enc "$P" renders/audio/mix_nomusic.wav "$D/TAXWISE_Singapore_reel_nomusic_v3.mp4"
+enc "$P" renders/audio/mix.wav "$D/TAXWISE_Singapore_reel_v4.mp4"
+enc "$P" renders/audio/mix_nomusic.wav "$D/TAXWISE_Singapore_reel_nomusic_v4.mp4"
 # covers:
 # - the hook with A NEW HORIZON over the skyline (3.55 s), rendered without the caption and moved down 90 px
 #   (the top rows of plain navy wall stretched to fill) so the title sits inside the profile grid's 3:4 crop;
