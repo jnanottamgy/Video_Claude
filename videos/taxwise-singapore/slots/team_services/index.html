@@ -47,8 +47,8 @@
         background: radial-gradient(closest-side, rgba(255, 249, 230, 1) 0%, rgba(255, 236, 190, 0.6) 35%, rgba(255, 236, 190, 0) 100%); }
       #subMask { position: absolute; left: 0; top: 30px; width: 1080px; height: 62px; overflow: hidden; }
       #subText { position: absolute; left: 0; top: 7px; width: 1080px; text-align: center; white-space: nowrap;
-        font-family: var(--tw-sans); font-weight: 600; font-size: 36px; line-height: 48px;
-        letter-spacing: 0.32em; text-indent: 0.32em; color: var(--tw-ivory); }
+        font-family: var(--tw-sans); font-weight: 600; font-size: 38px; line-height: 48px;
+        letter-spacing: 0.3em; text-indent: 0.3em; color: var(--tw-ivory); }
 
       /* ---------- Act 2: the network ---------- */
       #net { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 820px; }
@@ -439,6 +439,10 @@
           return [HUB.x + r * Math.cos(a), HUB.y + r * Math.sin(a), e];
         }
 
+        var OFF = { x: 170, y: 490, w: 740, h: 690 };
+        var offCv = document.createElement("canvas");
+        offCv.width = OFF.w; offCv.height = OFF.h;
+        var offCtx = offCv.getContext("2d");
         function drawAct1(t) {
           if (t > 4.95) return;
           if (t < 1.4) drawParticles(t);
@@ -447,8 +451,15 @@
           var dim = EZ.p2o(seg(t, Q.LOCK, Q.LOCK + 0.38)) * (1 - EZ.p2o(seg(t, Q.SWIRL + 0.01, Q.SWIRL + 0.17)));
           var fA = lerp(1, 0.2, dim), fBlur = 2.6 * dim, fS = lerp(1, 0.955 + 0.03 * EZ.sio(seg(t, 1.5, 3.96)), dim);
           var lock = env(t, Q.LOCK, 0.03, 0.16);
+          var mainCtx = ctx, useOff = fBlur > 0.05;
+          if (useOff) {
+            offCtx.setTransform(1, 0, 0, 1, 0, 0);
+            offCtx.globalAlpha = 1; offCtx.globalCompositeOperation = "source-over";
+            offCtx.clearRect(0, 0, OFF.w, OFF.h);
+            offCtx.setTransform(1, 0, 0, 1, -OFF.x, -OFF.y);
+            ctx = offCtx;   // every helper draws into the offscreen crowd layer for this pass
+          }
           ctx.lineCap = "round"; ctx.lineJoin = "round";
-          if (fBlur > 0.05) ctx.filter = "blur(" + fBlur.toFixed(2) + "px)";
           var swirling = t >= Q.SWIRL;
           for (var k = 0; k < icons.length; k++) {
             var ic = icons[k];
@@ -498,7 +509,14 @@
               ctx.beginPath(); ctx.arc(x, y + HEAD_Y * sc, 3.2, 0, 6.2832); ctx.fill();
             }
           }
-          ctx.filter = "none";
+          if (useOff) {
+            ctx = mainCtx;
+            ctx.save();
+            ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+            ctx.filter = "blur(" + fBlur.toFixed(2) + "px)";
+            ctx.drawImage(offCv, OFF.x, OFF.y);
+            ctx.restore();
+          }
           // lock glint over the whole crowd and glowing points of the condense
           ctx.globalCompositeOperation = "lighter";
           if (swirling) {
@@ -778,14 +796,18 @@
         var colT = document.getElementById("colT"), colO = document.getElementById("colO");
         var vbTg = document.getElementById("vbTg"), vbOg = document.getElementById("vbOg");
         var CELL = 300;
-        function countVal(t) { return 30 * EZ.p2o(seg(t, Q.LOCK, Q.LAND)); }
+        // 0 -> 29 decelerating, then the last unit clicks over fast so 30 lands crisply on "thirty"
+        function countVal(t) {
+          if (t < Q.LAND - 0.085) return 29 * EZ.p2o(seg(t, Q.LOCK, Q.LAND - 0.085));
+          return 29 + EZ.p3o(seg(t, Q.LAND - 0.08, Q.LAND));
+        }
         function tensPos(v) { var b = Math.floor(v / 10); return Math.min(3, b + sstep(9.0, 10.0, v - b * 10)); }
         function updateCounter(t) {
           var v = countVal(t), v1 = countVal(t - 1 / 30);
           var tp = tensPos(v), tp1 = tensPos(v1);
           stripO.style.transform = "translate3d(0," + (-v * CELL).toFixed(2) + "px,0)";
           stripT.style.transform = "translate3d(0," + (-tp * CELL).toFixed(2) + "px,0)";
-          var bO = Math.min(22, Math.abs(v - v1) * CELL * 0.32), bT = Math.min(22, Math.abs(tp - tp1) * CELL * 0.32);
+          var bO = Math.min(14, Math.abs(v - v1) * CELL * 0.2), bT = Math.min(14, Math.abs(tp - tp1) * CELL * 0.2);
           vbOg.setAttribute("stdDeviation", "0 " + bO.toFixed(2));
           vbTg.setAttribute("stdDeviation", "0 " + bT.toFixed(2));
           colO.style.filter = bO > 0.05 ? "url(#vbO)" : "none";
@@ -871,7 +893,7 @@
           onReverseComplete: function () { render(0); } }, 0);
 
         // Act 1: counter rises (15.46) and slams on "thirty" (16.34)
-        tl.fromTo("#cRise", { y: 96, opacity: 0, filter: "blur(10px)" },
+        tl.fromTo("#cRise", { y: 80, opacity: 0, filter: "blur(6px)" },
           { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.46, ease: "expo.out" }, Q.LOCK);
         tl.fromTo("#cPunch", { scale: 1 }, { scale: 1.085, duration: 0.07, ease: "power2.out" }, Q.LAND);
         tl.to("#cPunch", { scale: 1, duration: 0.45, ease: "power3.out", immediateRender: false }, Q.LAND + 0.07);
@@ -885,7 +907,7 @@
         // IN-HOUSE SPECIALISTS (16.82) with a gold hairline (16.74)
         tl.fromTo("#hair", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.5, ease: "expo.out" }, Q.HAIR);
         tl.fromTo("#subText", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "expo.out" }, Q.SUB);
-        trackIn("#subText", 36 * 0.3, Q.SUB, 0.8);
+        trackIn("#subText", 38 * 0.2, Q.SUB, 0.8);
         // "specialists" (17.38): a glint runs along the hairline
         tl.fromTo("#hairGlint", { x: 0, opacity: 0 }, { x: 420, duration: 0.5, ease: "power2.inOut" }, Q.RIPPLE);
         tl.to("#hairGlint", { opacity: 1, duration: 0.1, ease: "none" }, Q.RIPPLE);
@@ -922,7 +944,7 @@
         tl.to(mHot, { opacity: 0, duration: 0.45, ease: "power2.out", immediateRender: false }, Q.LIFT + 0.06);
         // EXPERTISE ACROSS (19.22)
         tl.fromTo("#hdrText", { yPercent: 115 }, { yPercent: 0, duration: 0.55, ease: "expo.out" }, Q.EXPERT);
-        trackIn("#hdrText", 27 * 0.32, Q.EXPERT, 0.85);
+        trackIn("#hdrText", 27 * 0.26, Q.EXPERT, 0.85);
 
         // the five services: icons draw in, a tick of light on landing, a flash when the lift pulse arrives
         CARDS.forEach(function (c) {
