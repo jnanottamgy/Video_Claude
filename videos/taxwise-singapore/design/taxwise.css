@@ -1,0 +1,73 @@
+/* TaxWise Consultants: the design system for the Singapore launch reel.
+ * Mostly midnight navy and ivory; champagne gold is the accent; the brand's royal blue only in small touches.
+ * Type: Cormorant Garamond (display, editorial) + Montserrat (labels, numbers, UI). */
+
+@font-face { font-family: "Cormorant Garamond"; font-weight: 400; font-style: normal; src: url("./fonts/cormorant-garamond-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-weight: 500; font-style: normal; src: url("./fonts/cormorant-garamond-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-weight: 600; font-style: normal; src: url("./fonts/cormorant-garamond-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-weight: 700; font-style: normal; src: url("./fonts/cormorant-garamond-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-weight: 400; font-style: italic; src: url("./fonts/cormorant-garamond-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-weight: 500; font-style: italic; src: url("./fonts/cormorant-garamond-latin-500-italic.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-weight: 600; font-style: italic; src: url("./fonts/cormorant-garamond-latin-600-italic.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 300; font-style: normal; src: url("./fonts/montserrat-latin-300-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 400; font-style: normal; src: url("./fonts/montserrat-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 500; font-style: normal; src: url("./fonts/montserrat-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 600; font-style: normal; src: url("./fonts/montserrat-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 700; font-style: normal; src: url("./fonts/montserrat-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 800; font-style: normal; src: url("./fonts/montserrat-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 900; font-style: normal; src: url("./fonts/montserrat-latin-900-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 400; font-style: italic; src: url("./fonts/montserrat-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 600; font-style: italic; src: url("./fonts/montserrat-latin-600-italic.woff2") format("woff2"); }
+
+:root {
+  /* navy: the ground */
+  --tw-ink: #03060d;            /* deepest, near black */
+  --tw-navy-950: #050a17;
+  --tw-navy-900: #08112a;
+  --tw-navy-800: #0b1734;
+  --tw-navy-700: #0e1b2f;       /* the logo file's own navy */
+  --tw-navy-600: #16264a;
+  /* royal blue: the brand's, sparingly (a rim, a glow, one detail) */
+  --tw-royal: #1f2b8c;
+  --tw-royal-hi: #3a4fd6;
+  --tw-royal-glow: 58, 79, 214;
+  /* champagne gold: the accent */
+  --tw-gold: #d4b26a;
+  --tw-gold-hi: #f3e2ae;
+  --tw-gold-lo: #9c7a35;
+  --tw-gold-glow: 232, 196, 120;
+  --tw-gold-grad: linear-gradient(180deg, #fbefc8 0%, #e8cb86 38%, #c9a35a 62%, #9c7a35 100%);
+  --tw-gold-sheen: linear-gradient(100deg, rgba(255,247,222,0) 30%, rgba(255,247,222,0.95) 50%, rgba(255,247,222,0) 70%);
+  /* ivory: the type */
+  --tw-ivory: #f4efe3;
+  --tw-ivory-dim: rgba(244, 239, 227, 0.72);
+  --tw-ivory-faint: rgba(244, 239, 227, 0.38);
+  /* surfaces */
+  --tw-glass: rgba(11, 23, 52, 0.58);
+  --tw-glass-edge: rgba(212, 178, 106, 0.38);
+  --tw-hair: rgba(212, 178, 106, 0.55);
+  --tw-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.35);
+  /* type */
+  --tw-serif: "Cormorant Garamond", "Times New Roman", serif;
+  --tw-sans: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* the editorial display face: big, tight, ivory */
+.tw-display { font-family: var(--tw-serif); font-weight: 600; color: var(--tw-ivory); letter-spacing: -0.01em; line-height: 0.92; }
+.tw-display-italic { font-family: var(--tw-serif); font-style: italic; font-weight: 500; color: var(--tw-ivory); }
+/* labels: small caps-like tracked sans */
+.tw-label { font-family: var(--tw-sans); font-weight: 600; text-transform: uppercase; letter-spacing: 0.32em; color: var(--tw-ivory-dim); }
+.tw-num { font-family: var(--tw-sans); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+/* gold type: a real metal gradient, not a flat yellow */
+.tw-gold-text { background: var(--tw-gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(60, 40, 10, 0.35)) drop-shadow(0 0 18px rgba(var(--tw-gold-glow), 0.28)); }
+.tw-hairline { height: 2px; background: linear-gradient(90deg, rgba(212,178,106,0) 0%, var(--tw-gold) 18%, var(--tw-gold-hi) 50%, var(--tw-gold) 82%, rgba(212,178,106,0) 100%); }
+.tw-glass { background: var(--tw-glass); border: 1px solid var(--tw-glass-edge); border-radius: 28px; box-shadow: var(--tw-shadow);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.tw-mark { display: block; overflow: visible; }
+/* full-frame ground: midnight navy with a soft royal pool of light and film-like falloff */
+.tw-ground { position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 70% at 50% 38%, rgba(var(--tw-royal-glow), 0.20) 0%, rgba(var(--tw-royal-glow), 0) 60%),
+    radial-gradient(90% 60% at 50% 110%, rgba(var(--tw-gold-glow), 0.10) 0%, rgba(var(--tw-gold-glow), 0) 70%),
+    linear-gradient(180deg, var(--tw-navy-900) 0%, var(--tw-navy-950) 55%, var(--tw-ink) 100%); }

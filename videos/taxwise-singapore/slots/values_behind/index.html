@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/taxwise-singapore/design: fonts, tokens, the TW mark -->
+    <link rel="stylesheet" href="./design/taxwise.css" />
+    <script src="./design/tw-mark.js"></script>
+    <style>
+      /* BEHIND layer: transparent canvas in source-frame coordinates.
+         Shot E: his head x ~790-1075 from y ~870; camera zooms about (912, 1024), up to ~1.17x on the punch-ins
+         (visible x >= ~135, y >= ~150). Instagram's top UI covers output y < 250, i.e. source y < ~335 at 1.12x,
+         so the stack runs from y 342 down to his hairline (~874), x 170-910. */
+      html, body { margin: 0; padding: 0; background: transparent; }
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; overflow: hidden; }
+      #textShade { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; filter: drop-shadow(0 6px 22px rgba(0, 0, 0, 0.42)); }
+
+      /* OUR COMMITMENT */
+      #hdr { position: absolute; left: 172px; top: 337px; font-family: var(--tw-sans); font-weight: 600; font-size: 32px; line-height: 1;
+             letter-spacing: 0.32em; white-space: nowrap; }
+      #hdrLine { position: absolute; left: 650px; top: 352px; width: 318px; height: 2px; transform-origin: 0 50%; }
+      #hdrTick { position: absolute; left: 962px; top: 345px; width: 16px; height: 16px; transform-origin: 50% 50%; overflow: visible; }
+
+      /* the values: Cormorant 600, 124 px; baseline = line-box top + 101.5 px */
+      .v { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      .bul { position: absolute; left: 172px; width: 42px; height: 43.4px; overflow: visible; transform-origin: 50% 50%; }
+      .mask { position: absolute; left: 236px; height: 156px; padding-right: 40px; overflow: hidden; }
+      .txt { display: block; padding-top: 10px; font-family: var(--tw-serif); font-weight: 600; font-size: 124px; line-height: 1; letter-spacing: -0.005em;
+             color: var(--tw-ivory); white-space: nowrap; text-shadow: 0 0 0 rgba(232, 196, 120, 0); }
+      .ul { position: absolute; left: 238px; height: 2px;
+            background: linear-gradient(90deg, rgba(243, 226, 174, 0.2) 0%, var(--tw-gold) 30%, var(--tw-gold-hi) 88%, #fff8e6 100%);
+            box-shadow: 0 0 10px rgba(var(--tw-gold-glow), 0.55); }
+      .ulHead { position: absolute; width: 48px; height: 48px; margin-left: -24px; margin-top: -23px; border-radius: 50%; opacity: 0;
+                background: radial-gradient(circle, rgba(255, 250, 236, 1) 0%, rgba(243, 226, 174, 0.7) 20%, rgba(232, 196, 120, 0) 70%); }
+      .glintS { position: absolute; width: 50px; height: 50px; margin-left: -25px; margin-top: -25px; opacity: 0; overflow: visible; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="6.8" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="6.8" data-track-index="0">
+        <div id="textShade">
+          <div id="hdr" class="tw-gold-text">OUR COMMITMENT</div>
+          <div id="hdrLine" class="tw-hairline"></div>
+          <svg id="hdrTick" viewBox="-8 -8 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M0,-7.5 L6,0 L0,7.5 L-6,0 Z" fill="#f3e2ae" /></svg>
+          <div id="values"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var DUR = 6.8, T0 = 35.57;                       // local t = output - 35.57
+        function at(out) { return +(out - T0).toFixed(3); }
+
+        // bullet = the TW diamond (TW_PATHS.diamond: bbox 384..616 x 877..1113), gold metal with a lit upper edge
+        function diamondSVG(id) {
+          return '<svg class="bul" id="' + id + '" viewBox="384 875 232 240" xmlns="http://www.w3.org/2000/svg">' +
+            '<defs><linearGradient id="' + id + 'g" x1="0" y1="0" x2="0.4" y2="1">' +
+            '<stop offset="0" stop-color="#fff6da"/><stop offset="0.32" stop-color="#f0d48e"/><stop offset="0.6" stop-color="#c99e55"/><stop offset="1" stop-color="#93692c"/></linearGradient></defs>' +
+            '<path d="' + TW_PATHS.diamond + '" fill="url(#' + id + 'g)"/>' +
+            '<path d="M500,877 L616,981 L500,1113" fill="none" stroke="rgba(80,52,14,0.35)" stroke-width="7"/>' +
+            '<path d="M384,981 L500,877 L616,981" fill="none" stroke="rgba(255,248,226,0.7)" stroke-width="6"/></svg>';
+        }
+        function glintSVG() {
+          return '<svg class="glintS" viewBox="-25 -25 50 50" xmlns="http://www.w3.org/2000/svg"><circle r="6.5" fill="#fff8e6" opacity="0.8"/>' +
+            '<path d="M0,-25 L2.3,-2.3 L25,0 L2.3,2.3 L0,25 L-2.3,2.3 L-25,0 L-2.3,-2.3 Z" fill="#fffaf0"/></svg>';
+        }
+
+        // the stack, 130 px apart. "relationships" sits on his hairline: its descender tucks behind his head.
+        var LINES = [
+          { id: "v1", text: "Expertise", base: 484, bullet: true, at: at(38.24), ulW: 470 },
+          { id: "v2", text: "Transparency", base: 614, bullet: true, at: at(39.20), ulW: 686 },
+          { id: "v3", text: "Lasting", base: 744, bullet: true, at: at(40.96), ulW: 376 },
+          { id: "v4", text: "relationships", base: 874, bullet: false, at: at(41.40), ulW: 640 }
+        ];
+        var host = document.getElementById("values");
+        LINES.forEach(function (L) {
+          var v = document.createElement("div"); v.className = "v"; v.id = L.id;
+          var boxTop = L.base - 101.5, ulY = L.base + 42;
+          v.innerHTML =
+            (L.bullet ? diamondSVG(L.id + "b") : "") +
+            '<div class="mask" data-layout-allow-overflow style="top:' + (boxTop - 10).toFixed(1) + 'px"><span class="txt">' + L.text + "</span></div>" +
+            '<i class="ul" style="top:' + ulY + "px;width:" + L.ulW + 'px"></i>' +
+            '<i class="ulHead" style="left:238px;top:' + (ulY + 1) + 'px"></i>' +
+            (L.bullet ? glintSVG() : "");
+          host.appendChild(v);
+          if (L.bullet) {
+            var b = v.querySelector(".bul"); b.style.top = (L.base - 25 - 21.7).toFixed(1) + "px";
+            var g = v.querySelector(".glintS"); g.style.left = "206px"; g.style.top = (L.base - 54).toFixed(1) + "px";
+          }
+        });
+
+        var tl = gsap.timeline({ paused: true });
+
+        // 36.32 "commitment": OUR COMMITMENT wipes in; its hairline draws out and ticks on "same" (37.60)
+        tl.fromTo("#hdr", { clipPath: "inset(-20% 100% -20% 0%)", x: -14 }, { clipPath: "inset(-20% 0% -20% 0%)", x: 0, duration: 0.62, ease: "power3.out" }, at(36.30));
+        tl.fromTo("#hdrLine", { scaleX: 0 }, { scaleX: 1, duration: 1.12, ease: "power2.inOut" }, at(36.48));
+        tl.fromTo("#hdrTick", { scale: 0, rotation: -90 }, { scale: 1, rotation: 0, duration: 0.42, ease: "back.out(3)" }, at(37.56));
+
+        LINES.forEach(function (L, i) {
+          var v = "#" + L.id, late = i === 3;   // the last streak must be gone before the cut (42.37)
+          // the word rises out of its mask, landing on the spoken word
+          tl.fromTo(v + " .txt", { yPercent: 120, filter: "blur(6px)" }, { yPercent: 0, filter: "blur(0px)", duration: 0.75, ease: "power4.out" }, L.at - 0.05);
+          // a gold light streak runs under it: draws in from the left, then passes out to the right
+          var inD = late ? 0.42 : 0.5, outAt = late ? 0.4 : 0.5, outD = late ? 0.38 : 0.55;
+          tl.fromTo(v + " .ul", { clipPath: "inset(-12px 100% -12px 0%)" }, { clipPath: "inset(-12px 0% -12px 0%)", duration: inD, ease: "power3.inOut" }, L.at + 0.02);
+          tl.to(v + " .ul", { clipPath: "inset(-12px 0% -12px 100%)", duration: outD, ease: "power2.in" }, L.at + outAt);
+          tl.fromTo(v + " .ulHead", { x: 0, opacity: 0 }, { x: L.ulW, opacity: 1, duration: inD, ease: "power3.inOut" }, L.at + 0.02);
+          tl.to(v + " .ulHead", { opacity: 0, duration: 0.28, ease: "power2.in" }, L.at + outAt);
+          if (L.bullet) {
+            // the TW diamond spins in as the bullet: a satisfying tick, with a glint
+            tl.fromTo(v + " .bul", { scale: 0, rotation: -135 }, { scale: 1, rotation: 0, duration: 0.45, ease: "back.out(2.6)" }, L.at - 0.06);
+            tl.fromTo(v + " .glintS", { opacity: 0, scale: 0.2, rotation: 0 }, { opacity: 1, scale: 1, rotation: 45, duration: 0.12, ease: "power2.out" }, L.at + 0.12);
+            tl.to(v + " .glintS", { opacity: 0, scale: 0.3, rotation: 90, duration: 0.28, ease: "power2.in" }, L.at + 0.24);
+          }
+        });
+        // the previous value dims a little as the next one lands
+        tl.to("#v1", { opacity: 0.55, duration: 0.45, ease: "power2.out" }, at(39.20));
+        tl.to("#v2", { opacity: 0.55, duration: 0.45, ease: "power2.out" }, at(40.96));
+        tl.to("#v1", { opacity: 0.45, duration: 0.45, ease: "power2.out" }, at(40.96));
+        // 41.78-42.36: all three glow once (peak on the 42.00 beat), settled before the cut at 42.37: then hold
+        ["#v1", "#v2", "#v3", "#v4"].forEach(function (v, i) {
+          var d = i * 0.04;
+          tl.to(v, { opacity: 1, duration: 0.3, ease: "power2.out" }, at(41.78) + d);
+          tl.to(v + " .txt", { textShadow: "0 0 36px rgba(232,196,120,0.9)", duration: 0.18, ease: "power2.out" }, at(41.80) + d);
+          tl.to(v + " .txt", { textShadow: "0 0 12px rgba(232,196,120,0.2)", duration: 0.26, ease: "power2.inOut" }, at(41.98) + d);
+        });
+        tl.fromTo(".bul", { filter: "brightness(1)" }, { filter: "brightness(1.7)", duration: 0.18, ease: "power2.out", immediateRender: false }, at(41.80));
+        tl.to(".bul", { filter: "brightness(1)", duration: 0.26, ease: "power2.inOut" }, at(41.98));
+        tl.fromTo("#hdrTick", { filter: "brightness(1)" }, { filter: "brightness(1.8)", duration: 0.18, ease: "power2.out", immediateRender: false }, at(41.80));
+        tl.to("#hdrTick", { filter: "brightness(1)", duration: 0.26, ease: "power2.inOut" }, at(41.98));
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

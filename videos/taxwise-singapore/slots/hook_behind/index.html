@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/taxwise-singapore/design: fonts, tokens, the TW mark -->
+    <link rel="stylesheet" href="./design/taxwise.css" />
+    <script src="./assets/skyline.js"></script>
+    <style>
+      html, body { margin: 0; background: transparent; }
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      .layer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      /* ---------- the world: sunrise, skyline, horizon (it recedes as one at 3.71) */
+      #world { transform-origin: 600px 760px; }
+      #sun { position: absolute; left: 40px; top: 290px; width: 1200px; height: 470px; overflow: hidden; }
+      #sun-core { position: absolute; left: 0; top: 0; width: 1200px; height: 470px; transform-origin: 50% 100%;
+        background: radial-gradient(46% 100% at 50% 100%, rgba(255, 232, 180, 0.95) 0%, rgba(248, 204, 126, 0.66) 15%,
+          rgba(236, 178, 96, 0.36) 36%, rgba(224, 160, 88, 0.13) 60%, rgba(224, 160, 88, 0) 84%); }
+      #sun-refl { position: absolute; left: 40px; top: 761px; width: 1200px; height: 70px; transform-origin: 50% 0%;
+        background: radial-gradient(34% 100% at 50% 0%, rgba(255, 222, 150, 0.34) 0%, rgba(240, 190, 110, 0.10) 50%, rgba(240, 190, 110, 0) 80%); }
+
+      #sky { position: absolute; left: 110px; top: 760px; width: 1px; height: 1px; transform: scale(0.92); transform-origin: 0 0; }
+      #sky svg { position: absolute; left: -24px; top: -328px; overflow: visible; }
+      #sky .sg-fill { fill: rgba(4, 9, 22, 0.62); }
+      #sky .sg-strokes { filter: drop-shadow(0 0 3px rgba(232, 196, 120, 0.55)) drop-shadow(0 0 11px rgba(232, 196, 120, 0.22)); }
+
+      /* horizon line: centred on the ignition point (880, 760), grows with scaleX */
+      #hline { position: absolute; left: -220px; top: 752px; width: 2200px; height: 16px; transform-origin: 50% 50%; }
+      #hline .core { position: absolute; left: 0; top: 7px; width: 100%; height: 2px;
+        background: linear-gradient(90deg, rgba(212,178,106,0) 0%, rgba(212,178,106,0.35) 9%, rgba(226,196,128,0.9) 24%,
+          #f6e4b2 44%, #fff6dc 50%, #f6e4b2 56%, rgba(226,196,128,0.9) 64%, rgba(212,178,106,0.4) 80%, rgba(212,178,106,0) 100%); }
+      #hline .glow { position: absolute; left: 0; top: 0; width: 100%; height: 16px; opacity: 0.55;
+        background: linear-gradient(180deg, rgba(232,196,120,0) 0%, rgba(232,196,120,0.28) 50%, rgba(232,196,120,0) 100%); }
+      .sheen { position: absolute; top: 754px; width: 260px; height: 12px;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,250,230,0.95) 0%, rgba(255,236,190,0.45) 35%, rgba(255,236,190,0) 72%); }
+      .tip { position: absolute; left: 840px; top: 740px; width: 80px; height: 40px;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,255,248,1) 0%, rgba(255,240,200,0.85) 12%, rgba(240,205,130,0.35) 34%, rgba(240,205,130,0) 70%); }
+
+      /* ignition flare at (880, 760) */
+      #flare { position: absolute; left: 430px; top: 610px; width: 900px; height: 300px; }
+      #flare .halo { position: absolute; left: 270px; top: 0; width: 360px; height: 300px;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,236,190,0.75) 0%, rgba(240,200,120,0.32) 22%, rgba(232,190,110,0.10) 48%, rgba(232,190,110,0) 72%); }
+      #flare .streak { position: absolute; left: 0; top: 143px; width: 900px; height: 14px; transform-origin: 50% 50%;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,252,240,0.95) 0%, rgba(255,236,190,0.55) 18%, rgba(240,205,130,0.16) 52%, rgba(240,205,130,0) 100%); }
+      #flare .core { position: absolute; left: 432px; top: 132px; width: 36px; height: 36px; border-radius: 50%;
+        background: radial-gradient(50% 50% at 50% 50%, #ffffff 0%, rgba(255,246,220,0.95) 30%, rgba(255,226,160,0.4) 62%, rgba(255,226,160,0) 100%); }
+      #flare .vert { position: absolute; left: 447px; top: 70px; width: 6px; height: 160px;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,250,235,0.9) 0%, rgba(255,236,190,0.3) 40%, rgba(255,236,190,0) 100%); }
+
+      /* glint (a four-point star) on the SkyPark prow: local (543,-256) -> (609.6, 524.5) */
+      #glint { position: absolute; left: 509.6px; top: 424.5px; width: 200px; height: 200px; }
+      #glint .h, #glint .v { position: absolute; left: 0; top: 96px; width: 200px; height: 8px;
+        background: radial-gradient(50% 50% at 50% 50%, #fffef6 0%, rgba(255,240,200,0.8) 25%, rgba(255,240,200,0) 100%); }
+      #glint .v { transform: rotate(90deg); }
+      #glint .o { position: absolute; left: 60px; top: 60px; width: 80px; height: 80px; border-radius: 50%;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,250,232,0.95) 0%, rgba(255,228,160,0.45) 30%, rgba(255,228,160,0) 70%); }
+
+      /* ---------- the title: "a new" / HORIZON, masked rises */
+      #title { transform-origin: 595px 400px; }
+      .mask { position: absolute; overflow: hidden; }
+      #anew-mask { left: 212px; top: 264px; width: 300px; height: 88px; }
+      #anew { position: absolute; left: 8px; top: 0; font-size: 88px; line-height: 1; white-space: nowrap; padding-right: 20px; }
+      #hz-mask { left: 55px; top: 317px; width: 1025px; height: 150px; }
+      #hz { display: flex; justify-content: center; width: 1080px; font-size: 150px; line-height: 1; height: 150px; }
+      #hz .ch { display: inline-block; margin-right: 0.06em; color: var(--tw-ivory);
+        text-shadow: 0 0 24px rgba(244, 239, 227, 0.12); }
+      #hz .ch:last-child { margin-right: 0; }
+
+      /* ---------- the globe (canvas, drawn from the timeline) */
+      #globe-wrap { position: absolute; left: 160px; top: 200px; width: 800px; height: 800px; transform-origin: 400px 400px; }
+      #gdisc { position: absolute; left: 100px; top: 100px; width: 600px; height: 600px; border-radius: 50%;
+        background: radial-gradient(circle at 38% 30%, rgba(232,196,120,0.10) 0%, rgba(232,196,120,0) 38%),
+          radial-gradient(circle at 50% 50%, rgba(5,10,25,0.66) 0%, rgba(5,10,25,0.60) 72%, rgba(14,24,54,0.45) 94%, rgba(5,10,25,0.0) 100%); }
+      #globe { position: absolute; left: 0; top: 0; width: 800px; height: 800px; }
+      #grim { position: absolute; left: 0; top: 0; width: 800px; height: 800px;
+        background: radial-gradient(circle at 50% 50%, rgba(58,79,214,0) 0px, rgba(58,79,214,0) 262px, rgba(76,98,232,0.55) 300px,
+          rgba(58,79,214,0.26) 320px, rgba(58,79,214,0.09) 352px, rgba(58,79,214,0) 396px); }
+      .pulse { position: absolute; left: 100px; top: 100px; width: 600px; height: 600px; border-radius: 50%; box-sizing: border-box;
+        border: 3px solid rgba(243, 226, 174, 0.95); box-shadow: 0 0 18px rgba(232,196,120,0.45), inset 0 0 18px rgba(232,196,120,0.25); }
+
+      #dust { position: absolute; left: 0; top: 240px; width: 1080px; height: 560px; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="6.1" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="6.1" data-track-index="0">
+        <div id="world" class="layer">
+          <div id="sun" data-layout-allow-overflow><div id="sun-core" data-layout-allow-overflow></div></div>
+          <div id="sun-refl" data-layout-allow-overflow></div>
+          <div id="sky"></div>
+          <div id="hline" data-layout-allow-overflow><div class="glow"></div><div class="core"></div></div>
+          <div id="sheenL" class="sheen" style="left: 750px" data-layout-allow-overflow></div>
+          <div id="sheenR" class="sheen" style="left: 750px" data-layout-allow-overflow></div>
+          <div id="tipL" class="tip" data-layout-allow-overflow></div>
+          <div id="tipR" class="tip" data-layout-allow-overflow></div>
+          <div id="flare" data-layout-allow-overflow><div class="halo"></div><div class="streak"></div><div class="vert"></div><div class="core"></div></div>
+          <div id="glint"><div class="o"></div><div class="h"></div><div class="v"></div></div>
+        </div>
+        <canvas id="dust" width="1080" height="560" data-layout-allow-occlusion></canvas>
+        <div id="title" class="layer">
+          <div id="anew-mask" class="mask" data-layout-allow-overflow><div id="anew" class="tw-display-italic tw-gold-text" data-layout-allow-occlusion data-layout-allow-overflow>a new</div></div>
+          <div id="hz-mask" class="mask" data-layout-allow-overflow><div id="hz" class="tw-display" data-layout-allow-occlusion data-layout-allow-overflow>
+            <span class="ch" data-layout-allow-occlusion>H</span><span class="ch" data-layout-allow-occlusion>O</span><span class="ch" data-layout-allow-occlusion>R</span><span class="ch" data-layout-allow-occlusion>I</span><span class="ch" data-layout-allow-occlusion>Z</span><span class="ch" data-layout-allow-occlusion>O</span><span class="ch" data-layout-allow-occlusion>N</span>
+          </div></div>
+        </div>
+        <div id="globe-wrap" data-layout-allow-occlusion>
+          <div id="grim"></div>
+          <div id="gdisc"></div>
+          <canvas id="globe" width="800" height="800" data-layout-allow-occlusion></canvas>
+          <div id="gpulse" class="pulse"></div>
+          <div id="gpulse2" class="pulse"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        // ------------------------------------------------------------------ constants (source px; t = output s)
+        var IGN_X = 880, HOR_Y = 760;
+        var T_DESERVE = 2.03, T_BIGGER = 2.59, T_HORIZONS = 3.07, T_AND = 3.71, T_GLOBAL = 5.31, END = 6.1;
+        var GC = { x: 400, y: 400, r: 300 };            // globe centre inside its 800px canvas -> (530, 570) on the wall
+
+        function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a);
+          t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+        function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+        function eOut2(u) { return 1 - (1 - u) * (1 - u); }
+        function eInOut2(u) { return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; }
+
+        // ------------------------------------------------------------------ skyline
+        var skyEl = document.getElementById("sky");
+        skyEl.innerHTML = sgSkylineSVG({ id: "hk", strokeWidth: 2.25 / 0.92 });
+        var strokes = sgSkylinePrep(skyEl.querySelector("svg"));
+        var fills = skyEl.querySelector(".sg-fills");
+
+        var tl = gsap.timeline({ paused: true });
+
+        // ------------------------------------------------------------------ 0.00-0.50 the horizon ignites and races out
+        tl.fromTo("#flare", { opacity: 0, scale: 0.25, transformOrigin: "450px 150px" },
+          { opacity: 1, scale: 1, duration: 0.12, ease: "expo.out" }, 0.0);
+        tl.fromTo("#flare .streak", { scaleX: 0.15 }, { scaleX: 1, duration: 0.3, ease: "expo.out" }, 0.0);
+        tl.to("#flare", { opacity: 0.5, scale: 0.72, duration: 0.32, ease: "power2.out", immediateRender: false }, 0.16);
+        // 0.50 downbeat: the point re-blooms as the line hits the edges
+        tl.to("#flare", { opacity: 0.85, scale: 0.9, duration: 0.08, ease: "power2.out", immediateRender: false }, 0.5);
+        tl.to("#flare", { opacity: 0.42, scale: 0.62, duration: 0.6, ease: "power2.inOut", immediateRender: false }, 0.58);
+        // the point sinks away as the city rises from it
+        tl.to("#flare", { opacity: 0, scale: 0.4, duration: 0.5, ease: "power2.in", immediateRender: false }, 2.0);
+
+        tl.fromTo("#hline", { scaleX: 0 }, { scaleX: 1, duration: 1.6, ease: "power2.out" }, 0.02);
+        tl.fromTo("#tipL", { x: 0 }, { x: -1100, duration: 1.6, ease: "power2.out" }, 0.02);
+        tl.fromTo("#tipR", { x: 0 }, { x: 1100, duration: 1.6, ease: "power2.out" }, 0.02);
+        tl.fromTo(["#tipL", "#tipR"], { opacity: 0 }, { opacity: 1, duration: 0.05, ease: "none" }, 0.02);
+        tl.to("#tipR", { opacity: 0, duration: 0.2, ease: "power1.in", immediateRender: false }, 0.12);
+        tl.to("#tipL", { opacity: 0, duration: 0.3, ease: "power1.in", immediateRender: false }, 0.42);
+        // 0.50: the line flashes as it lands, then settles
+        tl.fromTo("#hline .glow", { opacity: 0.55 }, { opacity: 1, duration: 0.06, ease: "power2.out" }, 0.5);
+        tl.to("#hline .glow", { opacity: 0.5, duration: 0.5, ease: "power2.out", immediateRender: false }, 0.56);
+
+        // 0.89 "ambitions": a light pulse runs out along the line
+        tl.fromTo("#sheenL", { x: 0, opacity: 0 }, { x: -1000, duration: 1.0, ease: "power2.in" }, 0.89);
+        tl.fromTo("#sheenR", { x: 0, opacity: 0 }, { x: 400, duration: 0.5, ease: "power2.in" }, 0.89);
+        tl.to(["#sheenL", "#sheenR"], { opacity: 1, duration: 0.12, ease: "power1.out" }, 0.89);
+        tl.set(["#sheenL", "#sheenR"], { opacity: 0 }, 1.9);
+
+        // ------------------------------------------------------------------ 2.03-3.07 the skyline draws itself up out of the line
+        var ELSTART = { mbs: 0.0, trees: 0.04, lotus: 0.10, flyer: 0.16, cbd: 0.22 };
+        strokes.forEach(function (s) {
+          var b = T_DESERVE + ELSTART[s.el];
+          var st, du, ez = "power2.out";
+          if (s.ph === 0) { st = b + 0.022 * s.k; du = 0.46; }
+          else if (s.ph === 1) { st = b + 0.30 + 0.012 * s.k; du = 0.30; }
+          else { st = b + 0.50 + 0.014 * s.k; du = 0.24; }
+          if (s.el === "mbs" && s.ph === 2) {           // the SkyPark ship slides across on "bigger", lands on "horizons"
+            if (s.k === 0) { st = 2.52; du = 0.08; } else { st = T_BIGGER; du = T_HORIZONS - T_BIGGER; ez = "power2.inOut"; }
+          }
+          if (s.el === "flyer" && s.ph === 2) { st = 2.60 + 0.016 * s.k; du = 0.12; ez = "power1.out"; }   // capsules tick on
+          if (s.el === "cbd" && s.ph === 2) { st = 2.78 + 0.03 * (s.k === 5 ? 1 : 0); du = 0.22; }
+          tl.fromTo(s.path, { strokeDashoffset: s.len }, { strokeDashoffset: 0, duration: du, ease: ez }, st);
+        });
+        tl.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.7, ease: "power1.out" }, 2.45);
+
+        // 3.07: completion glint on the prow + the sunrise swells behind the city
+        tl.fromTo("#glint", { opacity: 0, scale: 0.1, rotation: -30, transformOrigin: "100px 100px" },
+          { opacity: 1, scale: 1.15, rotation: 15, duration: 0.14, ease: "expo.out" }, T_HORIZONS - 0.03);
+        tl.to("#glint", { opacity: 0, scale: 0.3, rotation: 60, duration: 0.45, ease: "power2.in", immediateRender: false }, T_HORIZONS + 0.11);
+        tl.fromTo("#sun-core", { opacity: 0, scaleY: 0.35, scaleX: 0.7 }, { opacity: 1, scaleY: 1, scaleX: 1, duration: 0.8, ease: "power2.out" }, 2.98);
+        tl.fromTo("#sun-refl", { opacity: 0, scaleY: 0.3 }, { opacity: 1, scaleY: 1, duration: 0.8, ease: "power2.out" }, 2.98);
+
+        // ------------------------------------------------------------------ "a new HORIZON" rises out of its mask, lands on 3.00 / 3.07
+        tl.fromTo("#anew", { yPercent: 108, filter: "blur(5px)" }, { yPercent: 0, filter: "blur(0px)", duration: 0.6, ease: "power4.out" }, 2.6);
+        var chars = document.querySelectorAll("#hz .ch");
+        chars.forEach(function (c, i) {
+          var st = 2.68 + 0.03 * i;
+          tl.fromTo(c, { yPercent: 104 }, { yPercent: 0, duration: 0.62, ease: "power4.out" }, st);
+          tl.fromTo(c, { filter: "blur(7px)" }, { filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, st);
+        });
+
+        // ------------------------------------------------------------------ 3.71: the world eases back
+        tl.to("#world", { opacity: 0.36, y: -18, scale: 0.985, filter: "blur(1.2px)", duration: 0.8, ease: "power2.inOut" }, T_AND);
+        tl.to("#title", { opacity: 0.22, y: -40, filter: "blur(3.5px)", duration: 0.85, ease: "power2.inOut" }, T_AND + 0.14);
+
+        // ------------------------------------------------------------------ 3.71-5.31: the gold wireframe globe spins up
+        tl.fromTo("#globe-wrap", { opacity: 0, scale: 0.84 }, { opacity: 1, scale: 1, duration: 1.1, ease: "expo.out" }, T_AND);
+        tl.fromTo("#gdisc", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.inOut" }, T_AND + 0.05);
+        var gcv = document.getElementById("globe"), gx = gcv.getContext("2d");
+        var TILT = 22 * Math.PI / 180, ROLL = -16 * Math.PI / 180;
+        var ct = Math.cos(TILT), stt = Math.sin(TILT), cr = Math.cos(ROLL), sr = Math.sin(ROLL);
+        function proj(lat, lon, rot) {
+          var cl = Math.cos(lat), x = cl * Math.sin(lon + rot), y = Math.sin(lat), z = cl * Math.cos(lon + rot);
+          var y2 = y * ct - z * stt, z2 = y * stt + z * ct;
+          var x3 = x * cr - y2 * sr, y3 = x * sr + y2 * cr;
+          return [GC.x + GC.r * x3, GC.y - GC.r * y3, z2];
+        }
+        var gold = gx.createLinearGradient(0, GC.y - GC.r, 0, GC.y + GC.r);
+        gold.addColorStop(0, "#fff3d1"); gold.addColorStop(0.4, "#ecd08f"); gold.addColorStop(0.75, "#d4b26a"); gold.addColorStop(1, "#b8914a");
+        // a curve sampled by parameter; drawn front and back with different weights
+        function curve(fn, n, prog, lw, aFront, aBack) {
+          if (prog <= 0) return;
+          var m = Math.max(1, Math.round(n * prog)), pts = [];
+          for (var i = 0; i <= m; i++) pts.push(fn(Math.min(i / n, prog)));
+          for (var pass = 0; pass < 2; pass++) {
+            var front = pass === 1;
+            gx.globalAlpha = front ? aFront : aBack;
+            gx.lineWidth = front ? lw : lw * 0.8;
+            gx.shadowBlur = front ? 7 : 0;
+            gx.beginPath();
+            var pen = false;
+            for (var j = 0; j < pts.length; j++) {
+              var p = pts[j], vis = front ? p[2] >= -0.02 : p[2] < 0.02;
+              if (vis) { if (!pen) { gx.moveTo(p[0], p[1]); pen = true; } else gx.lineTo(p[0], p[1]); } else pen = false;
+            }
+            gx.stroke();
+          }
+        }
+        function seg(t, a, d) { return clamp01((t - a) / d); }
+        var D2R = Math.PI / 180;
+        function drawGlobe() {
+          var t = tl.time();
+          gx.setTransform(1, 0, 0, 1, 0, 0);
+          gx.clearRect(0, 0, 800, 800);
+          if (t < T_AND) return;
+          var rot = (-230 + 230 * (1 - Math.pow(1 - clamp01((t - T_AND) / (END - T_AND)), 3))) * D2R;
+          var flash = t >= T_GLOBAL ? Math.max(0, 1 - (t - T_GLOBAL) / 0.6) : 0;
+          var eqPulse = Math.max(0, 1 - Math.abs(t - 4.5) / 0.25);
+          gx.strokeStyle = gold; gx.lineCap = "round"; gx.lineJoin = "round";
+          gx.shadowColor = "rgba(232,196,120,0.75)";
+          var boost = 1 + 0.35 * flash;
+          // limb: the outline circle, drawn from the top
+          var pl = eInOut2(seg(t, T_AND, 0.5));
+          if (pl > 0) {
+            gx.globalAlpha = Math.min(1, 0.95 * boost); gx.lineWidth = 2.6; gx.shadowBlur = 10;
+            gx.beginPath(); gx.arc(GC.x, GC.y, GC.r, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * pl); gx.stroke();
+          }
+          // meridians: pole to pole, staggered
+          for (var i = 0; i < 12; i++) {
+            var pm = eOut2(seg(t, 3.80 + 0.04 * i, 0.42));
+            (function (lon) {
+              curve(function (u) { return proj(-Math.PI / 2 + Math.PI * u, lon, rot); }, 48, pm, 1.7, Math.min(1, 0.84 * boost), 0.1);
+            })(i * 30 * D2R);
+          }
+          // parallels (the equator last: it completes on "global")
+          var lats = [-60, -30, 30, 60];
+          for (var j = 0; j < lats.length; j++) {
+            var pp = eOut2(seg(t, 4.08 + 0.08 * j, 0.55));
+            (function (lat) {
+              curve(function (u) { return proj(lat, -Math.PI + 2 * Math.PI * u, rot); }, 72, pp, 1.7, Math.min(1, 0.8 * boost), 0.09);
+            })(lats[j] * D2R);
+          }
+          var pe = eInOut2(seg(t, 4.62, T_GLOBAL - 4.62));
+          curve(function (u) { return proj(0, -Math.PI * 0.75 + 2 * Math.PI * u, rot); }, 96, pe, 2.1 + 0.8 * eqPulse,
+            Math.min(1, (0.95 + 0.3 * eqPulse) * boost), 0.12);
+          // the equator's comet head while it draws
+          if (pe > 0 && pe < 1) {
+            var hp = proj(0, -Math.PI * 0.75 + 2 * Math.PI * pe, rot);
+            if (hp[2] > -0.1) {
+              gx.globalAlpha = 1; gx.shadowBlur = 0;
+              var rg = gx.createRadialGradient(hp[0], hp[1], 0, hp[0], hp[1], 22);
+              rg.addColorStop(0, "rgba(255,252,240,1)"); rg.addColorStop(0.25, "rgba(255,236,190,0.7)"); rg.addColorStop(1, "rgba(255,236,190,0)");
+              gx.fillStyle = rg; gx.beginPath(); gx.arc(hp[0], hp[1], 22, 0, 2 * Math.PI); gx.fill();
+            }
+          }
+          gx.globalAlpha = 1; gx.shadowBlur = 0;
+        }
+
+        // 5.31 "global": pulse rings + the royal-blue rim glow
+        tl.fromTo("#gpulse", { opacity: 0, scale: 1 }, { opacity: 0.95, duration: 0.04, ease: "none" }, T_GLOBAL);
+        tl.to("#gpulse", { scale: 1.42, opacity: 0, duration: 0.75, ease: "expo.out", immediateRender: false }, T_GLOBAL + 0.04);
+        tl.fromTo("#gpulse2", { opacity: 0, scale: 1 }, { opacity: 0.55, duration: 0.04, ease: "none" }, T_GLOBAL + 0.12);
+        tl.to("#gpulse2", { scale: 1.26, opacity: 0, duration: 0.7, ease: "expo.out", immediateRender: false }, T_GLOBAL + 0.16);
+        tl.fromTo("#grim", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1.0, duration: 0.3, ease: "power2.out" }, T_GLOBAL);
+        tl.to("#grim", { opacity: 0.7, duration: 0.5, ease: "power1.inOut", immediateRender: false }, T_GLOBAL + 0.3);
+
+        // ------------------------------------------------------------------ gold dust rising off the horizon (seeded)
+        var dcv = document.getElementById("dust"), dx = dcv.getContext("2d");
+        var rnd = mulberry32(20261031), motes = [];
+        for (var n = 0; n < 22; n++) {
+          motes.push({ x: 150 + rnd() * 900, y: 760 - 240 - rnd() * 140, t0: 0.7 + rnd() * 3.4, life: 2.0 + rnd() * 1.8,
+            rise: 70 + rnd() * 120, sway: 3 + rnd() * 9, f: 0.35 + rnd() * 0.5, ph: rnd() * 6.28, s: 1.4 + rnd() * 1.8, a: 0.45 + rnd() * 0.5 });
+        }
+        function drawDust() {
+          var t = tl.time();
+          dx.clearRect(0, 0, 1080, 560);
+          for (var i = 0; i < motes.length; i++) {
+            var m = motes[i], u = (t - m.t0) / m.life;
+            if (u <= 0 || u >= 1) continue;
+            var a = m.a * Math.pow(Math.sin(Math.PI * u), 0.8);
+            var x = m.x + m.sway * Math.sin(m.ph + 2 * Math.PI * m.f * (t - m.t0)), y = m.y - m.rise * u;
+            var g = dx.createRadialGradient(x, y, 0, x, y, m.s * 4);
+            g.addColorStop(0, "rgba(255,240,205," + a + ")"); g.addColorStop(0.3, "rgba(240,206,140," + (a * 0.5) + ")"); g.addColorStop(1, "rgba(240,206,140,0)");
+            dx.fillStyle = g; dx.beginPath(); dx.arc(x, y, m.s * 4, 0, 2 * Math.PI); dx.fill();
+          }
+        }
+        // one driver: every canvas frame is a pure function of tl.time()
+        var driver = { v: 0 };
+        tl.fromTo(driver, { v: 0 }, { v: 1, duration: END, ease: "none", onUpdate: function () { drawDust(); drawGlobe(); } }, 0);
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

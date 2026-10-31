@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>TaxWise team and services</title>
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/taxwise-singapore/design: fonts, tokens, the TW mark -->
+    <link rel="stylesheet" href="./design/taxwise.css" />
+    <script src="./design/tw-mark.js"></script>
+    <style>
+      html, body { margin: 0; padding: 0; background: #03060d; }
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #03060d; }
+      .scene { position: absolute; inset: 0; overflow: hidden; }
+      #fx { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; display: block; }
+      #probe { position: absolute; left: 0; top: 0; width: 10px; height: 10px; opacity: 0; pointer-events: none; }
+
+      /* ---------- Act 1: the counter ---------- */
+      #cWrap { position: absolute; left: 0; top: 640px; width: 1080px; height: 300px; transform-origin: 540px 180px; }
+      #cRise, #cPunch { position: absolute; left: 0; top: 0; width: 1080px; height: 300px; transform-origin: 490px 150px; }
+      #odo { position: absolute; left: 0; top: 0; width: 1080px; height: 300px;
+        filter: drop-shadow(0 3px 0 rgba(60, 40, 10, 0.38)) drop-shadow(0 0 26px rgba(232, 196, 120, 0.26)); }
+      .col { position: absolute; top: 0; width: 176px; height: 300px; overflow: hidden;
+        -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 17%, #000 83%, transparent 100%);
+        mask-image: linear-gradient(180deg, transparent 0%, #000 17%, #000 83%, transparent 100%); }
+      #colT { left: 303px; }
+      #colO { left: 479px; }
+      .strip { position: absolute; left: 0; top: 0; width: 176px; will-change: transform; white-space: pre; text-align: center;
+        font-family: var(--tw-sans); font-weight: 800; font-size: 260px; line-height: 300px; letter-spacing: 0;
+        background: repeating-linear-gradient(180deg, #fff4d2 0px, #fff4d2 57px, #f1d590 120px, #d6af63 180px, #a8833c 246px, #a8833c 300px);
+        -webkit-background-clip: text; background-clip: text; color: transparent; }
+      #sheen30 { position: absolute; left: 303px; top: 0; width: 352px; height: 300px; white-space: nowrap;
+        background: linear-gradient(100deg, rgba(255,250,236,0) 38%, rgba(255,250,236,0.95) 50%, rgba(255,250,236,0) 62%);
+        background-size: 300% 100%; background-position: 88% 0; background-repeat: no-repeat;
+        -webkit-background-clip: text; background-clip: text; color: transparent; }
+      #sheen30 .cell { display: inline-block; width: 176px; height: 300px; line-height: 300px; text-align: center; vertical-align: top;
+        font-family: var(--tw-sans); font-weight: 800; font-size: 260px; letter-spacing: 0; }
+      #plus { position: absolute; left: 667px; top: 0; width: 120px; height: 300px; transform-origin: 60px 140px; opacity: 0; }
+      #plus i { position: absolute; display: block; border-radius: 3px;
+        background: linear-gradient(180deg, #fffaf0 0%, #efe6d2 100%); box-shadow: 0 0 20px rgba(244, 239, 227, 0.28); }
+      #plus .h { left: 13px; top: 130px; width: 94px; height: 23px; }
+      #plus .v { left: 48.5px; top: 94.5px; width: 23px; height: 94px; }
+
+      #sub { position: absolute; left: 0; top: 900px; width: 1080px; height: 110px; }
+      #hair { position: absolute; left: 330px; top: 12px; width: 420px; transform-origin: 50% 50%; opacity: 0; }
+      #hairGlint { position: absolute; left: 290px; top: 1px; width: 80px; height: 24px; opacity: 0;
+        background: radial-gradient(closest-side, rgba(255, 249, 230, 1) 0%, rgba(255, 236, 190, 0.6) 35%, rgba(255, 236, 190, 0) 100%); }
+      #subMask { position: absolute; left: 0; top: 30px; width: 1080px; height: 62px; overflow: hidden; }
+      #subText { position: absolute; left: 0; top: 7px; width: 1080px; text-align: center; white-space: nowrap;
+        font-family: var(--tw-sans); font-weight: 600; font-size: 36px; line-height: 48px;
+        letter-spacing: 0.32em; text-indent: 0.32em; color: var(--tw-ivory); }
+
+      /* ---------- Act 2: the network ---------- */
+      #net { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 820px; }
+      #hub { position: absolute; left: 420px; top: 686.3px; width: 240px; height: 267.4px; transform-origin: 50% 50%; opacity: 0; }
+      #hub svg { position: absolute; left: 0; top: 0; width: 240px; height: 267.4px; overflow: visible;
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 24px rgba(232, 196, 120, 0.32)); }
+      #hdr { position: absolute; left: 0; top: 612px; width: 1080px; height: 50px; }
+      #hdrMask { position: absolute; left: 0; top: 0; width: 1080px; height: 50px; overflow: hidden; }
+      #hdrText { position: absolute; left: 0; top: 7px; width: 1080px; text-align: center; white-space: nowrap;
+        font-family: var(--tw-sans); font-weight: 600; font-size: 27px; line-height: 36px;
+        letter-spacing: 0.3em; text-indent: 0.3em; }
+
+      .gold-chars { filter: drop-shadow(0 2px 0 rgba(60, 40, 10, 0.35)) drop-shadow(0 0 14px rgba(232, 196, 120, 0.28)); }
+      .gold-chars span { background: var(--tw-gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .card { position: absolute; left: 0; top: 0; width: 280px; height: 180px; transform-origin: 50% 50%; opacity: 0;
+        will-change: transform, opacity, filter; }
+      .card-body.tw-glass { position: absolute; left: 0; top: 0; width: 280px; height: 180px; box-sizing: border-box; border-radius: 26px; overflow: hidden;
+        border: 1px solid rgba(212, 178, 106, 0.5); backdrop-filter: none; -webkit-backdrop-filter: none;
+        background: linear-gradient(160deg, rgba(36, 54, 102, 0.62) 0%, rgba(13, 25, 56, 0.70) 55%, rgba(8, 17, 42, 0.78) 100%);
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 236, 190, 0.26); }
+      .card-body::before { content: ""; position: absolute; inset: 0; border-radius: 26px; pointer-events: none;
+        background: linear-gradient(150deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.025) 34%, rgba(255, 255, 255, 0) 55%); }
+      .card-flash { position: absolute; left: -1px; top: -1px; width: 280px; height: 180px; box-sizing: border-box; border-radius: 26px; opacity: 0;
+        border: 2px solid rgba(255, 241, 206, 0.95); box-shadow: 0 0 36px rgba(232, 196, 120, 0.6), inset 0 0 28px rgba(232, 196, 120, 0.32); }
+      .ico { position: absolute; left: 98px; top: 21px; width: 84px; height: 84px; overflow: visible;
+        filter: drop-shadow(0 0 8px rgba(232, 196, 120, 0.35)); }
+      .ico path, .ico circle { fill: none; stroke: url(#gIco); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .card-label { position: absolute; left: 0; top: 120px; width: 280px; text-align: center; white-space: nowrap;
+        font-family: var(--tw-sans); font-weight: 700; font-size: 34px; line-height: 40px;
+        letter-spacing: 0.03em; text-indent: 0.03em; color: var(--tw-ivory); }
+
+      #tag { position: absolute; left: 0; top: 1350px; width: 1080px; height: 96px; text-align: center; white-space: nowrap;
+        font-size: 64px; line-height: 80px; opacity: 0; }
+      #tag .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.06em 0.16em; margin: 0 -0.02em; }
+      #tag .wi { display: inline-block; }
+      #tag .gi { font-style: italic; font-weight: 600; padding-right: 0.06em; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="11.2333" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="11.2333" data-track-index="0">
+        <div class="tw-ground"></div>
+        <canvas id="fx" width="1080" height="1920"></canvas>
+
+        <!-- shared SVG defs: motion-blur filters for the odometer, gold stroke for icons, a probe for path sampling -->
+        <svg id="probe" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <defs>
+            <filter id="vbT" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur id="vbTg" stdDeviation="0 0" /></filter>
+            <filter id="vbO" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur id="vbOg" stdDeviation="0 0" /></filter>
+            <linearGradient id="gIco" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#fbefc8" /><stop offset="0.45" stop-color="#e8cb86" /><stop offset="1" stop-color="#c9a35a" />
+            </linearGradient>
+          </defs>
+          <g id="probeG"></g>
+        </svg>
+
+        <!-- Act 1: 30+ counter and label -->
+        <div id="cWrap">
+          <div id="cRise">
+            <div id="cPunch">
+              <div id="odo" data-layout-ignore>
+                <div class="col" id="colT"><div class="strip" id="stripT"></div></div>
+                <div class="col" id="colO"><div class="strip" id="stripO"></div></div>
+                <div id="sheen30"><span class="cell">3</span><span class="cell">0</span></div>
+              </div>
+              <div id="plus"><i class="h"></i><i class="v"></i></div>
+            </div>
+          </div>
+        </div>
+        <div id="sub">
+          <div id="hair" class="tw-hairline"></div>
+          <div id="hairGlint"></div>
+          <div id="subMask"><div id="subText" data-layout-ignore>IN-HOUSE SPECIALISTS</div></div>
+        </div>
+
+        <!-- Act 2: the hub, the five services -->
+        <div id="net">
+          <div id="hdr"><div id="hdrMask"><div id="hdrText" class="gold-chars" data-layout-ignore>EXPERTISE ACROSS</div></div></div>
+          <div id="hub">
+            <svg id="markSvg" viewBox="0 0 1000 1114.1" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1114" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#fbefc8" /><stop offset="0.38" stop-color="#e8cb86" />
+                  <stop offset="0.62" stop-color="#c9a35a" /><stop offset="1" stop-color="#9c7a35" />
+                </linearGradient>
+                <linearGradient id="gSheen" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#fff7de" stop-opacity="0" /><stop offset="0.5" stop-color="#fff7de" stop-opacity="0.95" />
+                  <stop offset="1" stop-color="#fff7de" stop-opacity="0" />
+                </linearGradient>
+                <clipPath id="markClip"></clipPath>
+              </defs>
+              <g id="mFill" fill="url(#gGold)" opacity="0"></g>
+              <g id="mHot" fill="#fff6dc" opacity="0"></g>
+              <g clip-path="url(#markClip)"><rect id="mSheen" x="-700" y="-200" width="380" height="1600" fill="url(#gSheen)" transform="skewX(-18)" /></g>
+              <g id="mStroke" fill="none" stroke="#f6e6b8" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"></g>
+            </svg>
+          </div>
+          <div class="card" id="c0"><div class="card-body tw-glass"><div class="card-flash"></div>
+            <svg class="ico" viewBox="0 0 64 64"><path d="M6 58 H58" /><path d="M7 47 L22 31 L33 40 L54 17" /><path d="M43 16 H55 V28" /></svg>
+            <div class="card-label">FINANCE</div></div></div>
+          <div class="card" id="c1"><div class="card-body tw-glass"><div class="card-flash"></div>
+            <svg class="ico" viewBox="0 0 64 64"><path d="M15 6 H38 L50 18 V58 H15 Z" /><path d="M38 7 V18 H49" /><path d="M42 28 L23 50" /><circle cx="25.5" cy="31" r="4.2" /><circle cx="39.5" cy="47" r="4.2" /></svg>
+            <div class="card-label">TAXATION</div></div></div>
+          <div class="card" id="c2"><div class="card-body tw-glass"><div class="card-flash"></div>
+            <svg class="ico" viewBox="0 0 64 64"><circle cx="25" cy="13" r="9" /><path d="M25 9 V17" /><path d="M14 26 H52 Q57 26 57 31 V53 Q57 58 52 58 H12 Q7 58 7 53 V31 Q7 26 12 26" /><path d="M57 36 H47 Q42 36 42 41.5 Q42 47 47 47 H57" /></svg>
+            <div class="card-label">PAYROLL</div></div></div>
+          <div class="card" id="c3"><div class="card-body tw-glass"><div class="card-flash"></div>
+            <svg class="ico" viewBox="0 0 64 64"><path d="M32 5 L53 13 V30 C53 44 44 54 32 59 C20 54 11 44 11 30 V13 Z" /><path d="M21.5 32 L29 39.5 L43.5 24.5" /></svg>
+            <div class="card-label">COMPLIANCE</div></div></div>
+          <div class="card" id="c4"><div class="card-body tw-glass"><div class="card-flash"></div>
+            <svg class="ico" viewBox="0 0 64 64"><path d="M25 45 V41.5 C25 37.5 17 33.5 17 24.5 A15 15 0 0 1 47 24.5 C47 33.5 39 37.5 39 41.5 V45 Z" /><path d="M26 51 H38" /><path d="M28.5 57 H35.5" /><path d="M28 29 L32 33 L36 29" /><path d="M32 1.5 V4.5" /><path d="M10.5 9 L13 11.5" /><path d="M53.5 9 L51 11.5" /></svg>
+            <div class="card-label">ADVISORY</div></div></div>
+        </div>
+
+        <div id="tag" class="tw-display"><span class="w" data-layout-allow-overflow><span class="wi">One</span></span> <span class="w" data-layout-allow-overflow><span class="wi gi tw-gold-text">connected</span></span> <span class="w" data-layout-allow-overflow><span class="wi">finance</span></span> <span class="w" data-layout-allow-overflow><span class="wi">function</span></span></div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+        /* ======================================================================
+           team_services (full) - output window 14.220 to 25.470, 337 frames.
+           Local t = output time - 14.22. Every frame is a pure function of t:
+           render(t) is driven by one proxy tween; GSAP tweens own the type,
+           the mark and the card details. No randomness except mulberry32.
+           ====================================================================== */
+        var W = 1080, H = 1920;
+        var DUR = 11.2333; // 337 frames at 30 fps (frame N = 14.22 + (N-1)/30)
+        var Q = {
+          BURST: 0.28, LOCK: 1.24, LAND: 2.12, SHEEN: 2.28, HAIR: 2.52, SUB: 2.60, RIPPLE: 3.16,
+          SWIRL: 3.96, CONDENSE: 4.52, EXPERT: 5.00, PORTS: 5.96, HUBPULSE: 6.28,
+          LIFT: 10.28, LIFT_ARRIVE: 10.56, FOLD: 10.78
+        };
+        var HUB = { x: 540, y: 820 };
+        var SPH = { cx: 540, cy: 900, R: 400, tilt: 18 * Math.PI / 180, spinRate: 12 * Math.PI / 180 };
+
+        /* ---------- deterministic helpers ---------- */
+        function mulberry32(a) {
+          return function () {
+            a |= 0; a = (a + 0x6d2b79f5) | 0;
+            var t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        var rnd = mulberry32(0x7a5c0de);
+        function c01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function seg(t, a, b) { return c01((t - a) / (b - a)); }
+        function sstep(a, b, x) { var u = c01((x - a) / (b - a)); return u * u * (3 - 2 * u); }
+        var EZ = {
+          expoOut: function (p) { return p >= 1 ? 1 : 1 - Math.pow(2, -10 * p); },
+          p2o: function (p) { return 1 - (1 - p) * (1 - p); },
+          p3o: function (p) { return 1 - Math.pow(1 - p, 3); },
+          p4o: function (p) { return 1 - Math.pow(1 - p, 4); },
+          p2i: function (p) { return p * p; },
+          p3i: function (p) { return p * p * p; },
+          p2io: function (p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; },
+          p3io: function (p) { return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; },
+          sio: function (p) { return -(Math.cos(Math.PI * p) - 1) / 2; },
+          backOut: function (p, s) { s = s || 1.70158; var c3 = s + 1; return 1 + c3 * Math.pow(p - 1, 3) + s * Math.pow(p - 1, 2); }
+        };
+        // attack-decay envelope: linear rise over att, exponential decay with time constant dec
+        function env(t, t0, att, dec) {
+          if (t < t0) return 0;
+          if (t < t0 + att) return (t - t0) / att;
+          return Math.exp(-(t - t0 - att) / dec);
+        }
+        function wrapPi(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a <= -Math.PI) a += 2 * Math.PI; return a; }
+
+        /* ---------- canvas + glow sprite ---------- */
+        var cv = document.getElementById("fx");
+        var ctx = cv.getContext("2d");
+        var spr = document.createElement("canvas");
+        spr.width = spr.height = 128;
+        (function () {
+          var g = spr.getContext("2d");
+          var rg = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+          rg.addColorStop(0, "rgba(255,246,222,1)");
+          rg.addColorStop(0.16, "rgba(248,226,168,0.8)");
+          rg.addColorStop(0.42, "rgba(232,196,120,0.24)");
+          rg.addColorStop(1, "rgba(232,196,120,0)");
+          g.fillStyle = rg; g.fillRect(0, 0, 128, 128);
+        })();
+        function glow(x, y, r, a) {
+          if (a <= 0.003 || r <= 0.5) return;
+          ctx.globalAlpha = a > 1 ? 1 : a;
+          ctx.drawImage(spr, x - r, y - r, 2 * r, 2 * r);
+        }
+        function radial(x, y, r, stops, alpha) {
+          if (alpha <= 0.003) return;
+          var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+          for (var i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+          ctx.globalAlpha = alpha > 1 ? 1 : alpha;
+          ctx.fillStyle = g;
+          ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+        }
+        var GOLD = "rgb(226,192,118)", GOLD_HI = "rgb(246,228,178)", IVORY = "rgb(244,239,227)";
+        // a thin anamorphic streak of light through an impact point (lens-like, used on the four big hits)
+        function flare(x, y, len, a) {
+          if (a <= 0.004) return;
+          ctx.globalAlpha = Math.min(1, a * 0.55);
+          ctx.drawImage(spr, x - len, y - 16, 2 * len, 32);
+          var g = ctx.createLinearGradient(x - len, 0, x + len, 0);
+          g.addColorStop(0, "rgba(255,236,190,0)"); g.addColorStop(0.5, "rgba(255,247,226,1)"); g.addColorStop(1, "rgba(255,236,190,0)");
+          ctx.fillStyle = g; ctx.globalAlpha = Math.min(1, a);
+          ctx.fillRect(x - len, y - 1.1, 2 * len, 2.2);
+        }
+
+        /* ---------- dust (fine gold motes drifting in light) ---------- */
+        var dust = [];
+        for (var i = 0; i < 64; i++) {
+          dust.push({ x: rnd() * W, y: rnd() * H, vy: 6 + rnd() * 16, amp: 4 + rnd() * 10, per: 3 + rnd() * 4,
+            ph: rnd() * 6.283, s: 0.7 + rnd() * 1.7, a: 0.08 + rnd() * 0.26, tw: 1.2 + rnd() * 2.2 });
+        }
+        function drawDust(t) {
+          var fade = sstep(0.0, 0.6, t) * (1 - sstep(10.86, 11.1, t));
+          if (fade <= 0) return;
+          ctx.globalCompositeOperation = "lighter";
+          for (var i = 0; i < dust.length; i++) {
+            var d = dust[i];
+            var y = ((d.y - d.vy * t) % H + H) % H;
+            var x = d.x + d.amp * Math.sin(t * 6.283 / d.per + d.ph);
+            var a = d.a * (0.6 + 0.4 * Math.sin(t * d.tw + d.ph * 3)) * fade;
+            glow(x, y, d.s * 4.2, a);
+          }
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        /* ---------- Act 1: the team formation ---------- */
+        var FC = { x: 540, y: 830 };
+        var ROWS = [6, 5, 6, 5, 6, 5], DX = 108, DY = 96;
+        var icons = [];
+        ROWS.forEach(function (n, r) {
+          for (var c = 0; c < n; c++) {
+            icons.push({ x: FC.x + (c - (n - 1) / 2) * DX, y: FC.y + (r - (ROWS.length - 1) / 2) * DY });
+          }
+        });
+        var rMaxF = 0;
+        icons.forEach(function (ic) { ic.rF = Math.hypot(ic.x - FC.x, ic.y - FC.y); rMaxF = Math.max(rMaxF, ic.rF); });
+        icons.forEach(function (ic, k) {
+          ic.drawAt = 0.70 + 0.30 * (ic.rF / rMaxF);       // outlines trace from the centre outward
+          ic.dCtr = Math.hypot(ic.x - 540, ic.y - 790);    // distance from the counter (ripple)
+          ic.ph = rnd() * 6.283;
+        });
+        // icon geometry (local px): head circle + two shoulder halves drawn from the top centre
+        var HEAD_Y = -15, HEAD_R = 11;
+        var SH = [[0, 1], [13, 1], [23, 9], [23, 27]];
+        function bez(p0, p1, p2, p3, u) {
+          var v = 1 - u;
+          return [v * v * v * p0[0] + 3 * v * v * u * p1[0] + 3 * v * u * u * p2[0] + u * u * u * p3[0],
+                  v * v * v * p0[1] + 3 * v * v * u * p1[1] + 3 * v * u * u * p2[1] + u * u * u * p3[1]];
+        }
+        var SH_PTS = [];
+        for (var j = 0; j <= 14; j++) SH_PTS.push(bez(SH[0], SH[1], SH[2], SH[3], j / 14));
+        function strokePartial(pts, prog, ox, oy, sx, sc) {
+          // stroke the first `prog` fraction of a polyline (by point count; segments are near-uniform)
+          if (prog <= 0) return;
+          var n = pts.length - 1, upto = prog * n, k = Math.floor(upto);
+          ctx.beginPath();
+          ctx.moveTo(ox + pts[0][0] * sx * sc, oy + pts[0][1] * sc);
+          for (var q = 1; q <= k && q <= n; q++) ctx.lineTo(ox + pts[q][0] * sx * sc, oy + pts[q][1] * sc);
+          if (k < n) {
+            var f = upto - k;
+            ctx.lineTo(ox + lerp(pts[k][0], pts[k + 1][0], f) * sx * sc, oy + lerp(pts[k][1], pts[k + 1][1], f) * sc);
+          }
+          ctx.stroke();
+        }
+        function drawPerson(x, y, sc, headP, shP, shA) {
+          if (headP > 0) {
+            ctx.beginPath();
+            ctx.arc(x, y + HEAD_Y * sc, HEAD_R * sc, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * headP);
+            ctx.stroke();
+          }
+          if (shP > 0 && shA > 0) {
+            var a0 = ctx.globalAlpha;
+            ctx.globalAlpha = a0 * shA;
+            strokePartial(SH_PTS, shP, x, y, 1, sc);
+            strokePartial(SH_PTS, shP, x, y, -1, sc);
+            ctx.globalAlpha = a0;
+          }
+        }
+
+        // stream-in particles: 8 per person, burst from the centre on the 14.50 downbeat
+        var PT = [[0, -26], [-11, -15], [11, -15], [0, 1], [-15, 4], [15, 4], [-23, 26], [23, 26]];
+        var parts = [];
+        icons.forEach(function (ic, k) {
+          PT.forEach(function (p) {
+            var tx = ic.x + p[0], ty = ic.y + p[1];
+            var rT = Math.hypot(tx - FC.x, ty - FC.y), aT = Math.atan2(ty - FC.y, tx - FC.x);
+            parts.push({ icon: k, tx: tx, ty: ty, rT: rT, aT: aT, k0: 0.02 + rnd() * 0.18, sw: 0.55 + rnd() * 0.65,
+              L: Q.BURST + rnd() * 0.05, D: 0.66 + rnd() * 0.22, s: 1.3 + rnd() * 1.3 });
+          });
+        });
+        var field = [];
+        for (var i2 = 0; i2 < 44; i2++) {
+          var a0 = (i2 / 44) * 6.283 + rnd() * 0.12;
+          field.push({ a: a0, r0: 20 + rnd() * 30, r1: 820 + rnd() * 600, L: Q.BURST + rnd() * 0.05, D: 0.6 + rnd() * 0.35,
+            sw: 0.35 + rnd() * 0.3, s: 0.9 + rnd() * 1.1 });
+        }
+        function partPos(p, tt) {
+          var e = EZ.expoOut(seg(tt, p.L, p.L + p.D));
+          var r = lerp(p.rT * p.k0, p.rT, e), a = p.aT - p.sw * (1 - e);
+          return [FC.x + r * Math.cos(a), FC.y + r * Math.sin(a), e];
+        }
+        function fieldPos(f, tt) {
+          var e = EZ.expoOut(seg(tt, f.L, f.L + f.D));
+          var r = lerp(f.r0, f.r1, e), a = f.a - f.sw * (1 - e);
+          return [FC.x + r * Math.cos(a), FC.y + r * Math.sin(a), e, r];
+        }
+        function drawStreak(p0, p1, w, a, col) {
+          ctx.globalAlpha = a;
+          ctx.strokeStyle = col;
+          ctx.lineWidth = w;
+          ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+        }
+        function drawParticles(t) {
+          ctx.globalCompositeOperation = "lighter";
+          ctx.lineCap = "round";
+          for (var i = 0; i < field.length; i++) {
+            var f = field[i];
+            if (t < f.L || t > f.L + f.D) continue;
+            var h = fieldPos(f, t), tl1 = fieldPos(f, t - 0.03), tl2 = fieldPos(f, t - 0.06);
+            var a = (1 - sstep(420, 900, h[3])) * (1 - sstep(0.7, 1, h[2]));
+            if (a <= 0) continue;
+            drawStreak(tl2, tl1, f.s * 0.7, 0.16 * a, GOLD);
+            drawStreak(tl1, h, f.s, 0.42 * a, GOLD_HI);
+            glow(h[0], h[1], f.s * 4, 0.45 * a);
+          }
+          for (var j = 0; j < parts.length; j++) {
+            var p = parts[j];
+            if (t < p.L) continue;
+            var ic = icons[p.icon];
+            var fadeOut = 1 - sstep(ic.drawAt + 0.06, ic.drawAt + 0.26, t);
+            if (fadeOut <= 0) continue;
+            var hp = partPos(p, t), t1 = partPos(p, t - 0.035), t2 = partPos(p, t - 0.07);
+            var aIn = sstep(p.L, p.L + 0.04, t);
+            var a2 = aIn * fadeOut;
+            drawStreak(t2, t1, p.s * 0.8, 0.28 * a2, GOLD);
+            drawStreak(t1, hp, p.s, 0.75 * a2, GOLD_HI);
+            glow(hp[0], hp[1], p.s * (3.2 + 2.5 * (1 - hp[2])), 0.7 * a2);
+          }
+          ctx.globalCompositeOperation = "source-over";
+          ctx.globalAlpha = 1;
+        }
+
+        /* ---------- the TW mark: geometry + 33 outline points for the condense ---------- */
+        var NS = "http://www.w3.org/2000/svg";
+        var MARK_S = 0.24, MARK_W = 240, MARK_H = 1114.1 * MARK_S;
+        var MARK_X0 = HUB.x - MARK_W / 2, MARK_Y0 = HUB.y - MARK_H / 2;
+        var probeG = document.getElementById("probeG");
+        var mPaths = ["t", "w", "diamond"].map(function (k) {
+          var p = document.createElementNS(NS, "path");
+          p.setAttribute("d", TW_PATHS[k]);
+          probeG.appendChild(p);
+          return p;
+        });
+        var mLens = mPaths.map(function (p) { return p.getTotalLength(); });
+        var nD = 3, nT = Math.round(30 * mLens[0] / (mLens[0] + mLens[1])), nW = 30 - nT;
+        var mTargets = [];
+        [[0, nT], [1, nW], [2, nD]].forEach(function (pr) {
+          var p = mPaths[pr[0]], n = pr[1], L = mLens[pr[0]];
+          for (var q = 0; q < n; q++) {
+            var pt = p.getPointAtLength(((q + 0.5) / n) * L);
+            mTargets.push([MARK_X0 + pt.x * MARK_S, MARK_Y0 + pt.y * MARK_S]);
+          }
+        });
+        // pair people with outline points by angle around the hub, so the swirl never tangles
+        var byAngI = icons.map(function (ic, k) { return { k: k, a: Math.atan2(ic.y - HUB.y, ic.x - HUB.x) }; })
+          .sort(function (a, b) { return a.a - b.a; });
+        var byAngM = mTargets.map(function (m, k) { return { k: k, a: Math.atan2(m[1] - HUB.y, m[0] - HUB.x) }; })
+          .sort(function (a, b) { return a.a - b.a; });
+        var rMaxS = 0;
+        byAngI.forEach(function (o, n) {
+          var ic = icons[o.k], m = mTargets[byAngM[n].k];
+          ic.rS = Math.hypot(ic.x - HUB.x, ic.y - HUB.y); ic.aS = Math.atan2(ic.y - HUB.y, ic.x - HUB.x);
+          ic.mx = m[0]; ic.my = m[1];
+          ic.rM = Math.hypot(m[0] - HUB.x, m[1] - HUB.y);
+          ic.dA = wrapPi(Math.atan2(m[1] - HUB.y, m[0] - HUB.x) - ic.aS) + Math.PI * 0.9; // + a 0.45-turn vortex
+          rMaxS = Math.max(rMaxS, ic.rS);
+        });
+        icons.forEach(function (ic) { ic.s0 = Q.SWIRL + 0.06 * (ic.rS / rMaxS); });
+        function swirlAt(ic, tt) {
+          var e = EZ.p3io(seg(tt, ic.s0, Q.CONDENSE));
+          var r = lerp(ic.rS, ic.rM, e) * (1 - 0.3 * Math.sin(Math.PI * e));
+          var a = ic.aS + ic.dA * e;
+          return [HUB.x + r * Math.cos(a), HUB.y + r * Math.sin(a), e];
+        }
+
+        function drawAct1(t) {
+          if (t > 4.95) return;
+          if (t < 1.4) drawParticles(t);
+          if (t < 0.7) return;
+          // formation state: lock flash, dim + blur behind the counter, ripple, swirl
+          var dim = EZ.p2o(seg(t, Q.LOCK, Q.LOCK + 0.38)) * (1 - EZ.p2o(seg(t, Q.SWIRL + 0.01, Q.SWIRL + 0.17)));
+          var fA = lerp(1, 0.2, dim), fBlur = 2.6 * dim, fS = lerp(1, 0.955 + 0.03 * EZ.sio(seg(t, 1.5, 3.96)), dim);
+          var lock = env(t, Q.LOCK, 0.03, 0.16);
+          ctx.lineCap = "round"; ctx.lineJoin = "round";
+          if (fBlur > 0.05) ctx.filter = "blur(" + fBlur.toFixed(2) + "px)";
+          var swirling = t >= Q.SWIRL;
+          for (var k = 0; k < icons.length; k++) {
+            var ic = icons[k];
+            var drawP = seg(t, ic.drawAt, ic.drawAt + 0.24);
+            if (drawP <= 0) continue;
+            var rip = 0;
+            if (t > Q.RIPPLE && t < Q.RIPPLE + 0.8) {
+              var front = (t - Q.RIPPLE) * 1500;
+              rip = Math.exp(-Math.pow((front - ic.dCtr) / 120, 2)) * (1 - seg(t, Q.RIPPLE + 0.5, Q.RIPPLE + 0.8));
+            }
+            var x, y, sc = 1, shA = 1, e = 0;
+            if (!swirling) {
+              x = FC.x + (ic.x - FC.x) * fS; y = FC.y + (ic.y - FC.y) * fS;
+              // breathing: a tiny idle drift so the crowd feels alive
+              y += 1.6 * Math.sin(t * 2.1 + ic.ph);
+            } else {
+              var sp = swirlAt(ic, t);
+              x = sp[0]; y = sp[1]; e = sp[2];
+              sc = lerp(1, 0.2, sstep(0.04, 0.72, e));
+              shA = 1 - sstep(0.04, 0.5, e);
+              // trail of light along the vortex path
+              if (e > 0.02 && e < 0.995) {
+                ctx.globalCompositeOperation = "lighter";
+                ctx.strokeStyle = GOLD_HI; ctx.lineWidth = 2.2;
+                var prev = null;
+                for (var q = 8; q >= 0; q--) {
+                  var pq = swirlAt(ic, t - q * 0.014);
+                  if (prev) { ctx.globalAlpha = 0.5 * (1 - q / 9) * sstep(0.02, 0.2, e) * (1 - sstep(0.85, 1, e));
+                    ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(pq[0], pq[1]); ctx.stroke(); }
+                  prev = pq;
+                }
+                ctx.globalCompositeOperation = "source-over";
+              }
+            }
+            var bright = Math.min(1, lock * 0.9 + rip * 0.85 + (swirling ? 0.35 * Math.sin(Math.PI * e) : 0));
+            var alpha = Math.min(1, fA + rip * 0.62 + lock * 0.2);
+            if (swirling) alpha = 1 - sstep(Q.CONDENSE + 0.02, Q.CONDENSE + 0.2, t);
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = bright > 0.02 ? "rgb(" + Math.round(lerp(226, 252, bright)) + "," + Math.round(lerp(192, 242, bright)) + "," + Math.round(lerp(118, 214, bright)) + ")" : GOLD;
+            ctx.lineWidth = lerp(2.7, 2.2, sstep(0, 0.6, e));
+            var headP = c01(drawP / 0.55), shP = c01((drawP - 0.3) / 0.7);
+            drawPerson(x, y, sc, headP, shP, shA);
+            if (swirling && e > 0.4) {
+              // the head condenses into a point of light
+              ctx.globalAlpha = sstep(0.4, 0.85, e) * (1 - sstep(Q.CONDENSE + 0.02, Q.CONDENSE + 0.2, t));
+              ctx.fillStyle = GOLD_HI;
+              ctx.beginPath(); ctx.arc(x, y + HEAD_Y * sc, 3.2, 0, 6.2832); ctx.fill();
+            }
+          }
+          ctx.filter = "none";
+          // lock glint over the whole crowd and glowing points of the condense
+          ctx.globalCompositeOperation = "lighter";
+          if (swirling) {
+            for (var m = 0; m < icons.length; m++) {
+              var ic2 = icons[m], s2 = swirlAt(ic2, t);
+              var ga = sstep(0.35, 0.9, s2[2]) * (1 - sstep(Q.CONDENSE + 0.02, Q.CONDENSE + 0.2, t));
+              var land = env(t, Q.CONDENSE, 0.02, 0.1);
+              glow(s2[0], s2[1] + HEAD_Y * lerp(1, 0.2, sstep(0.04, 0.72, s2[2])), 12 + 14 * land, 0.75 * ga + 0.5 * land * ga);
+            }
+          }
+          ctx.globalCompositeOperation = "source-over";
+          ctx.globalAlpha = 1;
+        }
+
+        /* ---------- Act 1 punctuation: the 30+ slam ring and sparks ---------- */
+        var sparks = [];
+        for (var s3 = 0; s3 < 26; s3++) {
+          sparks.push({ a: (s3 / 26) * 6.283 + rnd() * 0.2, v: 380 + rnd() * 420, s: 1.2 + rnd() * 1.4, D: 0.45 + rnd() * 0.3 });
+        }
+        function ring(x, y, r, w, a, col) {
+          if (a <= 0.003) return;
+          ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = w;
+          ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.stroke();
+        }
+        function drawSlam(t) {
+          if (t < Q.LAND || t > Q.LAND + 0.9) return;
+          var p = seg(t, Q.LAND, Q.LAND + 0.75), e = EZ.expoOut(p);
+          ctx.globalCompositeOperation = "lighter";
+          ring(490, 790, lerp(150, 600, e), lerp(5, 1, p), 0.85 * (1 - p), GOLD_HI);
+          var p2 = seg(t, Q.LAND + 0.08, Q.LAND + 0.85);
+          ring(490, 790, lerp(150, 460, EZ.expoOut(p2)), 1.2, 0.5 * (1 - p2) * (p2 > 0 ? 1 : 0), GOLD);
+          for (var i = 0; i < sparks.length; i++) {
+            var sk = sparks[i], q = seg(t, Q.LAND, Q.LAND + sk.D);
+            if (q <= 0 || q >= 1) continue;
+            var dd = sk.v * sk.D * EZ.p3o(q) * 0.55, r0 = 170;
+            var x = 490 + Math.cos(sk.a) * (r0 + dd), y = 790 + Math.sin(sk.a) * (r0 * 0.62 + dd);
+            glow(x, y, sk.s * 5, 0.8 * (1 - q));
+          }
+          ctx.globalCompositeOperation = "source-over";
+          ctx.globalAlpha = 1;
+        }
+
+        /* ---------- Act 2: the five services ---------- */
+        var CW = 280, CH = 180;
+        var CARDS = [
+          { id: "c0", word: 6.44, cx: 226, cy: 470, top: false, port: 200, c1: [-110, 0], c2: [0, 104], theta: -150 },
+          { id: "c1", word: 7.16, cx: 854, cy: 470, top: false, port: -20, c1: [110, 0], c2: [0, 104], theta: 150 },
+          { id: "c2", word: 8.28, cx: 854, cy: 1030, top: true, port: 25, c1: [100, 0], c2: [0, -44], theta: 60 },
+          { id: "c3", word: 9.16, cx: 540, cy: 1210, top: true, port: 90, c1: [0, 44], c2: [0, -44], theta: 0 },
+          { id: "c4", word: 9.96, cx: 226, cy: 1030, top: true, port: 155, c1: [-100, 0], c2: [0, -44], theta: -60 }
+        ];
+        var NSEG = 40;
+        CARDS.forEach(function (c, k) {
+          var pa = c.port * Math.PI / 180;
+          c.p0 = [HUB.x + 150 * Math.cos(pa), HUB.y + 168 * Math.sin(pa)];
+          c.p3 = [c.cx, c.top ? c.cy - CH / 2 : c.cy + CH / 2];
+          c.p1 = [c.p0[0] + c.c1[0], c.p0[1] + c.c1[1]];
+          c.p2 = [c.p3[0] + c.c2[0], c.p3[1] + c.c2[1]];
+          c.off = [c.cx - c.p3[0], c.cy - c.p3[1]];
+          c.pts = [];
+          for (var q = 0; q <= NSEG; q++) c.pts.push(bez(c.p0, c.p1, c.p2, c.p3, q / NSEG));
+          c.el = document.getElementById(c.id);
+          c.ph = k * 1.7;
+          c.rot0 = (k % 2 ? 1 : -1) * 9;
+          c.th = c.theta * Math.PI / 180;
+        });
+
+        // network camera: slow push-in, then the fold moves the hub (north pole) onto the sphere centre
+        var cam = { s: 1, y: 0 };
+        function camAt(t) {
+          var s = lerp(1, 1.025, EZ.sio(seg(t, Q.EXPERT, Q.FOLD)));
+          var f = EZ.p2io(seg(t, Q.FOLD, Q.FOLD + 0.2));
+          cam.s = lerp(s, 1, f);
+          cam.y = 80 * f;
+        }
+        function N2S(x, y) { return [540 + cam.s * (x - 540), 820 + cam.s * (y - 820) + cam.y]; }
+
+        function polyAt(pts, u) {
+          var n = pts.length - 1, f = u * n, k = Math.min(n - 1, Math.floor(f)), r = f - k;
+          return [lerp(pts[k][0], pts[k + 1][0], r), lerp(pts[k][1], pts[k + 1][1], r)];
+        }
+        function cardFly(c, t) { return EZ.expoOut(seg(t, c.word, c.word + 0.5)); }
+
+        /* ---------- the sphere (hub = north pole seen from above, tilting to 18 degrees) ---------- */
+        function tiltAt(t) { return lerp(Math.PI / 2, SPH.tilt, EZ.sio(seg(t, 10.86, 11.2))); }
+        function spinAt(t) { return (t - 10.95) * SPH.spinRate; }
+        function sph(lat, lon, tilt, spin) {
+          var cl = Math.cos(lat), th = lon + spin;
+          var x = cl * Math.sin(th), y = Math.sin(lat), z = cl * Math.cos(th);
+          var ca = Math.cos(tilt), sa = Math.sin(tilt);
+          return [SPH.cx + SPH.R * x, SPH.cy - SPH.R * (y * ca - z * sa), y * sa + z * ca];
+        }
+        // the five connectors become the northern halves of these meridians (hub end -> pole, card end -> equator)
+        function morphAt(t) { return EZ.p2io(seg(t, Q.FOLD, Q.FOLD + 0.16)); }
+
+        function connectorScreenPts(c, t, uEnd) {
+          var out = [], m = morphAt(t), tilt = tiltAt(t), spin = spinAt(t);
+          for (var q = 0; q <= NSEG; q++) {
+            var u = (q / NSEG) * uEnd;
+            var nP = polyAt(c.pts, u), s = N2S(nP[0], nP[1]);
+            if (m > 0) {
+              var lat = (Math.PI / 2) * (1 - q / NSEG);
+              var g = sph(lat, c.th, tilt, spin);
+              out.push([lerp(s[0], g[0], m), lerp(s[1], g[1], m), m > 0.5 ? g[2] : 1]);
+            } else out.push([s[0], s[1], 1]);
+          }
+          return out;
+        }
+        // stroke a polyline split into front (z>0) and back runs
+        function strokeRuns(pts, wFront, aFront, aBack, col, glowOn) {
+          var runStart = 0;
+          for (var i = 1; i <= pts.length; i++) {
+            var endRun = i === pts.length || (pts[i][2] > 0) !== (pts[runStart][2] > 0);
+            if (!endRun) continue;
+            var front = pts[runStart][2] > 0;
+            ctx.globalAlpha = front ? aFront : aBack;
+            ctx.lineWidth = front ? wFront : wFront * 0.7;
+            ctx.strokeStyle = col;
+            ctx.shadowBlur = front && glowOn ? 8 : 0;
+            ctx.beginPath();
+            ctx.moveTo(pts[runStart][0], pts[runStart][1]);
+            for (var j = runStart + 1; j < Math.min(i + 1, pts.length); j++) ctx.lineTo(pts[j][0], pts[j][1]);
+            ctx.stroke();
+            runStart = i;
+          }
+          ctx.shadowBlur = 0;
+        }
+        function meridianPts(lon, lat0, lat1, prog, tilt, spin) {
+          var n = 48, out = [];
+          var k = Math.max(1, Math.round(n * prog));
+          for (var q = 0; q <= k; q++) {
+            var lat = lerp(lat0, lat1, (q / n));
+            out.push(sph(lat, lon, tilt, spin));
+          }
+          return out;
+        }
+        function latitudePts(lat, prog, tilt, spin) {
+          // drawn from the front centre (lon = -spin) outward in both directions
+          var n = 96, half = Math.max(1, Math.round((n / 2) * prog)), out = [];
+          for (var q = -half; q <= half; q++) out.push(sph(lat, (q / n) * 2 * Math.PI - spin, tilt, spin));
+          return out;
+        }
+        var MERID = [];
+        for (var mk = 0; mk < 12; mk++) MERID.push(mk * 30 - 150);  // -150 .. 180
+        var CONN_TH = CARDS.map(function (c) { return c.theta; });
+        var LATS = [60, 30, 0, -30, -60];
+        function drawSphere(t) {
+          if (t < Q.FOLD + 0.01) return;
+          var tilt = tiltAt(t), spin = spinAt(t), D2R = Math.PI / 180;
+          ctx.lineCap = "round"; ctx.lineJoin = "round";
+          ctx.shadowColor = "rgba(232,196,120,0.55)";
+          // outline (limb): sweeps on from the top in both directions
+          var rl = EZ.p3o(seg(t, 10.80, 11.0));
+          if (rl > 0) {
+            ctx.globalAlpha = 1; ctx.strokeStyle = "rgb(243,229,190)"; ctx.lineWidth = 2.4; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.arc(SPH.cx, SPH.cy, SPH.R, -Math.PI / 2 - Math.PI * rl, -Math.PI / 2 + Math.PI * rl); ctx.stroke();
+            ctx.shadowBlur = 0;
+          }
+          // latitudes
+          LATS.forEach(function (la, k) {
+            var pr = EZ.p3o(seg(t, 10.83 + 0.025 * k, 11.03 + 0.025 * k));
+            if (pr <= 0) return;
+            var col = la === 0 ? "rgb(241,224,180)" : GOLD;
+            strokeRuns(latitudePts(la * D2R, pr, tilt, spin), la === 0 ? 2.1 : 1.8, la === 0 ? 0.95 : 0.85, 0.16, col, true);
+          });
+          // meridians: the five connector meridians get their southern halves; the rest draw pole to pole
+          MERID.forEach(function (lo) {
+            var isConn = CONN_TH.indexOf(lo) >= 0;
+            if (isConn) {
+              var ps = EZ.p2o(seg(t, 10.86, 11.07));
+              if (ps > 0) strokeRuns(meridianPts(lo * D2R, 0, -Math.PI / 2, ps, tilt, spin), 1.8, 0.85, 0.16, GOLD, true);
+            } else {
+              var pm = EZ.p3o(seg(t, 10.82, 11.05));
+              if (pm > 0) strokeRuns(meridianPts(lo * D2R, Math.PI / 2, -Math.PI / 2, pm, tilt, spin), 1.8, 0.85, 0.16, GOLD, true);
+            }
+          });
+          ctx.globalAlpha = 1;
+        }
+
+        function drawNetwork(t) {
+          if (t < Q.CONDENSE - 0.1) return;
+          var foldGone = sstep(Q.FOLD, Q.FOLD + 0.22, t);
+          ctx.lineCap = "round"; ctx.lineJoin = "round";
+          // hub glow (warm light behind the mark)
+          var hc = N2S(HUB.x, HUB.y);
+          var base = sstep(Q.CONDENSE - 0.05, Q.CONDENSE + 0.3, t) * (1 - sstep(Q.FOLD, Q.FOLD + 0.25, t));
+          var bloom = (env(t, Q.CONDENSE, 0.04, 0.32) + 0.85 * env(t, Q.LIFT, 0.05, 0.42)) * (1 - sstep(Q.FOLD + 0.1, Q.FOLD + 0.28, t));
+          ctx.globalCompositeOperation = "lighter";
+          var rim = env(t, Q.LIFT, 0.08, 0.5) * (1 - sstep(Q.FOLD, Q.FOLD + 0.25, t));
+          radial(hc[0], hc[1], 620, [[0, "rgba(58,79,214,0)"], [0.45, "rgba(58,79,214,0.0)"], [0.7, "rgba(58,79,214,0.22)"], [1, "rgba(58,79,214,0)"]], rim);
+          radial(hc[0], hc[1], 360 + 180 * bloom, [[0, "rgba(232,196,120,0.55)"], [0.35, "rgba(232,196,120,0.16)"], [1, "rgba(232,196,120,0)"]], 0.42 * base + 0.6 * bloom);
+          ctx.globalCompositeOperation = "source-over";
+          // condense shockwave + hub pulse ring + lift rings
+          ctx.globalCompositeOperation = "lighter";
+          flare(hc[0], hc[1], 400 + 200 * seg(t, Q.CONDENSE, Q.CONDENSE + 0.5), 0.75 * env(t, Q.CONDENSE, 0.02, 0.2));
+          flare(hc[0], hc[1], 440 + 220 * seg(t, Q.LIFT, Q.LIFT + 0.6), 0.65 * env(t, Q.LIFT, 0.03, 0.24) * (1 - sstep(Q.FOLD, Q.FOLD + 0.15, t)));
+          var pc = seg(t, Q.CONDENSE, Q.CONDENSE + 0.6);
+          if (pc > 0 && pc < 1) ring(hc[0], hc[1], lerp(130, 470, EZ.expoOut(pc)), lerp(3, 1, pc), 0.7 * (1 - pc), GOLD_HI);
+          var ph = seg(t, Q.HUBPULSE, Q.HUBPULSE + 0.55);
+          if (ph > 0 && ph < 1) ring(hc[0], hc[1], lerp(150, 330, EZ.expoOut(ph)), 1.6, 0.55 * (1 - ph), GOLD_HI);
+          var pl = seg(t, Q.LIFT, Q.LIFT + 0.75);
+          if (pl > 0 && pl < 1) ring(hc[0], hc[1], lerp(160, 760, EZ.expoOut(pl)), lerp(4, 1, pl), 0.75 * (1 - pl), GOLD_HI);
+          var pl2 = seg(t, Q.LIFT + 0.1, Q.LIFT + 0.85);
+          if (pl2 > 0 && pl2 < 1) ring(hc[0], hc[1], lerp(160, 620, EZ.expoOut(pl2)), 1.3, 0.45 * (1 - pl2), GOLD);
+          ctx.globalCompositeOperation = "source-over";
+
+          // connectors
+          var liftGlow = env(t, Q.LIFT, 0.06, 0.55) + 0.35 * sstep(Q.LIFT, Q.LIFT + 0.3, t);
+          ctx.shadowColor = "rgba(232,196,120,0.65)";
+          CARDS.forEach(function (c, k) {
+            if (t < c.word) return;
+            var u = cardFly(c, t);
+            var pts = connectorScreenPts(c, t, u);
+            var lg = Math.min(1, liftGlow) * (1 - sstep(Q.FOLD, Q.FOLD + 0.2, t));
+            var mm = morphAt(t);
+            var aConn = lerp(0.78 + 0.22 * lg, 0.85, mm);
+            var wConn = lerp(2.0 + 0.8 * lg, 1.8, mm);
+            var cg = Math.round(lerp(192, 226, lg)), cr = Math.round(lerp(226, 246, lg)), cb = Math.round(lerp(118, 170, lg));
+            strokeRuns(pts, wConn, aConn, 0.16, "rgb(" + cr + "," + cg + "," + cb + ")", true);
+            ctx.globalCompositeOperation = "lighter";
+            // comet head while the card flies
+            var fl = seg(t, c.word, c.word + 0.5);
+            if (fl < 1) { var hd = pts[pts.length - 1]; glow(hd[0], hd[1], 26, 0.9 * (1 - fl)); }
+            // landing tick of light where the line meets the card
+            var tk = env(t, c.word + 0.24, 0.03, 0.13);
+            if (tk > 0.01 && foldGone < 1) {
+              var a3 = N2S(c.p3[0], c.p3[1]);
+              glow(a3[0], a3[1], 30 + 20 * tk, 0.9 * tk);
+              ctx.globalAlpha = 0.85 * tk; ctx.strokeStyle = "rgb(255,246,222)"; ctx.lineWidth = 1.6;
+              var L = 34 * tk + 8;
+              ctx.beginPath(); ctx.moveTo(a3[0] - L, a3[1]); ctx.lineTo(a3[0] + L, a3[1]);
+              ctx.moveTo(a3[0], a3[1] - L * 0.6); ctx.lineTo(a3[0], a3[1] + L * 0.6); ctx.stroke();
+            }
+            // the lift: a pulse of light races out along every line
+            var pp = seg(t, Q.LIFT, Q.LIFT_ARRIVE);
+            if (pp > 0 && pp < 1 && t < Q.FOLD) {
+              var uu = EZ.p2i(pp);
+              for (var q = 0; q < 7; q++) {
+                var uq = uu - q * 0.035;
+                if (uq < 0) break;
+                var pq = polyAt(c.pts, uq), sq = N2S(pq[0], pq[1]);
+                glow(sq[0], sq[1], 24 - q * 2.4, (0.95 - q * 0.13) * (1 - sstep(0.85, 1, pp) * 0.4));
+              }
+            }
+            var arr = env(t, Q.LIFT_ARRIVE, 0.02, 0.18) * (1 - foldGone);
+            if (arr > 0.01) { var a4 = N2S(c.p3[0], c.p3[1]); glow(a4[0], a4[1], 40, 0.85 * arr); }
+            ctx.globalCompositeOperation = "source-over";
+          });
+          ctx.shadowBlur = 0;
+
+          // ports: five sockets light up around the hub on "across"
+          ctx.globalCompositeOperation = "lighter";
+          CARDS.forEach(function (c, k) {
+            var tp = Q.PORTS + 0.05 * k;
+            if (t < tp) return;
+            var pp2 = seg(t, tp, tp + 0.35);
+            var sP = N2S(c.p0[0], c.p0[1]);
+            var a5 = (1 - foldGone) * (t < c.word ? 1 : 1);
+            ctx.globalAlpha = a5; ctx.fillStyle = GOLD_HI;
+            ctx.beginPath(); ctx.arc(sP[0], sP[1], 3.4 * EZ.backOut(pp2, 2.4), 0, 6.2832); ctx.fill();
+            var pr2 = seg(t, tp, tp + 0.45);
+            if (pr2 > 0 && pr2 < 1) ring(sP[0], sP[1], lerp(4, 20, EZ.expoOut(pr2)), 1.3, 0.8 * (1 - pr2) * a5, GOLD_HI);
+            glow(sP[0], sP[1], 14 + 10 * env(t, tp, 0.03, 0.15), (0.5 + 0.5 * env(t, tp, 0.03, 0.15)) * a5);
+          });
+          ctx.globalCompositeOperation = "source-over";
+          ctx.globalAlpha = 1;
+        }
+
+        /* ---------- DOM state driven from t ---------- */
+        var stripT = document.getElementById("stripT"), stripO = document.getElementById("stripO");
+        (function () {
+          stripT.textContent = "\u00a0\n1\n2\n3";
+          var o = [];
+          for (var v = 0; v <= 30; v++) o.push(String(v % 10));
+          stripO.textContent = o.join("\n");
+        })();
+        var colT = document.getElementById("colT"), colO = document.getElementById("colO");
+        var vbTg = document.getElementById("vbTg"), vbOg = document.getElementById("vbOg");
+        var CELL = 300;
+        function countVal(t) { return 30 * EZ.p2o(seg(t, Q.LOCK, Q.LAND)); }
+        function tensPos(v) { var b = Math.floor(v / 10); return Math.min(3, b + sstep(9.0, 10.0, v - b * 10)); }
+        function updateCounter(t) {
+          var v = countVal(t), v1 = countVal(t - 1 / 30);
+          var tp = tensPos(v), tp1 = tensPos(v1);
+          stripO.style.transform = "translate3d(0," + (-v * CELL).toFixed(2) + "px,0)";
+          stripT.style.transform = "translate3d(0," + (-tp * CELL).toFixed(2) + "px,0)";
+          var bO = Math.min(22, Math.abs(v - v1) * CELL * 0.32), bT = Math.min(22, Math.abs(tp - tp1) * CELL * 0.32);
+          vbOg.setAttribute("stdDeviation", "0 " + bO.toFixed(2));
+          vbTg.setAttribute("stdDeviation", "0 " + bT.toFixed(2));
+          colO.style.filter = bO > 0.05 ? "url(#vbO)" : "none";
+          colT.style.filter = bT > 0.05 ? "url(#vbT)" : "none";
+        }
+        function updateCards(t) {
+          CARDS.forEach(function (c) {
+            if (t < c.word) { c.el.style.opacity = "0"; return; }
+            var u = cardFly(c, t);
+            var sc = lerp(0.12, 1, EZ.backOut(seg(t, c.word, c.word + 0.55), 1.9));
+            var op = EZ.p2o(seg(t, c.word, c.word + 0.09));
+            var bl = 10 * (1 - EZ.p3o(seg(t, c.word, c.word + 0.32)));
+            var rot = c.rot0 * (1 - EZ.expoOut(seg(t, c.word, c.word + 0.6)));
+            var a = polyAt(c.pts, u);
+            var x = a[0] + c.off[0] * sc, y = a[1] + c.off[1] * sc;
+            y += 3 * Math.sin((t - c.word) * 2.3 + c.ph) * sstep(c.word + 0.4, c.word + 1.0, t);
+            // the fold: cards fall into the sphere and dissolve
+            var f = seg(t, Q.FOLD, Q.FOLD + 0.24);
+            if (f > 0) {
+              var fe = EZ.p2i(f);
+              x = lerp(x, HUB.x, 0.18 * fe); y = lerp(y, HUB.y, 0.18 * fe);
+              sc *= lerp(1, 0.7, fe); op *= 1 - fe; bl += 7 * fe;
+            }
+            c.el.style.opacity = op.toFixed(3);
+            c.el.style.transform = "translate3d(" + (x - CW / 2).toFixed(2) + "px," + (y - CH / 2).toFixed(2) + "px,0) scale(" + sc.toFixed(4) + ") rotate(" + rot.toFixed(2) + "deg)";
+            c.el.style.filter = bl > 0.05 ? "blur(" + bl.toFixed(2) + "px)" : "none";
+          });
+        }
+        var netEl = document.getElementById("net");
+
+        var P = { t: 0 };
+        function render(t) {
+          camAt(t);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; ctx.filter = "none"; ctx.shadowBlur = 0;
+          ctx.clearRect(0, 0, W, H);
+          // warm light: the burst flash and a soft pool under the crowd
+          ctx.globalCompositeOperation = "lighter";
+          var pre = sstep(0.04, Q.BURST, t) * (1 - seg(t, Q.BURST, Q.BURST + 0.1));
+          var flash = env(t, Q.BURST, 0.025, 0.16);
+          radial(FC.x, FC.y, 190 + 90 * flash, [[0, "rgba(255,240,205,0.75)"], [0.28, "rgba(232,196,120,0.26)"], [1, "rgba(232,196,120,0)"]], 0.3 * pre + 0.62 * flash);
+          var pool = sstep(Q.BURST, 1.2, t) * (1 - sstep(Q.SWIRL, Q.CONDENSE, t));
+          radial(FC.x, FC.y + 10, 560, [[0, "rgba(232,196,120,0.16)"], [1, "rgba(232,196,120,0)"]], pool);
+          var sw0 = seg(t, Q.BURST, Q.BURST + 0.7);
+          if (sw0 > 0 && sw0 < 1) ring(FC.x, FC.y, lerp(30, 720, EZ.expoOut(sw0)), lerp(2.2, 0.6, sw0), 0.4 * (1 - sw0), GOLD_HI);
+          flare(FC.x, FC.y, 360 + 160 * seg(t, Q.BURST, Q.BURST + 0.4), 0.6 * env(t, Q.BURST, 0.02, 0.16));
+          flare(490, 790, 380 + 200 * seg(t, Q.LAND, Q.LAND + 0.5), 0.7 * env(t, Q.LAND, 0.02, 0.18));
+          ctx.globalCompositeOperation = "source-over";
+          // a navy halo behind the counter keeps the number crisp over the crowd
+          var halo = sstep(Q.LOCK, Q.LOCK + 0.3, t) * (1 - sstep(Q.SWIRL, Q.SWIRL + 0.2, t));
+          radial(510, 830, 470, [[0, "rgba(4,8,20,0.82)"], [0.55, "rgba(4,8,20,0.5)"], [1, "rgba(4,8,20,0)"]], halo);
+          drawDust(t);
+          drawAct1(t);
+          drawSlam(t);
+          drawNetwork(t);
+          drawSphere(t);
+          ctx.globalAlpha = 1;
+          updateCounter(t);
+          updateCards(t);
+          netEl.style.transform = "translate3d(0," + cam.y.toFixed(2) + "px,0) scale(" + cam.s.toFixed(5) + ")";
+        }
+
+        /* ---------- the timeline ---------- */
+        var tl = gsap.timeline({ paused: true });
+        // "tracking in" without animating letter-spacing: each glyph starts pushed out from the centre by
+        // `extra` px per character step and settles to its laid-out place (x transforms only)
+        function trackIn(sel, extra, at, dur) {
+          var el = document.querySelector(sel), txt = el.textContent;
+          el.textContent = "";
+          var spans = [];
+          for (var i = 0; i < txt.length; i++) {
+            var sp = document.createElement("span");
+            sp.style.display = "inline-block";
+            sp.style.whiteSpace = "pre";
+            sp.textContent = txt[i];
+            el.appendChild(sp); spans.push(sp);
+          }
+          var mid = (txt.length - 1) / 2;
+          tl.fromTo(spans, { x: function (i) { return (i - mid) * extra; } },
+            { x: 0, duration: dur, ease: "power3.out" }, at);
+        }
+        tl.to(P, { t: DUR, duration: DUR, ease: "none", onUpdate: function () { render(P.t); },
+          onReverseComplete: function () { render(0); } }, 0);
+
+        // Act 1: counter rises (15.46) and slams on "thirty" (16.34)
+        tl.fromTo("#cRise", { y: 96, opacity: 0, filter: "blur(10px)" },
+          { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.46, ease: "expo.out" }, Q.LOCK);
+        tl.fromTo("#cPunch", { scale: 1 }, { scale: 1.085, duration: 0.07, ease: "power2.out" }, Q.LAND);
+        tl.to("#cPunch", { scale: 1, duration: 0.45, ease: "power3.out", immediateRender: false }, Q.LAND + 0.07);
+        tl.fromTo("#plus", { scale: 2.6 }, { scale: 1, duration: 0.34, ease: "back.out(1.4)" }, Q.LAND);
+        tl.fromTo("#plus", { filter: "blur(14px)" }, { filter: "blur(0px)", duration: 0.24, ease: "expo.out" }, Q.LAND);
+        tl.to("#plus", { opacity: 1, duration: 0.05, ease: "none" }, Q.LAND);
+        tl.fromTo("#sheen30", { backgroundPosition: "88% 0%" }, { backgroundPosition: "12% 0%", duration: 0.46, ease: "power1.inOut" }, Q.SHEEN);
+        tl.fromTo("#cWrap", { scale: 1, rotation: 0, opacity: 1, filter: "blur(0px)" },
+          { scale: 0.3, rotation: -16, opacity: 0, filter: "blur(10px)", duration: 0.22, ease: "power2.in" }, Q.SWIRL - 0.1);
+
+        // IN-HOUSE SPECIALISTS (16.82) with a gold hairline (16.74)
+        tl.fromTo("#hair", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.5, ease: "expo.out" }, Q.HAIR);
+        tl.fromTo("#subText", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "expo.out" }, Q.SUB);
+        trackIn("#subText", 36 * 0.3, Q.SUB, 0.8);
+        // "specialists" (17.38): a glint runs along the hairline
+        tl.fromTo("#hairGlint", { x: 0, opacity: 0 }, { x: 420, duration: 0.5, ease: "power2.inOut" }, Q.RIPPLE);
+        tl.to("#hairGlint", { opacity: 1, duration: 0.1, ease: "none" }, Q.RIPPLE);
+        tl.to("#hairGlint", { opacity: 0, duration: 0.12, ease: "none", immediateRender: false }, Q.RIPPLE + 0.38);
+        tl.fromTo("#sub", { opacity: 1, y: 0 }, { opacity: 0, y: 14, duration: 0.18, ease: "power2.in" }, Q.SWIRL - 0.12);
+
+        // the TW mark condenses on "together" (18.74)
+        var markSvg = document.getElementById("markSvg");
+        var mFill = document.getElementById("mFill"), mHot = document.getElementById("mHot");
+        var mStroke = document.getElementById("mStroke"), mClip = document.getElementById("markClip");
+        ["t", "w", "diamond"].forEach(function (k) {
+          [mFill, mHot, mClip].forEach(function (g) {
+            var p = document.createElementNS(NS, "path"); p.setAttribute("d", TW_PATHS[k]); g.appendChild(p);
+          });
+          var ps = document.createElementNS(NS, "path"); ps.setAttribute("d", TW_PATHS[k]); mStroke.appendChild(ps);
+        });
+        var strokePaths = Array.prototype.slice.call(mStroke.querySelectorAll("path"));
+        strokePaths.forEach(function (p, k) {
+          var L = mLens[k] * 1.02;
+          p.style.strokeDasharray = L + " " + L;
+          p.style.strokeDashoffset = String(L);
+          tl.fromTo(p, { strokeDashoffset: L }, { strokeDashoffset: 0, duration: 0.24, ease: "power2.out" }, 4.34 + 0.03 * k);
+        });
+        tl.set("#hub", { opacity: 1 }, 4.33);
+        tl.fromTo(mHot, { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "power1.out" }, Q.CONDENSE - 0.02);
+        tl.to(mHot, { opacity: 0, duration: 0.45, ease: "power2.out", immediateRender: false }, Q.CONDENSE + 0.04);
+        tl.fromTo(mFill, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, Q.CONDENSE);
+        tl.fromTo(mStroke, { opacity: 1 }, { opacity: 0.3, duration: 0.5, ease: "power2.out" }, Q.CONDENSE + 0.2);
+        tl.fromTo(markSvg, { scale: 0.9, transformOrigin: "50% 50%" }, { scale: 1, duration: 0.6, ease: "back.out(2.2)" }, Q.CONDENSE);
+        // shine on "expertise" (19.22) and on the lift (24.50)
+        tl.fromTo("#mSheen", { attr: { x: -700 } }, { attr: { x: 1500 }, duration: 0.55, ease: "power2.inOut" }, Q.EXPERT);
+        tl.fromTo("#mSheen", { attr: { x: -700 } }, { attr: { x: 1500 }, duration: 0.5, ease: "power2.inOut", immediateRender: false }, Q.LIFT);
+        tl.to(mHot, { opacity: 0.45, duration: 0.06, ease: "power1.out", immediateRender: false }, Q.LIFT);
+        tl.to(mHot, { opacity: 0, duration: 0.45, ease: "power2.out", immediateRender: false }, Q.LIFT + 0.06);
+        // EXPERTISE ACROSS (19.22)
+        tl.fromTo("#hdrText", { yPercent: 115 }, { yPercent: 0, duration: 0.55, ease: "expo.out" }, Q.EXPERT);
+        trackIn("#hdrText", 27 * 0.32, Q.EXPERT, 0.85);
+
+        // the five services: icons draw in, a tick of light on landing, a flash when the lift pulse arrives
+        CARDS.forEach(function (c) {
+          var paths = Array.prototype.slice.call(c.el.querySelectorAll(".ico path, .ico circle"));
+          paths.forEach(function (p, k) {
+            var L = (p.getTotalLength ? p.getTotalLength() : 100) * 1.04;
+            p.style.strokeDasharray = L + " " + L;
+            p.style.strokeDashoffset = String(L);
+            tl.fromTo(p, { strokeDashoffset: L }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, c.word + 0.12 + 0.08 * k);
+          });
+          var fl = c.el.querySelector(".card-flash");
+          tl.fromTo(fl, { opacity: 0 }, { opacity: 1, duration: 0.05, ease: "power1.out" }, c.word + 0.22);
+          tl.to(fl, { opacity: 0, duration: Math.min(0.45, Q.LIFT_ARRIVE - (c.word + 0.27) - 0.01), ease: "power2.out", immediateRender: false }, c.word + 0.27);
+          tl.to(fl, { opacity: 0.9, duration: 0.05, ease: "power1.out", immediateRender: false }, Q.LIFT_ARRIVE);
+          tl.to(fl, { opacity: 0.25, duration: 0.2, ease: "power2.out", immediateRender: false }, Q.LIFT_ARRIVE + 0.05);
+        });
+
+        // ONE CONNECTED FINANCE FUNCTION (24.46 - 25.30)
+        tl.set("#tag", { opacity: 1 }, 10.16);
+        tl.fromTo("#tag .wi", { yPercent: 118 }, { yPercent: 0, duration: 0.5, ease: "expo.out", stagger: 0.035 }, 10.16);
+        tl.to("#tag", { opacity: 0, y: -8, duration: 0.07, ease: "power1.in", immediateRender: false }, 11.01);
+
+        // the fold (25.00): type and hub leave, the sphere takes over
+        tl.fromTo("#hdr", { opacity: 1 }, { opacity: 0, duration: 0.1, ease: "power1.in" }, Q.FOLD);
+        tl.fromTo("#hub", { scale: 1, filter: "blur(0px)" }, { scale: 0.5, filter: "blur(6px)", duration: 0.2, ease: "power2.in", immediateRender: false }, Q.FOLD);
+        tl.to("#hub", { opacity: 0, duration: 0.18, ease: "power2.in", immediateRender: false }, Q.FOLD + 0.02);
+
+        render(0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

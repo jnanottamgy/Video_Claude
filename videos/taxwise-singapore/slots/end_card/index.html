@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/taxwise-singapore/design: fonts, tokens, the TW mark -->
+    <link rel="stylesheet" href="./design/taxwise.css" />
+    <script src="./design/tw-mark.js"></script>
+    <style>
+      html, body { margin: 0; padding: 0; background: #050a17; }
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #050a17; }
+      .scene { position: absolute; inset: 0; overflow: hidden; }
+      .layer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      /* the ground: midnight navy, a faint royal pool around the mark, warm floor light */
+      #royalPool { background: radial-gradient(70% 38% at 50% 39%, rgba(var(--tw-royal-glow), 0.17) 0%, rgba(var(--tw-royal-glow), 0) 72%); opacity: 0; }
+      #ground {
+        background:
+          radial-gradient(90% 55% at 50% 112%, rgba(var(--tw-gold-glow), 0.09) 0%, rgba(var(--tw-gold-glow), 0) 70%),
+          linear-gradient(180deg, var(--tw-navy-900) 0%, var(--tw-navy-950) 58%, var(--tw-ink) 100%);
+      }
+      #pool { background: radial-gradient(34% 22% at 50% 40%, rgba(var(--tw-gold-glow), 0.16) 0%, rgba(var(--tw-gold-glow), 0) 100%); opacity: 0; }
+      #bloom { pointer-events: none; mix-blend-mode: screen; }
+      #cam { transform-origin: 540px 960px; }
+      #mk { position: absolute; left: 0; top: 0; overflow: visible; }
+
+      /* wordmark */
+      .row { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: flex-start; white-space: nowrap; }
+      #tx { top: 1023px; font-family: var(--tw-sans); font-weight: 700; font-size: 84px; line-height: 1; letter-spacing: 0.12em; padding-left: 0.12em;
+            color: var(--tw-ivory); }
+      #tx .m { display: inline-block; overflow: hidden; height: 84px; }
+      #tx .l { display: inline-block; }
+      #txWrap { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45)); }
+      #cs .c { display: inline-block; }
+      #cs { top: 1117px; font-family: var(--tw-sans); font-weight: 500; font-size: 30px; line-height: 1; letter-spacing: 0.42em; padding-left: 0.42em; }
+
+      /* gold hairline + its travelling flares */
+      #rule { position: absolute; left: 230px; top: 1195px; width: 620px; height: 2px; transform-origin: 310px 1px; }
+      .flare { position: absolute; top: 1180px; left: 524px; width: 32px; height: 32px; border-radius: 50%;
+               background: radial-gradient(circle, rgba(255, 248, 226, 1) 0%, rgba(243, 226, 174, 0.75) 22%, rgba(232, 196, 120, 0) 70%); opacity: 0; }
+
+      /* offices */
+      #cities { top: 1221px; font-family: var(--tw-sans); font-weight: 600; font-size: 30px; line-height: 1; letter-spacing: 0.18em; color: var(--tw-ivory); align-items: center; }
+      .city { display: inline-flex; align-items: center; margin-right: -0.18em; }
+      .sep { display: inline-block; width: 2px; height: 26px; margin: 0 30px; transform-origin: 50% 50%;
+             background: linear-gradient(180deg, rgba(212, 178, 106, 0) 0%, var(--tw-gold) 30%, var(--tw-gold-hi) 50%, var(--tw-gold) 70%, rgba(212, 178, 106, 0) 100%); }
+      #pin { display: inline-block; width: 21px; height: 28px; margin-right: 12px; margin-top: -4px; transform-origin: 50% 100%; overflow: visible; }
+
+      /* tagline */
+      #tag { top: 1295px; font-family: var(--tw-serif); font-style: italic; font-weight: 500; font-size: 48px; line-height: 1; color: var(--tw-ivory-dim); }
+      #tag .w { display: inline-block; margin: 0 0.12em; }
+
+      /* url */
+      #url { top: 1399px; }
+      #urlBox { position: relative; display: inline-block; }
+      #urlT { display: block; font-family: var(--tw-sans); font-weight: 600; font-size: 34px; line-height: 1; letter-spacing: 0.2em; padding-left: 0.2em; color: var(--tw-ivory); }
+      #urlTrack { position: absolute; left: 0; top: -8px; width: 100%; height: 50px; }
+      #urlBar { position: absolute; left: -2px; top: 0; width: 3px; height: 50px; border-radius: 2px; opacity: 0;
+                background: linear-gradient(180deg, rgba(255, 246, 220, 0) 0%, #fff6dc 50%, rgba(255, 246, 220, 0) 100%);
+                box-shadow: 0 0 14px 4px rgba(var(--tw-gold-glow), 0.55); }
+
+      /* lens flare streak + glint (on the diamond) */
+      #streak { position: absolute; left: 0; top: 904px; width: 1080px; height: 40px; opacity: 0; transform-origin: 540px 20px; pointer-events: none; }
+      #streak i { position: absolute; left: 0; width: 1080px; }
+      #streak .core { top: 19px; height: 2px; filter: blur(0.6px); background: linear-gradient(90deg, rgba(255, 238, 205, 0) 14%, rgba(255, 244, 222, 0.22) 32%, rgba(255, 246, 228, 0.75) 50%, rgba(255, 244, 222, 0.22) 68%, rgba(255, 238, 205, 0) 86%); }
+      #streak .haze { top: 4px; height: 32px; filter: blur(10px); background: linear-gradient(90deg, rgba(232, 196, 120, 0) 22%, rgba(232, 196, 120, 0.3) 50%, rgba(232, 196, 120, 0) 78%); }
+      #glint { position: absolute; left: 497px; top: 846px; width: 90px; height: 90px; opacity: 0; transform-origin: 45px 45px; overflow: visible; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="3.7333" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="3.7333" data-track-index="0">
+        <div id="ground" class="layer"></div>
+        <div id="royalPool" class="layer"></div>
+        <div id="pool" class="layer"></div>
+        <canvas id="dustBack" class="layer" width="1080" height="1920" style="pointer-events: none"></canvas>
+        <div id="bloom" class="layer"></div>
+        <div id="cam" class="layer">
+          <svg id="mk" width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div id="txWrap"><div id="tx" class="row"></div></div>
+          <div id="cs" class="row"></div>
+          <div id="rule" class="tw-hairline"></div>
+          <div id="flL" class="flare"></div>
+          <div id="flR" class="flare"></div>
+          <div id="cities" class="row">
+            <span class="city" data-layout-allow-occlusion>BANGALORE</span><i class="sep"></i><span class="city" data-layout-allow-occlusion>CHENNAI</span><i class="sep"></i>
+            <span class="city"><svg id="pin" viewBox="0 0 21 28" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="pinG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbefc8" /><stop offset="0.45" stop-color="#e8cb86" /><stop offset="1" stop-color="#9c7a35" /></linearGradient></defs>
+                <path fill="url(#pinG)" fill-rule="evenodd" d="M10.5 0C4.7 0 0 4.6 0 10.3C0 17.6 10.5 28 10.5 28S21 17.6 21 10.3C21 4.6 16.3 0 10.5 0ZM10.5 14.3A4 4 0 1 1 10.5 6.3A4 4 0 1 1 10.5 14.3Z" />
+              </svg><span class="tw-gold-text" data-layout-allow-occlusion>SINGAPORE</span></span>
+          </div>
+          <div id="tag" class="row"><span class="w" data-layout-allow-occlusion>This</span><span class="w" data-layout-allow-occlusion>is</span><span class="w" data-layout-allow-occlusion>just</span><span class="w" data-layout-allow-occlusion>the</span><span class="w" data-layout-allow-occlusion>beginning.</span></div>
+          <div id="url" class="row"><span id="urlBox"><span id="urlT" data-layout-allow-occlusion>TWCHARTERED.COM</span><span id="urlTrack"><i id="urlBar"></i></span></span></div>
+          <svg id="glint" viewBox="-45 -45 90 90" xmlns="http://www.w3.org/2000/svg">
+            <defs><radialGradient id="glG"><stop offset="0" stop-color="#ffffff" /><stop offset="0.35" stop-color="#fff3d2" /><stop offset="1" stop-color="#f3e2ae" stop-opacity="0" /></radialGradient></defs>
+            <circle r="16" fill="url(#glG)" opacity="0.9" />
+            <path d="M0,-45 L4.2,-4.2 L45,0 L4.2,4.2 L0,45 L-4.2,4.2 L-45,0 L-4.2,-4.2 Z" fill="#fffaf0" />
+            <path d="M0,-20 L2,-2 L20,0 L2,2 L0,20 L-2,2 L-20,0 L-2,-2 Z" fill="#fffaf0" transform="rotate(45)" />
+          </svg>
+        </div>
+        <div id="streak" data-layout-allow-occlusion><i class="haze"></i><i class="core"></i></div>
+        <canvas id="dustFront" class="layer" width="1080" height="1920" style="pointer-events: none" data-layout-ignore></canvas>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var DUR = 3.7333;
+        var SVGNS = "http://www.w3.org/2000/svg";
+
+        // ---------- helpers (deterministic) ----------
+        function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; var t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+        function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+        function lerp(a, b, p) { return a + (b - a) * p; }
+        var ease = {
+          p4o: gsap.parseEase("power4.out"), p3o: gsap.parseEase("power3.out"), p2o: gsap.parseEase("power2.out"),
+          p2io: gsap.parseEase("power2.inOut"), p2i: gsap.parseEase("power2.in"), back: gsap.parseEase("back.out(2.4)"),
+          expo: gsap.parseEase("expo.out"), sine: gsap.parseEase("sine.inOut")
+        };
+        function seg(t, t0, d, e) { var p = clamp((t - t0) / d, 0, 1); return e ? e(p) : p; }
+        function bump(t, t0, up, down) { if (t <= t0) return 0; if (t < t0 + up) return ease.p2o((t - t0) / up); return 1 - ease.p2io(clamp((t - t0 - up) / down, 0, 1)); }
+        function el(tag, attrs, parent) { var n = document.createElementNS(SVGNS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+
+        // ---------- the TW mark, built in frame coordinates (never stretched: one uniform scale K) ----------
+        var K = 0.42, MX = 540 - 500 * K, MY = 740 - 1114.1 * K / 2;   // 420 px wide, centred on (540, 740)
+        function place(d) { return d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, function (m, x, y) { return (MX + K * parseFloat(x)).toFixed(2) + "," + (MY + K * parseFloat(y)).toFixed(2); }); }
+        var dT = place(TW_PATHS.t), dW = place(TW_PATHS.w), dD = place(TW_PATHS.diamond);
+        var DCX = MX + 500 * K, DCY = MY + 995 * K;                     // diamond centre
+        var BX0 = MX - 40, BY0 = MY - 40, BW = 1000 * K + 80, BH = 1114.1 * K + 80;
+
+        var svg = document.getElementById("mk");
+        var defs = el("defs", {}, svg);
+        // champagne-gold metal: a FIXED light field the parts move through (the highlight slides over them as they arrive)
+        var METAL = [[0, "#9d7835"], [0.12, "#d6b066"], [0.24, "#f4e0a4"], [0.31, "#fff6da"], [0.39, "#efd18b"], [0.53, "#c99e55"],
+                     [0.64, "#98712f"], [0.74, "#b98f47"], [0.86, "#e6c983"], [1, "#f7e4ac"]];
+        function metalGrad(id) {
+          var g = el("linearGradient", { id: id, gradientUnits: "userSpaceOnUse", x1: MX - 30, y1: MY - 10, x2: MX + 1000 * K + 40, y2: MY + 1114.1 * K + 30 }, defs);
+          METAL.forEach(function (s) { el("stop", { offset: s[0], "stop-color": s[1] }, g); });
+          return g;
+        }
+        var gT = metalGrad("gmT"), gW = metalGrad("gmW"), gD = metalGrad("gmD");
+        // vertical motion blur for the arriving parts
+        function blurFilter(id) { var f = el("filter", { id: id, x: "-20%", y: "-70%", width: "140%", height: "240%" }, defs); return el("feGaussianBlur", { stdDeviation: "0 0" }, f); }
+        var fbT = blurFilter("fbT"), fbW = blurFilter("fbW");
+        // polished bevel: a specular light from the upper left catches the chamfered edges
+        var bev = el("filter", { id: "bev", filterUnits: "userSpaceOnUse", x: BX0 - 20, y: 0, width: BW + 40, height: 1500, "color-interpolation-filters": "sRGB" }, defs);
+        el("feGaussianBlur", { in: "SourceAlpha", stdDeviation: "2.4", result: "b" }, bev);
+        var spec = el("feSpecularLighting", { in: "b", surfaceScale: "3", specularConstant: "1.05", specularExponent: "20", "lighting-color": "#fff3d4", result: "s" }, bev);
+        el("feDistantLight", { azimuth: "235", elevation: "40" }, spec);
+        el("feComposite", { in: "s", in2: "SourceAlpha", operator: "in", result: "si" }, bev);
+        el("feComposite", { in: "SourceGraphic", in2: "si", operator: "arithmetic", k1: "0", k2: "1", k3: "0.75", k4: "0" }, bev);
+        // soft royal-blue rim light behind the mark (the brand's blue, once)
+        var fg = el("filter", { id: "rimBlur", filterUnits: "userSpaceOnUse", x: BX0 - 160, y: BY0 - 160, width: BW + 320, height: BH + 320 }, defs);
+        el("feGaussianBlur", { stdDeviation: "30" }, fg);
+        var fg2 = el("filter", { id: "warmBlur", filterUnits: "userSpaceOnUse", x: BX0 - 160, y: BY0 - 160, width: BW + 320, height: BH + 320 }, defs);
+        el("feGaussianBlur", { stdDeviation: "14" }, fg2);
+        var clip = el("clipPath", { id: "clipAll" }, defs);
+        [dT, dW, dD].forEach(function (d) { el("path", { d: d }, clip); });
+        // the shine: a soft diagonal band
+        var sh = el("linearGradient", { id: "gSheen", gradientUnits: "userSpaceOnUse", x1: 0, y1: 0, x2: 280, y2: 0, gradientTransform: "rotate(22 540 740)" }, defs);
+        [[0, "rgba(255,250,236,0)"], [0.28, "rgba(255,248,228,0.1)"], [0.44, "rgba(255,250,236,0.62)"], [0.5, "rgba(255,253,246,0.98)"], [0.56, "rgba(255,250,236,0.62)"], [0.72, "rgba(255,248,228,0.1)"], [1, "rgba(255,250,236,0)"]]
+          .forEach(function (s) { el("stop", { offset: s[0], "stop-color": s[1] }, sh); });
+
+        var rim = el("g", { opacity: 0, filter: "url(#rimBlur)" }, svg);
+        [dT, dW, dD].forEach(function (d) { el("path", { d: d, fill: "#3a4fd6", stroke: "#3a4fd6", "stroke-width": 26, "stroke-linejoin": "round" }, rim); });
+        var warm = el("g", { opacity: 0, filter: "url(#warmBlur)" }, svg);
+        [dT, dW, dD].forEach(function (d) { el("path", { d: d, fill: "#e8c478" }, warm); });
+        var body = el("g", { filter: "url(#bev)" }, svg);
+        var pT = el("g", { opacity: 0 }, body), pTb = el("g", {}, pT); el("path", { d: dT, fill: "url(#gmT)" }, pTb);
+        var pW = el("g", { opacity: 0 }, body), pWb = el("g", {}, pW); el("path", { d: dW, fill: "url(#gmW)" }, pWb);
+        var pD = el("g", { opacity: 0 }, body); el("path", { d: dD, fill: "url(#gmD)" }, pD);
+        var flashes = [el("path", { d: dT, fill: "#fff4da", opacity: 0 }, pTb), el("path", { d: dW, fill: "#fff4da", opacity: 0 }, pWb), el("path", { d: dD, fill: "#fff4da", opacity: 0 }, pD)];
+        var fx = el("g", { "clip-path": "url(#clipAll)" }, svg);
+        var sheen = el("rect", { x: BX0, y: BY0, width: BW, height: BH, fill: "url(#gSheen)", opacity: 0, style: "mix-blend-mode: screen" }, fx);
+
+        // ---------- wordmark letters ----------
+        var tx = document.getElementById("tx");
+        "TAXWISE".split("").forEach(function (c) { var m = document.createElement("span"); m.className = "m"; var l = document.createElement("span"); l.className = "l"; l.textContent = c; l.setAttribute("data-layout-allow-occlusion", ""); m.appendChild(l); tx.appendChild(m); });
+
+        var cs = document.getElementById("cs");
+        "CONSULTANTS".split("").forEach(function (c) { var l = document.createElement("span"); l.className = "c tw-gold-text"; l.textContent = c; l.setAttribute("data-layout-allow-occlusion", ""); cs.appendChild(l); });
+
+        // ---------- gold dust (seeded, a pure function of time) ----------
+        function sprite(r, core) {
+          var c = document.createElement("canvas"); c.width = c.height = r * 2; var g = c.getContext("2d");
+          var gr = g.createRadialGradient(r, r, 0, r, r, r);
+          gr.addColorStop(0, "rgba(255,246,222,1)"); gr.addColorStop(core, "rgba(243,222,170,0.85)"); gr.addColorStop(1, "rgba(232,196,120,0)");
+          g.fillStyle = gr; g.fillRect(0, 0, r * 2, r * 2); return c;
+        }
+        var sprSharp = sprite(16, 0.22), sprSoft = sprite(64, 0.05);
+        var R = mulberry32(48250);
+        var motes = [], bokeh = [];
+        for (var i = 0; i < 78; i++) {
+          var z = R();
+          motes.push({ x: R() * 1080, y: R() * 1920, z: z, r: 0.7 + 2.1 * Math.pow(z, 1.6), vy: -(5 + 20 * z), vx: (R() - 0.5) * 9,
+                       amp: 3 + 7 * R(), fr: 0.25 + 0.5 * R(), ph: R() * 6.283, tw: 0.9 + 1.8 * R(), a: 0.16 + 0.5 * z });
+        }
+        for (var j = 0; j < 7; j++) {
+          bokeh.push({ x: 80 + R() * 920, y: 260 + R() * 1400, r: 16 + R() * 24, vy: -(10 + R() * 14), vx: (R() - 0.5) * 12, a: 0.04 + R() * 0.05, ph: R() * 6.283 });
+        }
+        var cb = document.getElementById("dustBack").getContext("2d"), cf = document.getElementById("dustFront").getContext("2d");
+        function drawDust(t) {
+          var vis = seg(t, 0.15, 0.7, ease.p2o);
+          var kick = t > 0.75 ? (1 - Math.exp(-(t - 0.75) * 7)) : 0;      // the diamond's landing nudges the dust outward
+          var zb = 1 + 0.012 * t / DUR;                                   // slower parallax than the 3% push
+          cb.clearRect(0, 0, 1080, 1920); cb.globalCompositeOperation = "lighter";
+          for (var i = 0; i < motes.length; i++) {
+            var p = motes[i];
+            var x = p.x + p.vx * t + p.amp * Math.sin(p.fr * t * 6.283 + p.ph);
+            var y = p.y + p.vy * t;
+            var dx = x - 540, dy = y - 780, d = Math.sqrt(dx * dx + dy * dy) + 1e-3;
+            var push = 30 * Math.max(0, 1 - d / 560) * kick;
+            x += dx / d * push; y += dy / d * push;
+            x = 540 + (x - 540) * zb; y = 960 + (y - 960) * zb;
+            var a = p.a * vis * (0.62 + 0.38 * Math.sin(p.tw * t * 6.283 + p.ph * 1.7));
+            if (a <= 0.003) continue;
+            var s = p.r * 3.2;
+            cb.globalAlpha = a; cb.drawImage(sprSharp, x - s, y - s, s * 2, s * 2);
+          }
+          cf.clearRect(0, 0, 1080, 1920); cf.globalCompositeOperation = "lighter";
+          var vf = seg(t, 0.5, 0.9, ease.p2o), zf = 1 + 0.06 * t / DUR;
+          for (var k = 0; k < bokeh.length; k++) {
+            var b = bokeh[k];
+            var bx = 540 + (b.x + b.vx * t - 540) * zf, by = 960 + (b.y + b.vy * t - 960) * zf;
+            cf.globalAlpha = b.a * vf * (0.8 + 0.2 * Math.sin(1.3 * t + b.ph));
+            cf.drawImage(sprSoft, bx - b.r, by - b.r, b.r * 2, b.r * 2);
+          }
+        }
+
+        // ---------- the opening light: the previous shot's gold bloom resolves into the navy ground ----------
+        var bloomEl = document.getElementById("bloom"), poolEl = document.getElementById("pool"), royalEl = document.getElementById("royalPool");
+        function drawBloom(t) {
+          if (t >= 0.5) { bloomEl.style.opacity = "0"; return; }
+          var ac = 1 - seg(t, 0.04, 0.44, ease.p2io);      // the centre lets go last
+          var ae = 1 - seg(t, 0.0, 0.3, ease.p2io);        // the edges fall to navy first
+          var am = (ac + ae) / 2;
+          var Rr = lerp(1500, 900, seg(t, 0, 0.45, ease.p2o));
+          bloomEl.style.opacity = "1";
+          // screen-blended warm light: as it fades it stays a warm glow on navy instead of a grey veil
+          // and, like real light, it warms toward amber as it dims
+          function warmCol(hot, cool, k) { return Math.round(lerp(cool[0], hot[0], k)) + "," + Math.round(lerp(cool[1], hot[1], k)) + "," + Math.round(lerp(cool[2], hot[2], k)); }
+          var kc = Math.pow(ac, 0.9), km = Math.pow(am, 0.9);
+          bloomEl.style.background = "radial-gradient(circle at 540px 740px, rgba(" + warmCol([255, 248, 228], [236, 176, 92], kc) + "," + ac.toFixed(3) + ") 0px, rgba(" +
+            warmCol([252, 228, 174], [226, 160, 76], kc) + "," + (ac * 0.95).toFixed(3) + ") " + (Rr * 0.18).toFixed(1) + "px, rgba(" +
+            warmCol([238, 194, 112], [206, 136, 56], km) + "," + (am * 0.92).toFixed(3) + ") " + (Rr * 0.5).toFixed(1) + "px, rgba(212,158,74," + (ae * 0.94).toFixed(3) +
+            ") " + (Rr * 0.85).toFixed(1) + "px, rgba(194,140,62," + (ae * 0.92).toFixed(3) + ") " + (Rr * 1.4).toFixed(1) + "px)";
+        }
+
+        // ---------- the mark: assembly, lock, shine ----------
+        var T0 = 0.25, W0 = 0.27, MOVE = 0.7, DROP = 440;
+        function yT(t) { return -DROP * (1 - seg(t, T0, MOVE, ease.p4o)); }
+        function yW(t) { return DROP * (1 - seg(t, W0, MOVE, ease.p4o)); }
+        function setBlur(node, group, v) {
+          if (v < 0.25) { group.removeAttribute("filter"); }
+          else { node.setAttribute("stdDeviation", "0 " + v.toFixed(2)); group.setAttribute("filter", "url(#" + node.parentNode.id + ")"); }
+        }
+        var LOCK = 0.75;   // 49.00: the diamond lands
+        function drawMark(t) {
+          var ty = yT(t), wy = yW(t);
+          pT.setAttribute("transform", "translate(0 " + ty.toFixed(2) + ")");
+          pW.setAttribute("transform", "translate(0 " + wy.toFixed(2) + ")");
+          pT.setAttribute("opacity", seg(t, T0, 0.06).toFixed(3));
+          pW.setAttribute("opacity", seg(t, W0, 0.06).toFixed(3));
+          // the light field turns a few degrees through the hold: the metal shimmers as the camera pushes in
+          var rot = "rotate(" + (-3 + 7 * seg(t, 0.6, DUR - 0.6, ease.sine)).toFixed(3) + " 540 740)";
+          gT.setAttribute("gradientTransform", "translate(0 " + (-ty).toFixed(2) + ") " + rot);
+          gW.setAttribute("gradientTransform", "translate(0 " + (-wy).toFixed(2) + ") " + rot);
+          gD.setAttribute("gradientTransform", rot);
+          setBlur(fbT, pTb, Math.min(16, Math.abs(ty - yT(t - 1 / 30)) * 0.34));
+          setBlur(fbW, pWb, Math.min(16, Math.abs(wy - yW(t - 1 / 30)) * 0.34));
+          // the diamond pops last, landing on the downbeat
+          var ds = seg(t, LOCK - 0.13, 0.36, ease.back);
+          var dy = -26 * (1 - seg(t, LOCK - 0.13, 0.2, ease.p3o));
+          pD.setAttribute("opacity", seg(t, LOCK - 0.13, 0.05).toFixed(3));
+          pD.setAttribute("transform", "translate(" + DCX.toFixed(2) + " " + (DCY + dy).toFixed(2) + ") scale(" + Math.max(0.001, ds).toFixed(4) + ") translate(" + (-DCX).toFixed(2) + " " + (-DCY).toFixed(2) + ")");
+          // lock: a breath of light through the metal, the blue rim and a warm halo bloom in behind
+          var fl = (0.38 * bump(t, LOCK - 0.02, 0.06, 0.36)).toFixed(3);
+          flashes[0].setAttribute("opacity", fl); flashes[1].setAttribute("opacity", fl); flashes[2].setAttribute("opacity", fl);
+          rim.setAttribute("opacity", (0.6 * seg(t, LOCK - 0.05, 0.8, ease.p2o)).toFixed(3));
+          warm.setAttribute("opacity", (0.22 * seg(t, LOCK - 0.05, 0.6, ease.p2o) + 0.3 * bump(t, LOCK - 0.02, 0.08, 0.5)).toFixed(3));
+          poolEl.style.opacity = (seg(t, 0.3, 0.8, ease.p2o)).toFixed(3);
+          royalEl.style.opacity = (seg(t, 0.35, 0.6, ease.p2io)).toFixed(3);   // the blue pool only once the gold light has gone
+          // the shine sweeps across the mark (49.30)
+          var sp = seg(t, 1.05, 0.75, ease.p2io);
+          sheen.setAttribute("opacity", sp > 0 && sp < 1 ? "1" : "0");
+          var sx = lerp(MX - 330, MX + 1000 * K + 80, sp);
+          sheen.setAttribute("x", BX0); // static rect; move the gradient
+          document.getElementById("gSheen").setAttribute("gradientTransform", "rotate(22 540 740) translate(" + sx.toFixed(1) + " 0)");
+        }
+
+        function renderAll(t) { drawBloom(t); drawMark(t); drawDust(t); }
+
+        // ---------- the timeline ----------
+        var tl = gsap.timeline({ paused: true });
+        var drv = { t: 0 };
+        tl.to(drv, { t: DUR, duration: DUR, ease: "none", onUpdate: function () { renderAll(drv.t); } }, 0);
+        // slow push-in through the whole card
+        tl.fromTo("#cam", { scale: 1 }, { scale: 1.03, duration: DUR, ease: "none" }, 0);
+        // lens streak + glint on the diamond's landing (49.00)
+        tl.fromTo("#streak", { opacity: 0, scaleX: 0.15 }, { opacity: 1, scaleX: 1, duration: 0.16, ease: "power2.out" }, LOCK - 0.02);
+        tl.to("#streak", { opacity: 0, scaleX: 1.2, duration: 0.22, ease: "power2.in" }, LOCK + 0.14);
+        tl.fromTo("#glint", { opacity: 0, scale: 0.1, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.14, ease: "power2.out" }, LOCK + 0.02);
+        tl.to("#glint", { opacity: 0, scale: 0.2, rotation: 40, duration: 0.3, ease: "power2.in" }, LOCK + 0.16);
+        // TAXWISE rises out of its mask, letter by letter (49.03-49.55)
+        tl.fromTo("#tx .l", { yPercent: 108, filter: "blur(6px)" }, { yPercent: 0, filter: "blur(0px)", duration: 0.62, ease: "power4.out", stagger: 0.045 }, 0.78);
+        // CONSULTANTS tracks in (49.25-49.60)
+        tl.fromTo("#cs", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.5, ease: "power2.out" }, 1.0);
+        tl.fromTo("#cs .c", { x: function (i) { return (i - 5) * 15; } }, { x: 0, duration: 0.75, ease: "power3.out" }, 1.0);
+        // 49.80: the gold hairline draws out from the centre
+        tl.fromTo("#rule", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, 1.55);
+        tl.fromTo("#flL", { x: 0, opacity: 0 }, { x: -306, opacity: 1, duration: 0.6, ease: "expo.out" }, 1.55);
+        tl.fromTo("#flR", { x: 0, opacity: 0 }, { x: 306, opacity: 1, duration: 0.6, ease: "expo.out" }, 1.55);
+        tl.to(["#flL", "#flR"], { opacity: 0, duration: 0.4, ease: "power2.in" }, 1.9);
+        // 50.00: BANGALORE | CHENNAI | SINGAPORE
+        tl.fromTo("#cities .city", { y: 16, opacity: 0, filter: "blur(6px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.5, ease: "power3.out", stagger: 0.09 }, 1.75);
+        tl.fromTo("#cities .sep", { scaleY: 0 }, { scaleY: 1, duration: 0.35, ease: "power3.out", stagger: 0.09 }, 1.8);
+        tl.fromTo("#pin", { scale: 0, y: -12 }, { scale: 1, y: 0, duration: 0.5, ease: "back.out(3)" }, 1.93);
+        // 50.20: This is just the beginning.
+        tl.fromTo("#tag .w", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out", stagger: 0.067 }, 1.95);
+        // 50.50: TWCHARTERED.COM wipes in behind a glowing edge
+        tl.fromTo("#urlT", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.5, ease: "power3.out" }, 2.25);
+        tl.fromTo("#urlTrack", { xPercent: 0 }, { xPercent: 100, duration: 0.5, ease: "power3.out" }, 2.25);
+        tl.fromTo("#urlBar", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "none" }, 2.25);
+        tl.to("#urlBar", { opacity: 0, duration: 0.3, ease: "power2.in" }, 2.55);
+
+        renderAll(0);
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

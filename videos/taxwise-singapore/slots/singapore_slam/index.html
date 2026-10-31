@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/taxwise-singapore/design: fonts, tokens, the TW mark -->
+    <link rel="stylesheet" href="./design/taxwise.css" />
+    <script src="./design/tw-mark.js"></script>
+    <style>
+      html, body { margin: 0; padding: 0; background: #050a17; }
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #050a17; }
+      .scene { position: absolute; inset: 0; overflow: hidden; }
+      .layer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      #ground {
+        background:
+          radial-gradient(70% 34% at 50% 48.6%, rgba(var(--tw-royal-glow), 0.09) 0%, rgba(var(--tw-royal-glow), 0) 70%),
+          radial-gradient(90% 60% at 50% 110%, rgba(var(--tw-gold-glow), 0.1) 0%, rgba(var(--tw-gold-glow), 0) 70%),
+          linear-gradient(180deg, var(--tw-navy-900) 0%, var(--tw-navy-950) 55%, var(--tw-ink) 100%);
+      }
+      /* a pool of shadow right behind the word so the gold reads against the light burst */
+      #plate { background: radial-gradient(56% 9% at 50% 48.6%, rgba(3, 6, 13, 0.72) 0%, rgba(3, 6, 13, 0.45) 55%, rgba(3, 6, 13, 0) 100%); opacity: 0; }
+      #content { transform-origin: 540px 933px; }
+      #mk { position: absolute; left: 0; top: 0; overflow: visible; }
+
+      .row { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: center; white-space: nowrap; }
+
+      /* NOW IN */
+      #nowRow { top: 796px; height: 44px; }
+      #nowin { font-family: var(--tw-sans); font-weight: 700; font-size: 44px; line-height: 1; letter-spacing: 0.5em; padding-left: 0.5em; color: var(--tw-ivory);
+               transform-origin: 50% 50%; }
+      .nl { display: block; width: 96px; height: 2px; }
+      #nlL { margin-right: 26px; transform-origin: 100% 50%; background: linear-gradient(90deg, rgba(212, 178, 106, 0) 0%, var(--tw-gold) 60%, var(--tw-gold-hi) 100%); }
+      #nlR { margin-left: 26px; transform-origin: 0% 50%; background: linear-gradient(90deg, var(--tw-gold-hi) 0%, var(--tw-gold) 40%, rgba(212, 178, 106, 0) 100%); }
+
+      /* SINGAPORE: per-letter gold metal (a chrome-gold horizon), sheen layer on top driven per letter */
+      #word { top: 856px; height: 150px; font-family: var(--tw-sans); font-weight: 900; font-size: 150px; line-height: 1; letter-spacing: -0.01em;
+              font-kerning: none; font-feature-settings: "kern" 0, "liga" 0; }
+      .Lw { display: block; position: relative; transform-origin: 50% 55%; will-change: transform, filter; }
+      .L { display: block; color: transparent; -webkit-background-clip: text; background-clip: text;
+           background-image:
+             linear-gradient(104deg, rgba(255, 250, 236, 0) 0%, rgba(255, 250, 236, 0) 41%, rgba(255, 252, 244, 0.96) 50%, rgba(255, 250, 236, 0) 59%, rgba(255, 250, 236, 0) 100%),
+             linear-gradient(180deg, #fff2cc 0%, #fff6de 15%, #f6dea0 29%, #ddb96f 44%, #b98d45 50.5%, #8c652a 53.5%, #a97f3c 58%, #d8b46c 70%, #f6e2a8 84%, #fff1c6 100%);
+           background-size: 520px 150px, 100% 100%; background-repeat: no-repeat; background-position: -2000px 0, 0 0;
+           filter: drop-shadow(0 3px 0 rgba(84, 56, 16, 0.75)); }
+      #wordShade { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.5)); }
+
+      /* the pin and its pulse rings */
+      #pinWrap { position: absolute; left: 509px; top: 1036px; width: 62px; height: 84px; transform-origin: 31px 84px; }
+      #pin { display: block; width: 62px; height: 84px; overflow: visible; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.55)); }
+      #rings { position: absolute; left: 0; top: 0; overflow: visible; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="1.72" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="1.72" data-track-index="0">
+        <div id="ground" class="layer"></div>
+        <div id="handoff" class="tw-ground" style="opacity: 0"></div>
+        <canvas id="fx" class="layer" width="1080" height="1920" style="pointer-events: none" data-layout-allow-overflow></canvas>
+        <div id="plate" class="layer"></div>
+        <svg id="mk" width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="content" class="layer">
+          <svg id="rings" width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div id="nowRow" class="row"><i id="nlL" class="nl"></i><span id="nowin" data-layout-allow-occlusion>NOW IN</span><i id="nlR" class="nl"></i></div>
+          <div id="wordShade"><div id="word" class="row"></div></div>
+          <div id="pinWrap">
+            <svg id="pin" viewBox="0 0 62 84" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="pinMetal" x1="0" y1="0" x2="0.35" y2="1">
+                  <stop offset="0" stop-color="#fff4d2" /><stop offset="0.3" stop-color="#f0d38e" /><stop offset="0.62" stop-color="#c79c52" /><stop offset="1" stop-color="#8e6729" />
+                </linearGradient>
+              </defs>
+              <!-- teardrop pin; the hole is the TW diamond -->
+              <path fill="url(#pinMetal)" fill-rule="evenodd"
+                d="M31 0C13.9 0 0 13.6 0 30.4C0 52.2 31 84 31 84S62 52.2 62 30.4C62 13.6 48.1 0 31 0ZM31 15.5L41.6 26.4L31 38.8L20.4 26.4Z" />
+            </svg>
+          </div>
+        </div>
+        <canvas id="fxFront" class="layer" width="1080" height="1920" style="pointer-events: none" data-layout-ignore></canvas>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var DUR = 1.72;
+        var SVGNS = "http://www.w3.org/2000/svg";
+        var CX = 540, CY = 933;                         // the burst centre = the word's centre
+
+        // ---------- helpers (deterministic) ----------
+        function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; var t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+        function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+        function lerp(a, b, p) { return a + (b - a) * p; }
+        function smooth(a, b, v) { var x = clamp((v - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); }
+        var ease = {
+          p2i: gsap.parseEase("power2.in"), p2o: gsap.parseEase("power2.out"), p3o: gsap.parseEase("power3.out"), p2io: gsap.parseEase("power2.inOut"),
+          expo: gsap.parseEase("expo.out"), back3: gsap.parseEase("back.out(3)"), back2: gsap.parseEase("back.out(2.2)")
+        };
+        function seg(t, t0, d, e) { var p = clamp((t - t0) / d, 0, 1); return e ? e(p) : p; }
+        function bump(t, t0, up, down) { if (t <= t0) return 0; if (t < t0 + up) return ease.p2o((t - t0) / up); return 1 - ease.p2io(clamp((t - t0 - up) / down, 0, 1)); }
+        function el(tag, attrs, parent) { var n = document.createElementNS(SVGNS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+
+        // ---------- SINGAPORE letters (offsets = Montserrat 900 advances at 150 px, -0.01em, no kerning) ----------
+        var OFFS = [0, 97.05, 148.05, 267.15, 381.0, 500.4, 610.35, 736.05, 846.3], WORD_W = 945.75, WX = (1080 - WORD_W) / 2;
+        var ADV = OFFS.map(function (o, i) { return (i < OFFS.length - 1 ? OFFS[i + 1] : WORD_W) - o; });
+        var wordEl = document.getElementById("word"), letters = [], R = mulberry32(1250);
+        "SINGAPORE".split("").forEach(function (c, i) {
+          var w = document.createElement("span"); w.className = "Lw";
+          var l = document.createElement("span"); l.className = "L"; l.textContent = c; l.setAttribute("data-layout-allow-occlusion", "");
+          w.appendChild(l); wordEl.appendChild(w);
+          letters.push({ w: w, l: l, s0: -0.06 + i * 0.034, rot: (R() - 0.5) * 14, dy: (R() - 0.5) * 60, ox: OFFS[i] });
+        });
+        function drawLetters(t) {
+          var sweep = seg(t, 0.96, 0.5, ease.p2io);                       // 13.50: the light sweep (band centre in word coords)
+          var sx = lerp(-300, WORD_W + 300, sweep);
+          for (var i = 0; i < letters.length; i++) {
+            var L = letters[i], u = seg(t, L.s0, 0.13), ue = ease.p2i(u);
+            var v = seg(t, L.s0 + 0.13, 0.26);
+            var sc = u < 1 ? lerp(2.0, 0.93, ue) : lerp(0.93, 1, ease.back3(v));
+            var blur = Math.max(0, sc - 1) * 8;
+            var hit = bump(t, L.s0 + 0.13, 0.02, 0.16);                    // each letter flashes as it hits
+            if (sweep > 0 && sweep < 1) { var dd = (sx - (L.ox + ADV[i] / 2)) / 95; hit += 0.42 * Math.exp(-dd * dd); }   // the sweep lifts each letter it crosses
+            var op = Math.pow(clamp(u / 0.6, 0, 1), 1.3);
+            L.w.style.opacity = op.toFixed(3);
+            L.w.style.transform = "translate(0px," + (L.dy * (1 - ue)).toFixed(2) + "px) rotate(" + (L.rot * (1 - ue)).toFixed(2) + "deg) scale(" + sc.toFixed(4) + ")";
+            L.w.style.filter = "blur(" + blur.toFixed(2) + "px) brightness(" + (1 + 0.75 * hit).toFixed(3) + ")";
+            L.l.style.backgroundPosition = (sweep > 0 && sweep < 1 ? (sx - L.ox - 260).toFixed(1) : -2000) + "px 0px, 0px 0px";
+          }
+        }
+
+        // ---------- the TW mark (gold metal, assembled fast; later the lens we fly through) ----------
+        var K = 0.2, MX = 540 - 500 * K, MY = 498;                         // 200 px wide, never stretched
+        function place(d) { return d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, function (m, x, y) { return (MX + K * parseFloat(x)).toFixed(2) + "," + (MY + K * parseFloat(y)).toFixed(2); }); }
+        var dT = place(TW_PATHS.t), dW = place(TW_PATHS.w), dD = place(TW_PATHS.diamond);
+        var DCX = MX + 500 * K, DCY = MY + 995 * K;
+        var svg = document.getElementById("mk"), defs = el("defs", {}, svg);
+        var METAL = [[0, "#a07a37"], [0.14, "#dcb86e"], [0.27, "#f7e5ad"], [0.34, "#fff7de"], [0.42, "#eed18c"], [0.56, "#c99e55"], [0.68, "#9a7331"], [0.78, "#b98f47"], [0.9, "#e6c983"], [1, "#f7e4ac"]];
+        function metalGrad(id) {
+          var g = el("linearGradient", { id: id, gradientUnits: "userSpaceOnUse", x1: MX - 10, y1: MY - 6, x2: MX + 1000 * K + 14, y2: MY + 1114.1 * K + 10 }, defs);
+          METAL.forEach(function (s) { el("stop", { offset: s[0], "stop-color": s[1] }, g); }); return g;
+        }
+        var gT = metalGrad("gmT"), gW = metalGrad("gmW"); metalGrad("gmD");
+        function blurFilter(id) { var f = el("filter", { id: id, x: "-20%", y: "-80%", width: "140%", height: "260%" }, defs); return el("feGaussianBlur", { stdDeviation: "0 0" }, f); }
+        var fbT = blurFilter("fbT"), fbW = blurFilter("fbW");
+        var bev = el("filter", { id: "bev", filterUnits: "userSpaceOnUse", x: 380, y: 260, width: 320, height: 720, "color-interpolation-filters": "sRGB" }, defs);
+        el("feGaussianBlur", { in: "SourceAlpha", stdDeviation: "1.5", result: "b" }, bev);
+        var spec = el("feSpecularLighting", { in: "b", surfaceScale: "2.5", specularConstant: "1.05", specularExponent: "18", "lighting-color": "#fff3d4", result: "s" }, bev);
+        el("feDistantLight", { azimuth: "235", elevation: "40" }, spec);
+        el("feComposite", { in: "s", in2: "SourceAlpha", operator: "in", result: "si" }, bev);
+        el("feComposite", { in: "SourceGraphic", in2: "si", operator: "arithmetic", k1: "0", k2: "1", k3: "0.75", k4: "0" }, bev);
+        var fgl = el("filter", { id: "glow", filterUnits: "userSpaceOnUse", x: 300, y: 380, width: 480, height: 460 }, defs);
+        el("feGaussianBlur", { stdDeviation: "16" }, fgl);
+        var clip = el("clipPath", { id: "clipAll" }, defs);
+        [dT, dW, dD].forEach(function (d) { el("path", { d: d }, clip); });
+        var sh = el("linearGradient", { id: "gSheen", gradientUnits: "userSpaceOnUse", x1: 0, y1: 0, x2: 110, y2: 0 }, defs);
+        [[0, "rgba(255,250,236,0)"], [0.5, "rgba(255,252,242,0.95)"], [1, "rgba(255,250,236,0)"]].forEach(function (s) { el("stop", { offset: s[0], "stop-color": s[1] }, sh); });
+
+        var mkAll = el("g", {}, svg);                                      // the zoom-through transform lives here
+        var glow = el("g", { opacity: 0, filter: "url(#glow)" }, mkAll);
+        [dT, dW, dD].forEach(function (d) { el("path", { d: d, fill: "#e8c478" }, glow); });
+        var body = el("g", { filter: "url(#bev)" }, mkAll);
+        var pT = el("g", { opacity: 0 }, body), pTb = el("g", {}, pT); el("path", { d: dT, fill: "url(#gmT)" }, pTb);
+        var pW = el("g", { opacity: 0 }, body), pWb = el("g", {}, pW); el("path", { d: dW, fill: "url(#gmW)" }, pWb);
+        var pD = el("g", { opacity: 0 }, body); el("path", { d: dD, fill: "url(#gmD)" }, pD);
+        var fxg = el("g", { "clip-path": "url(#clipAll)" }, mkAll);
+        var sheen = el("rect", { x: MX - 20, y: MY - 20, width: 1000 * K + 40, height: 1114.1 * K + 40, fill: "url(#gSheen)", opacity: 0 }, fxg);
+        // glint star on the diamond
+        var glint = el("g", { opacity: 0 }, mkAll);
+        el("circle", { cx: 0, cy: 0, r: 9, fill: "#fff8e8", opacity: 0.85 }, glint);
+        el("path", { d: "M0,-30 L3,-3 L30,0 L3,3 L0,30 L-3,3 L-30,0 L-3,-3 Z", fill: "#fffaf0" }, glint);
+
+        function yT(t) { return -150 * (1 - seg(t, 0.0, 0.3, ease.expo)); }
+        function yW(t) { return 150 * (1 - seg(t, 0.04, 0.3, ease.expo)); }
+        function setBlur(node, group, v) {
+          if (v < 0.25) group.removeAttribute("filter");
+          else { node.setAttribute("stdDeviation", "0 " + v.toFixed(2)); group.setAttribute("filter", "url(#" + node.parentNode.id + ")"); }
+        }
+        var POCKET_X = MX + 281 * K, POCKET_Y = MY + 318 * K;              // the left pocket of the shield's negative space
+        function drawMark(t, P) {
+          var ty = yT(t), wy = yW(t);
+          pT.setAttribute("transform", "translate(0 " + ty.toFixed(2) + ")");
+          pW.setAttribute("transform", "translate(0 " + wy.toFixed(2) + ")");
+          pT.setAttribute("opacity", seg(t, -0.02, 0.06).toFixed(3));
+          pW.setAttribute("opacity", seg(t, 0.03, 0.06).toFixed(3));
+          gT.setAttribute("gradientTransform", "translate(0 " + (-ty).toFixed(2) + ")");
+          gW.setAttribute("gradientTransform", "translate(0 " + (-wy).toFixed(2) + ")");
+          setBlur(fbT, pTb, Math.min(12, Math.abs(ty - yT(t - 1 / 30)) * 0.3));
+          setBlur(fbW, pWb, Math.min(12, Math.abs(wy - yW(t - 1 / 30)) * 0.3));
+          var ds = seg(t, 0.28, 0.24, ease.back2);
+          pD.setAttribute("opacity", seg(t, 0.28, 0.04).toFixed(3));
+          pD.setAttribute("transform", "translate(" + DCX + " " + DCY + ") scale(" + Math.max(0.001, ds).toFixed(4) + ") translate(" + (-DCX) + " " + (-DCY) + ")");
+          var g = bump(t, 0.36, 0.06, 0.22);
+          glint.setAttribute("opacity", g.toFixed(3));
+          glint.setAttribute("transform", "translate(" + (DCX + 8) + " " + (DCY - 6) + ") rotate(" + (40 * seg(t, 0.36, 0.3)).toFixed(1) + ") scale(" + (0.3 + 0.9 * g).toFixed(3) + ")");
+          glow.setAttribute("opacity", (0.22 + 0.25 * bump(t, 0.3, 0.08, 0.4) + 0.2 * bump(t, 0.98, 0.1, 0.4)).toFixed(3));
+          // 13.50: the sheen crosses the mark
+          var sp = seg(t, 0.98, 0.38, ease.p2io);
+          sheen.setAttribute("opacity", sp > 0 && sp < 1 ? "1" : "0");
+          sh.setAttribute("gradientTransform", "rotate(24 540 610) translate(" + lerp(MX - 160, MX + 1000 * K + 60, sp).toFixed(1) + " 0)");
+          // 14.00 -> 14.22: the shield flies through the lens; we pass through its negative space into navy
+          if (P <= 0) { mkAll.removeAttribute("transform"); body.setAttribute("filter", "url(#bev)"); svg.style.filter = "none"; return; }
+          body.removeAttribute("filter");
+          var S = Math.exp(Math.log(54) * P * P);
+          var q = ease.p2io(P), qx = lerp(POCKET_X, 540, q), qy = lerp(POCKET_Y, 960, q);
+          mkAll.setAttribute("transform", "translate(" + qx.toFixed(2) + " " + qy.toFixed(2) + ") scale(" + S.toFixed(4) + ") translate(" + (-POCKET_X).toFixed(2) + " " + (-POCKET_Y).toFixed(2) + ")");
+          svg.style.filter = "blur(" + (14 * P * P).toFixed(2) + "px)";
+        }
+
+        // ---------- rays, sparks, dust, warp (one canvas behind the type, one in front) ----------
+        var cx = document.getElementById("fx").getContext("2d"), cf = document.getElementById("fxFront").getContext("2d");
+        function sprite(r, core) {
+          var c = document.createElement("canvas"); c.width = c.height = r * 2; var g = c.getContext("2d");
+          var gr = g.createRadialGradient(r, r, 0, r, r, r);
+          gr.addColorStop(0, "rgba(255,246,222,1)"); gr.addColorStop(core, "rgba(243,222,170,0.8)"); gr.addColorStop(1, "rgba(232,196,120,0)");
+          g.fillStyle = gr; g.fillRect(0, 0, r * 2, r * 2); return c;
+        }
+        var sprSoft = sprite(64, 0.08), sprDot = sprite(16, 0.25);
+        var Rr = mulberry32(912);
+        var rays = [];
+        for (var i = 0; i < 22; i++) rays.push({ a: (i + Rr() * 0.8) / 22 * Math.PI * 2, w: (1.2 + Rr() * 2.6) * Math.PI / 180, len: 520 + Rr() * 480, k: 0.1 + Rr() * 0.13, c: "236,192,112" });
+        for (var i2 = 0; i2 < 46; i2++) rays.push({ a: Rr() * Math.PI * 2, w: (0.1 + Rr() * 0.32) * Math.PI / 180, len: 560 + Rr() * 700, k: 0.16 + Rr() * 0.32, c: "255,236,196" });
+        var sparks = [];
+        for (var s = 0; s < 120; s++) {
+          var hot = Rr() < 0.25;
+          sparks.push({ a: Rr() * Math.PI * 2, sp: 450 + Math.pow(Rr(), 1.4) * 2300, x0: CX + (Rr() - 0.5) * 760, y0: CY + (Rr() - 0.5) * 70,
+                        life: 0.45 + Rr() * 0.95, sz: 0.8 + Math.pow(Rr(), 2) * 2.8, t0: -0.06 + Rr() * 0.07, hot: hot });
+        }
+        var dust = [];
+        for (var d = 0; d < 46; d++) dust.push({ x: Rr() * 1080, y: 200 + Rr() * 1500, vx: (Rr() - 0.5) * 14, vy: -(6 + Rr() * 18), r: 0.8 + Rr() * 1.8, a: 0.15 + Rr() * 0.35, ph: Rr() * 6.283 });
+        var bok = [];
+        for (var b = 0; b < 9; b++) bok.push({ a: Rr() * Math.PI * 2, sp: 900 + Rr() * 1300, r: 34 + Rr() * 60, al: 0.1 + Rr() * 0.12, x0: CX + (Rr() - 0.5) * 300, y0: CY + (Rr() - 0.5) * 80 });
+        var warp = [];
+        for (var w = 0; w < 80; w++) warp.push({ a: Rr() * Math.PI * 2, r0: 60 + Rr() * 420, k: 0.4 + Rr() * 0.6 });
+
+        function rayIntensity(t) { return (0.42 + 1.1 * Math.exp(-Math.max(0, t) / 0.17) + 0.4 * bump(t, 0.96, 0.1, 0.45)); }
+        function drawFX(t, P) {
+          cx.clearRect(0, 0, 1080, 1920);
+          var I = rayIntensity(t) * (1 - P);
+          // royal-blue rim around the burst (the brand's blue, a touch)
+          var rimA = (0.06 + 0.1 * Math.exp(-t / 0.3)) * (1 - P);
+          var g0 = cx.createRadialGradient(CX, CY, 340, CX, CY, 900);
+          g0.addColorStop(0, "rgba(58,79,214,0)"); g0.addColorStop(0.4, "rgba(58,79,214," + rimA.toFixed(3) + ")"); g0.addColorStop(1, "rgba(58,79,214,0)");
+          cx.fillStyle = g0; cx.fillRect(0, 0, 1080, 1920);
+          // hot core
+          var core = (0.16 + 0.8 * Math.exp(-Math.max(0, t) / 0.11)) * (1 - P);
+          var g1 = cx.createRadialGradient(CX, CY, 0, CX, CY, 620);
+          g1.addColorStop(0, "rgba(255,246,222," + core.toFixed(3) + ")"); g1.addColorStop(0.22, "rgba(246,220,160," + (core * 0.62).toFixed(3) + ")");
+          g1.addColorStop(0.5, "rgba(236,200,128," + (core * 0.24).toFixed(3) + ")"); g1.addColorStop(0.78, "rgba(232,196,120," + (core * 0.06).toFixed(3) + ")"); g1.addColorStop(1, "rgba(232,196,120,0)");
+          cx.globalCompositeOperation = "lighter";
+          cx.fillStyle = g1; cx.fillRect(0, 0, 1080, 1920);
+          // rays
+          var rot = 0.13 * t, grow = 0.72 + 0.28 * seg(t, -0.1, 0.5, ease.expo);
+          for (var i = 0; i < rays.length; i++) {
+            var r = rays[i], th = r.a + rot, L = r.len * grow * (1 + 2.6 * P * P);
+            var m = 0.35 + 0.65 * Math.pow(Math.abs(Math.sin(th)), 0.7);     // more light up and down, softer along the word
+            var A = clamp(I * r.k * m, 0, 1);
+            if (A < 0.004) continue;
+            var gr = cx.createRadialGradient(CX, CY, 0, CX, CY, L);
+            gr.addColorStop(0, "rgba(" + r.c + ",0)"); gr.addColorStop(0.12, "rgba(" + r.c + ",0)");
+            gr.addColorStop(0.26, "rgba(" + r.c + "," + A.toFixed(3) + ")");
+            gr.addColorStop(0.55, "rgba(" + r.c + "," + (A * 0.32).toFixed(3) + ")");
+            gr.addColorStop(1, "rgba(" + r.c + ",0)");
+            cx.fillStyle = gr;
+            cx.beginPath(); cx.moveTo(CX, CY);
+            cx.lineTo(CX + Math.cos(th - r.w) * L, CY + Math.sin(th - r.w) * L);
+            cx.lineTo(CX + Math.cos(th + r.w) * L, CY + Math.sin(th + r.w) * L);
+            cx.closePath(); cx.fill();
+          }
+          // sparks thrown outward on the drop (drag + a little gravity), drawn as short streaks
+          cx.lineCap = "round";
+          for (var s = 0; s < sparks.length; s++) {
+            var p = sparks[s], tau = t - p.t0;
+            if (tau <= 0 || tau > p.life) continue;
+            var k = 3.1, d1 = p.sp / k * (1 - Math.exp(-k * tau)), tp = Math.max(0, tau - 0.024), d0 = p.sp / k * (1 - Math.exp(-k * tp));
+            var ca = Math.cos(p.a), sa = Math.sin(p.a);
+            var x1 = p.x0 + ca * d1, y1 = p.y0 + sa * d1 + 70 * tau * tau, x0 = p.x0 + ca * d0, y0 = p.y0 + sa * d0 + 70 * tp * tp;
+            var al = Math.pow(1 - tau / p.life, 1.3) * (p.hot ? 0.95 : 0.7) * (1 - P);
+            var col = p.hot ? "255,248,230" : "240,206,130";
+            cx.strokeStyle = "rgba(" + col + "," + (al * 0.16).toFixed(3) + ")"; cx.lineWidth = p.sz * 4;
+            cx.beginPath(); cx.moveTo(x0, y0); cx.lineTo(x1 + 0.01, y1); cx.stroke();
+            cx.strokeStyle = "rgba(" + col + "," + al.toFixed(3) + ")"; cx.lineWidth = p.sz;
+            cx.beginPath(); cx.moveTo(x0, y0); cx.lineTo(x1 + 0.01, y1); cx.stroke();
+          }
+          // fine dust in the light; during the push it streaks outward with us
+          var zP = 1 + 3.2 * P * P, zP0 = 1 + 3.2 * Math.max(0, P - 0.12) * Math.max(0, P - 0.12);
+          for (var j = 0; j < dust.length; j++) {
+            var q = dust[j];
+            var qx = q.x + q.vx * t, qy = q.y + q.vy * t;
+            var ax = CX + (qx - CX) * zP, ay = CY + (qy - CY) * zP;
+            var al2 = q.a * (0.7 + 0.3 * Math.sin(5 * t + q.ph));
+            if (P > 0) {
+              var bx = CX + (qx - CX) * zP0, by = CY + (qy - CY) * zP0;
+              cx.strokeStyle = "rgba(243,222,170," + (al2 * (1 - P * 0.6)).toFixed(3) + ")"; cx.lineWidth = q.r;
+              cx.beginPath(); cx.moveTo(bx, by); cx.lineTo(ax, ay); cx.stroke();
+            } else {
+              cx.globalAlpha = al2; cx.drawImage(sprDot, ax - q.r * 3, ay - q.r * 3, q.r * 6, q.r * 6); cx.globalAlpha = 1;
+            }
+          }
+          // warp streaks: we accelerate into the camera
+          if (P > 0) {
+            var wa = Math.sin(Math.PI * Math.min(1, P * 1.1)) * 0.75;
+            for (var n = 0; n < warp.length; n++) {
+              var wv = warp[n], r1 = wv.r0 * (1 + 7 * P * P * wv.k), r0 = wv.r0 * (1 + 7 * Math.pow(Math.max(0, P - 0.22), 2) * wv.k);
+              cx.strokeStyle = "rgba(243,222,170," + (wa * wv.k).toFixed(3) + ")"; cx.lineWidth = 1.2 + wv.k;
+              cx.beginPath(); cx.moveTo(CX + Math.cos(wv.a) * r0, CY + Math.sin(wv.a) * r0); cx.lineTo(CX + Math.cos(wv.a) * r1, CY + Math.sin(wv.a) * r1); cx.stroke();
+            }
+          }
+          cx.globalCompositeOperation = "source-over";
+          // front: a few big out-of-focus motes rush past the lens on the drop
+          cf.clearRect(0, 0, 1080, 1920); cf.globalCompositeOperation = "lighter";
+          for (var bI = 0; bI < bok.length; bI++) {
+            var bb = bok[bI], tb = t + 0.05;
+            if (tb <= 0 || tb > 0.75) continue;
+            var dd = bb.sp / 2.2 * (1 - Math.exp(-2.2 * tb));
+            var bxx = bb.x0 + Math.cos(bb.a) * dd, byy = bb.y0 + Math.sin(bb.a) * dd, rr = bb.r * (1 + 1.4 * tb);
+            cf.globalAlpha = bb.al * Math.pow(1 - tb / 0.75, 1.5);
+            cf.drawImage(sprSoft, bxx - rr, byy - rr, rr * 2, rr * 2);
+          }
+          cf.globalAlpha = 1;
+        }
+
+        // ---------- the pin and its rings ----------
+        var ringSvg = document.getElementById("rings"), RX = 540, RY = 1120;
+        var tipGlow = el("ellipse", { cx: RX, cy: RY, rx: 36, ry: 11, fill: "rgba(255,240,205,0.9)", opacity: 0 }, ringSvg);
+        var rings = [0.5, 0.64, 1.0].map(function (t0) { return { t0: t0, n: el("ellipse", { cx: RX, cy: RY, rx: 10, ry: 3, fill: "none", stroke: "#f3e2ae", "stroke-width": 3, opacity: 0 }, ringSvg) }; });
+        var pinWrap = document.getElementById("pinWrap");
+        function drawPin(t) {
+          var u = seg(t, 0.4, 0.1), y;
+          if (t < 0.5) y = -34 * (1 - ease.p2i(u));
+          else { var v = seg(t, 0.5, 0.3); y = -8 * Math.sin(Math.PI * v) * (1 - v); }
+          var sq = bump(t, 0.5, 0.03, 0.22);                                // a little squash on landing
+          var pop = 0.55 + 0.45 * ease.p2o(u);
+          pinWrap.style.opacity = clamp(u * 2.5, 0, 1).toFixed(3);
+          pinWrap.style.transform = "translate(0px," + y.toFixed(2) + "px) scale(" + (pop * (1 + 0.1 * sq)).toFixed(3) + "," + (pop * (1 - 0.13 * sq)).toFixed(3) + ")";
+          tipGlow.setAttribute("opacity", (0.8 * bump(t, 0.5, 0.03, 0.35) + 0.35 * bump(t, 1.0, 0.05, 0.35)).toFixed(3));
+          rings.forEach(function (r) {
+            var v = seg(t, r.t0, 0.8);
+            if (v <= 0 || v >= 1) { r.n.setAttribute("opacity", "0"); return; }
+            var e = ease.p2o(v), rx = lerp(12, 190, e);
+            r.n.setAttribute("rx", rx.toFixed(2)); r.n.setAttribute("ry", (rx * 0.3).toFixed(2));
+            r.n.setAttribute("stroke-width", lerp(3.2, 0.8, v).toFixed(2));
+            r.n.setAttribute("opacity", (0.95 * Math.pow(1 - v, 1.3)).toFixed(3));
+          });
+        }
+
+        // ---------- the push-through (14.00 -> 14.22) ----------
+        var content = document.getElementById("content"), plate = document.getElementById("plate"), handoff = document.getElementById("handoff");
+        function drawPush(t, P) {
+          var sc = 1 + 1.9 * Math.pow(P, 2.2);
+          content.style.transform = P > 0 ? "scale(" + sc.toFixed(4) + ")" : "none";
+          content.style.filter = P > 0 ? "blur(" + (26 * Math.pow(P, 1.6)).toFixed(2) + "px)" : "none";
+          content.style.opacity = (1 - smooth(0.3, 0.85, P)).toFixed(3);
+          plate.style.opacity = (seg(t, 0.05, 0.3, ease.p2o) * (1 - P)).toFixed(3);
+          handoff.style.opacity = smooth(0.45, 1, P).toFixed(3);
+        }
+
+        function renderAll(t) {
+          var P = seg(t, 1.5, 0.2);
+          drawFX(t, P); drawLetters(t); drawMark(t, P); drawPin(t); drawPush(t, P);
+        }
+
+        // ---------- the timeline ----------
+        var tl = gsap.timeline({ paused: true });
+        var drv = { t: 0 };
+        tl.to(drv, { t: DUR, duration: DUR, ease: "none", onUpdate: function () { renderAll(drv.t); } }, 0);
+        // 13.00: NOW IN snaps in, its hairlines flick outward
+        tl.fromTo("#nowin", { opacity: 0, scale: 1.45, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.22, ease: "expo.out" }, 0.47);
+        tl.fromTo("#nlL", { scaleX: 0 }, { scaleX: 1, duration: 0.34, ease: "power3.out" }, 0.53);
+        tl.fromTo("#nlR", { scaleX: 0 }, { scaleX: 1, duration: 0.34, ease: "power3.out" }, 0.53);
+
+        renderAll(0);
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

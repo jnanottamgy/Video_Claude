@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/taxwise-singapore/design: fonts, tokens, the TW mark -->
+    <link rel="stylesheet" href="./design/taxwise.css" />
+    <script src="./design/tw-mark.js"></script>
+    <style>
+      html, body { margin: 0; background: transparent; }
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      .layer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      .mask { position: absolute; overflow: hidden; }
+      .row { display: flex; white-space: nowrap; }
+      .ch { display: inline-block; }
+
+      /* ---------- HK / VINAY: Cormorant 600, 250px, left at x 200. line box 250, baseline 204.6 below its top */
+      #hk-mask { left: 186px; top: 520px; width: 420px; height: 250px; }
+      #hk { position: absolute; left: 14px; top: 0; font-size: 250px; line-height: 1; height: 250px; }
+      #hk .ch { background: var(--tw-gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+        filter: drop-shadow(0 2px 0 rgba(60, 40, 10, 0.35)) drop-shadow(0 0 22px rgba(232, 196, 120, 0.25)); }
+      #vn-mask { left: 186px; top: 750px; width: 820px; height: 250px; }
+      #vn { position: absolute; left: 14px; top: 0; font-size: 250px; line-height: 1; height: 250px; }
+      #vn .ch { color: var(--tw-ivory); text-shadow: 0 10px 34px rgba(0, 0, 0, 0.38); }
+      /* light sweep across the gold HK */
+      #hk-sheen { position: absolute; left: 186px; top: 520px; width: 420px; height: 250px; overflow: hidden; }
+      #hk-sheen .row { position: absolute; left: 14px; top: 0; font-size: 250px; line-height: 1; height: 250px; }
+      #hk-sheen .ch { background: linear-gradient(100deg, rgba(255,250,232,0) 0%, rgba(255,250,232,0) 38%, rgba(255,250,232,0.95) 50%, rgba(255,250,232,0) 62%, rgba(255,250,232,0) 100%);
+        background-size: 300% 100%; background-position: 100% 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+      /* ---------- MANAGING PARTNER: gold hairline draws out, label rises under it */
+      #rule { position: absolute; left: 200px; top: 976px; width: 560px; height: 2px; transform-origin: 0 50%;
+        background: linear-gradient(90deg, #f3e2ae 0%, #d4b26a 55%, rgba(212,178,106,0) 100%); }
+      #mp-mask { position: absolute; left: 196px; top: 984px; width: 600px; height: 44px; overflow: hidden; }
+      #mp { position: absolute; left: 4px; top: 0; font-family: var(--tw-sans); font-weight: 600; font-size: 34px; line-height: 44px;
+        letter-spacing: 0.26em; color: rgba(244, 239, 227, 0.92); white-space: nowrap; }
+
+      /* ---------- the TaxWise lockup (stacked), centred at x 820 */
+      #mark { position: absolute; left: 747.2px; top: 497.2px; width: 145.6px; height: 161.57px; overflow: visible; }
+      #wm-tax-mask { position: absolute; left: 620px; top: 670px; width: 400px; height: 56px; overflow: hidden; }
+      #wm-tax { position: absolute; left: 0; top: 0; width: 400px; text-align: center; font-family: var(--tw-sans); font-weight: 700;
+        font-size: 50px; line-height: 56px; letter-spacing: 0.12em; padding-left: 0.12em; box-sizing: border-box; color: var(--tw-ivory); }
+      #wm-con { position: absolute; left: 620px; top: 725px; width: 400px; text-align: center; font-family: var(--tw-sans); font-weight: 500;
+        font-size: 28px; line-height: 34px; letter-spacing: 0.36em; padding-left: 0.36em; box-sizing: border-box; color: #dcbc78; }
+
+      /* ---------- the build: fuse / loading line at y 330 + EXPANSION */
+      #fuse { position: absolute; left: 0; top: 322px; width: 1080px; height: 18px; transform-origin: 0 50%; transform: scaleX(0); opacity: 0; }
+      #fuse .core { position: absolute; left: 0; top: 8px; width: 100%; height: 2px;
+        background: linear-gradient(90deg, rgba(212,178,106,0.25) 0%, rgba(226,196,128,0.85) 40%, #f6e4b2 85%, #fff8e2 100%); }
+      #fuse .glow { position: absolute; left: 0; top: 0; width: 100%; height: 18px;
+        background: linear-gradient(180deg, rgba(232,196,120,0) 0%, rgba(232,196,120,0.30) 50%, rgba(232,196,120,0) 100%); }
+      #spark { position: absolute; left: -60px; top: 271px; width: 120px; height: 120px; opacity: 0; }
+      #spark .halo { position: absolute; left: 0; top: 0; width: 120px; height: 120px; border-radius: 50%;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,246,214,0.9) 0%, rgba(246,210,140,0.42) 22%, rgba(236,190,110,0.12) 50%, rgba(236,190,110,0) 72%); }
+      #spark .streak { position: absolute; left: -60px; top: 56px; width: 240px; height: 8px;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,252,240,0.95) 0%, rgba(255,236,190,0.4) 30%, rgba(255,236,190,0) 100%); }
+      #spark .core { position: absolute; left: 51px; top: 51px; width: 18px; height: 18px; border-radius: 50%;
+        background: radial-gradient(50% 50% at 50% 50%, #ffffff 0%, rgba(255,248,226,0.95) 40%, rgba(255,230,170,0) 100%); }
+
+      #xp-glow { position: absolute; left: 160px; top: 300px; width: 900px; height: 270px;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,232,176,0.55) 0%, rgba(240,200,120,0.22) 40%, rgba(240,200,120,0) 75%); }
+      .xp { position: absolute; left: 0; top: 361px; width: 1080px; height: 140px; font-family: var(--tw-sans); font-weight: 800;
+        font-size: 118px; line-height: 140px; display: flex; justify-content: center; padding-left: 142px; box-sizing: border-box; }
+      .xp .ch { margin-right: 0.02em; }
+      .xp .ch:last-child { margin-right: 0; }
+      /* outline = the glyph minus its eroded self (SVG filter): follows only the outer silhouette, so Montserrat's
+         overlapping contours never show as stray inner lines (which -webkit-text-stroke would draw) */
+      #xp-line .ch { background: linear-gradient(180deg, #fff3d0 0%, #f0d595 45%, #d9b46a 100%); -webkit-background-clip: text; background-clip: text;
+        color: transparent; filter: url(#xp-outline) drop-shadow(0 0 7px rgba(232, 196, 120, 0.45)); }
+      #xp-fill { clip-path: inset(100% 0 0 0); }
+      #xp-fill .ch { background: linear-gradient(180deg, #fff6d8 0%, #f1d697 34%, #d9b467 64%, #a8823c 100%); -webkit-background-clip: text; background-clip: text;
+        color: transparent; filter: drop-shadow(0 0 16px rgba(240, 206, 130, 0.6)); }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="6.4" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="6.4" data-track-index="0">
+        <div id="name" class="layer">
+          <div id="hk-mask" class="mask" data-layout-allow-overflow>
+            <div id="hk" class="row tw-display" data-layout-allow-overflow data-layout-allow-occlusion><span class="ch" data-layout-allow-occlusion>H</span><span class="ch" data-layout-allow-occlusion>K</span></div>
+          </div>
+          <div id="hk-sheen" data-layout-allow-overflow data-layout-allow-occlusion>
+            <div class="row tw-display" data-layout-allow-overflow data-layout-allow-occlusion><span class="ch" data-layout-allow-occlusion>H</span><span class="ch" data-layout-allow-occlusion>K</span></div>
+          </div>
+          <div id="vn-mask" class="mask" data-layout-allow-overflow>
+            <div id="vn" class="row tw-display" data-layout-allow-overflow><span class="ch">V</span><span class="ch">I</span><span class="ch">N</span><span class="ch">A</span><span class="ch">Y</span></div>
+          </div>
+          <div id="rule"></div>
+          <div id="mp-mask" data-layout-allow-overflow><div id="mp" data-layout-allow-overflow>MANAGING PARTNER</div></div>
+          <svg id="mark" viewBox="-20 -20 1040 1154.1" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="nm-fill" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1114">
+                <stop offset="0" stop-color="#fbefc8" /><stop offset="0.38" stop-color="#e8cb86" /><stop offset="0.62" stop-color="#c9a35a" /><stop offset="1" stop-color="#9c7a35" />
+              </linearGradient>
+              <linearGradient id="nm-stroke" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1114">
+                <stop offset="0" stop-color="#fff4d6" /><stop offset="0.5" stop-color="#ecd08f" /><stop offset="1" stop-color="#c39a52" />
+              </linearGradient>
+              <linearGradient id="nm-shine" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="420" y2="0">
+                <stop offset="0" stop-color="#fffbea" stop-opacity="0" /><stop offset="0.5" stop-color="#fffbea" stop-opacity="0.95" /><stop offset="1" stop-color="#fffbea" stop-opacity="0" />
+              </linearGradient>
+              <clipPath id="nm-clip"><path id="nm-cp-t" /><path id="nm-cp-w" /><path id="nm-cp-d" /></clipPath>
+            </defs>
+            <g id="nm-fills" fill="url(#nm-fill)"><path id="nm-f-t" /><path id="nm-f-w" /><path id="nm-f-d" /></g>
+            <g id="nm-strokes" fill="none" stroke="url(#nm-stroke)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+              <path id="nm-s-t" /><path id="nm-s-w" /><path id="nm-s-d" />
+            </g>
+            <g clip-path="url(#nm-clip)"><g id="nm-shine-g"><rect x="-420" y="-200" width="420" height="1500" fill="url(#nm-shine)" transform="skewX(-18)" /></g></g>
+          </svg>
+          <div id="wm-tax-mask" data-layout-allow-overflow><div id="wm-tax" data-layout-allow-overflow>TAXWISE</div></div>
+          <div id="wm-con">CONSULTANTS</div>
+        </div>
+
+        <svg id="xp-defs" width="0" height="0" aria-hidden="true" style="position:absolute; left:0; top:0">
+          <defs>
+            <filter id="xp-outline" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+              <feMorphology in="SourceAlpha" operator="erode" radius="2.3" result="er" />
+              <feComposite in="SourceGraphic" in2="er" operator="out" result="band" />
+              <feComponentTransfer in="SourceGraphic" result="faint"><feFuncA type="linear" slope="0.09" /></feComponentTransfer>
+              <feMerge><feMergeNode in="faint" /><feMergeNode in="band" /></feMerge>
+            </filter>
+          </defs>
+        </svg>
+        <div id="xp-glow"></div>
+        <div id="fuse" data-layout-allow-overflow><div class="glow"></div><div class="core"></div></div>
+        <div id="xp-line" class="xp" data-layout-allow-overflow>
+          <span class="ch">E</span><span class="ch">X</span><span class="ch">P</span><span class="ch">A</span><span class="ch">N</span><span class="ch">S</span><span class="ch">I</span><span class="ch">O</span><span class="ch">N</span>
+        </div>
+        <div id="xp-fill" class="xp" data-layout-allow-overflow data-layout-allow-occlusion>
+          <span class="ch" data-layout-allow-occlusion>E</span><span class="ch" data-layout-allow-occlusion>X</span><span class="ch" data-layout-allow-occlusion>P</span><span class="ch" data-layout-allow-occlusion>A</span><span class="ch" data-layout-allow-occlusion>N</span><span class="ch" data-layout-allow-occlusion>S</span><span class="ch" data-layout-allow-occlusion>I</span><span class="ch" data-layout-allow-occlusion>O</span><span class="ch" data-layout-allow-occlusion>N</span>
+        </div>
+        <div id="spark" data-layout-allow-overflow><div class="halo"></div><div class="streak"></div><div class="core"></div></div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        // composition t = output t - 6.10
+        var W0 = 6.10;
+        function T(out) { return +(out - W0).toFixed(4); }
+        var END = 6.4;
+        function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+        function expoOut(u) { return u >= 1 ? 1 : 1 - Math.pow(2, -10 * u); }
+
+        // ---------------- the TW mark paths
+        [["t", TW_PATHS.t], ["w", TW_PATHS.w], ["d", TW_PATHS.diamond]].forEach(function (p) {
+          ["nm-cp-", "nm-f-", "nm-s-"].forEach(function (pre) { document.getElementById(pre + p[0]).setAttribute("d", p[1]); });
+        });
+
+        var tl = gsap.timeline({ paused: true });
+
+        // ---------------- 6.64 "HK" / 7.12 "Vinay": letters rise out of their masks as the camera pulls out
+        document.querySelectorAll("#hk .ch").forEach(function (c, i) {
+          var st = T(6.64) + 0.07 * i;
+          tl.fromTo(c, { yPercent: 100 }, { yPercent: 0, duration: 0.75, ease: "power4.out" }, st);
+          tl.fromTo(c, { filter: "blur(8px) drop-shadow(0 2px 0 rgba(60,40,10,0.35)) drop-shadow(0 0 22px rgba(232,196,120,0.25))" },
+            { filter: "blur(0px) drop-shadow(0 2px 0 rgba(60,40,10,0.35)) drop-shadow(0 0 22px rgba(232,196,120,0.25))", duration: 0.32, ease: "power2.out" }, st);
+        });
+        document.querySelectorAll("#vn .ch").forEach(function (c, i) {
+          var st = T(7.12) + 0.055 * i;
+          tl.fromTo(c, { yPercent: 100 }, { yPercent: 0, duration: 0.75, ease: "power4.out" }, st);
+          tl.fromTo(c, { filter: "blur(8px)" }, { filter: "blur(0px)", duration: 0.32, ease: "power2.out" }, st);
+        });
+        // 7.50 beat: a light sweep runs across the gold HK
+        tl.fromTo("#hk-sheen .ch", { backgroundPosition: "100% 0" }, { backgroundPosition: "0% 0", duration: 0.7, ease: "power2.inOut" }, T(7.50));
+
+        // ---------------- 7.68 "managing": hairline draws out, the title rises under it
+        tl.fromTo("#rule", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, T(7.68));
+        tl.fromTo("#mp", { yPercent: -100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, T(7.74));
+
+        // ---------------- 8.56 "TaxWise" (the music cuts out): the mark draws itself on, fills, shines
+        var parts = ["t", "w", "d"];
+        var starts = [T(8.56), T(8.62), T(8.80)], durs = [0.42, 0.44, 0.24];
+        parts.forEach(function (k, i) {
+          var p = document.getElementById("nm-s-" + k), len = p.getTotalLength() + 2;
+          p.style.strokeDasharray = len + " " + (len + 40);           // a margin so the round caps leave no dot before the draw
+          tl.fromTo(p, { strokeDashoffset: len + 14 }, { strokeDashoffset: 0, duration: durs[i], ease: "power2.out" }, starts[i]);
+        });
+        tl.fromTo("#nm-fills path", { fillOpacity: 0 }, { fillOpacity: 1, duration: 0.26, ease: "power1.out", stagger: 0.04 }, T(8.98));
+        tl.fromTo("#nm-strokes", { opacity: 1 }, { opacity: 0.55, duration: 0.3, ease: "power1.out" }, T(9.05));
+        tl.fromTo("#nm-shine-g", { x: -60 }, { x: 1500, duration: 0.5, ease: "power2.inOut" }, T(9.12));
+        // the wordmark
+        tl.fromTo("#wm-tax", { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: "power4.out" }, T(8.70));
+        tl.fromTo("#wm-con", { clipPath: "inset(0% 100% 0% 0%)", opacity: 0.4 }, { clipPath: "inset(0% 0% 0% 0%)", opacity: 1, duration: 0.5, ease: "power2.out" }, T(8.84));
+
+        // ---------------- 9.49-12.37 the build: everything dims to ~40%
+        tl.to("#name", { opacity: 0.4, duration: 2.0, ease: "sine.inOut" }, T(9.49));
+
+        // the fuse / loading line: it steps forward on every word and reaches the far edge at 12.50
+        var STEPS = [[9.49, 0.05], [9.81, 0.13], [10.13, 0.26], [10.61, 0.34], [10.77, 0.49], [11.33, 0.59], [11.65, 0.77]];
+        function fuseP(out) {
+          if (out < STEPS[0][0]) return 0;
+          var v = 0;
+          for (var i = 0; i < STEPS.length; i++) {
+            var k = STEPS[i][0];
+            if (out < k) break;
+            var nxt = i + 1 < STEPS.length ? STEPS[i + 1][0] : 12.37;
+            var d = Math.min(0.3, nxt - k);
+            v = (i ? STEPS[i - 1][1] : 0) + (STEPS[i][1] - (i ? STEPS[i - 1][1] : 0)) * expoOut(clamp01((out - k) / d));
+          }
+          if (out >= 12.37) {                                  // "into": the last run to the edge, landing at 12.50
+            var u = clamp01((out - 12.37) / 0.13);
+            v = 0.77 + 0.23 * (1 - (1 - u) * (1 - u));
+          }
+          return v;
+        }
+        var TICKS = [9.49, 9.81, 10.13, 10.61, 10.77, 11.33, 11.65, 12.37];
+        var fuseEl = document.getElementById("fuse"), sparkEl = document.getElementById("spark");
+        var haloEl = sparkEl.querySelector(".halo"), streakEl = sparkEl.querySelector(".streak");
+        function drawFuse() {
+          var out = tl.time() + W0;
+          var p = fuseP(out);
+          fuseEl.style.transform = "scaleX(" + p.toFixed(5) + ")";
+          var on = out >= 9.49 ? 1 : 0;
+          var fl = 0;
+          for (var i = 0; i < TICKS.length; i++) if (out >= TICKS[i]) fl = Math.max(fl, Math.exp(-(out - TICKS[i]) / 0.11));
+          var shimmer = 0.06 * Math.sin(out * 47.0) + 0.04 * Math.sin(out * 83.0);
+          sparkEl.style.opacity = on ? 1 : 0;
+          sparkEl.style.transform = "translateX(" + (1080 * p).toFixed(2) + "px)";
+          haloEl.style.transform = "scale(" + (1 + 0.9 * fl + shimmer).toFixed(4) + ")";
+          streakEl.style.transform = "scaleX(" + (1 + 1.4 * fl + shimmer).toFixed(4) + ")";
+          fuseEl.style.opacity = on;
+        }
+        var driver = { v: 0 };
+        tl.fromTo(driver, { v: 0 }, { v: 1, duration: END, ease: "none", onUpdate: drawFuse }, 0);
+
+        // ---------------- 11.65 "expansion": EXPANSION springs outward from its centre, outlined in gold
+        var ADV = [79.3, 87.0, 87.0, 92.7, 95.1, 76.3, 40.0, 99.8, 95.1], GAP = 2.36, x = 0, ctr = [];
+        ADV.forEach(function (a) { ctr.push(x + a / 2); x += a + GAP; });
+        var mid = (x - GAP) / 2;
+        document.querySelectorAll("#xp-line .ch").forEach(function (c, i) {
+          var off = -(ctr[i] - mid) * 0.62;
+          tl.fromTo(c, { x: off, opacity: 0, scale: 0.86, filter: "url(#xp-outline) blur(9px) drop-shadow(0 0 7px rgba(232,196,120,0.45))" },
+            { x: 0, opacity: 1, scale: 1, filter: "url(#xp-outline) blur(0px) drop-shadow(0 0 7px rgba(232,196,120,0.45))", duration: 0.42, ease: "expo.out" },
+            T(11.65) + 0.012 * Math.abs(i - 4));
+        });
+        // 12.37 "into": the outline floods with gold, full by the last frame (12.47)
+        tl.fromTo("#xp-fill", { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.095, ease: "power1.out" }, T(12.37));
+        tl.fromTo("#xp-glow", { opacity: 0, scale: 0.8 }, { opacity: 0.35, scale: 1, duration: 0.6, ease: "power2.out" }, T(11.65));
+        tl.to("#xp-glow", { opacity: 1, scale: 1.12, duration: 0.12, ease: "power2.in", immediateRender: false }, T(12.36));
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

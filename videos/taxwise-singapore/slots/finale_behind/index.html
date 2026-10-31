@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/taxwise-singapore/design: fonts, tokens, the TW mark -->
+    <link rel="stylesheet" href="./design/taxwise.css" />
+    <script src="./design/tw-mark.js"></script>
+    <script src="./assets/skyline.js"></script>
+    <style>
+      html, body { margin: 0; background: transparent; }
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      .layer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+      /* ---------- sunrise behind the city: centred under the mark (600, 760), clipped at the horizon */
+      #sun { position: absolute; left: 0; top: 200px; width: 1200px; height: 560px; overflow: hidden; }
+      #sun-a, #sun-b { position: absolute; left: 0; top: 0; width: 1200px; height: 560px; transform-origin: 600px 560px; }
+      #sun-a { background: radial-gradient(40% 92% at 600px 100%, rgba(255, 236, 190, 0.85) 0%, rgba(246, 212, 146, 0.48) 18%,
+          rgba(236, 192, 116, 0.20) 42%, rgba(232, 186, 110, 0.06) 66%, rgba(232, 186, 110, 0) 86%); }
+      #sun-b { background: radial-gradient(48% 100% at 600px 100%, rgba(255, 214, 140, 0.98) 0%, rgba(248, 176, 84, 0.66) 20%,
+          rgba(232, 148, 64, 0.32) 44%, rgba(220, 130, 60, 0.10) 68%, rgba(220, 130, 60, 0) 88%); }
+      #sun-refl { position: absolute; left: 0; top: 761px; width: 1200px; height: 80px; transform-origin: 600px 0px;
+        background: radial-gradient(30% 100% at 600px 0%, rgba(255, 220, 150, 0.32) 0%, rgba(240, 186, 110, 0.10) 50%, rgba(240, 186, 110, 0) 80%); }
+      #halo { position: absolute; left: 250px; top: 85px; width: 700px; height: 700px;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(246, 214, 150, 0.36) 0%, rgba(236, 196, 120, 0.14) 38%, rgba(236, 196, 120, 0) 70%); }
+
+      /* ---------- the skyline (same SVG as the hook), scale 0.76, lotus centred under the mark */
+      #sky { position: absolute; left: 215.4px; top: 760px; width: 1px; height: 1px; transform: scale(0.76); transform-origin: 0 0; }
+      #sky svg { position: absolute; left: -24px; top: -328px; overflow: visible; }
+      #sky .sg-fill { fill: rgba(4, 9, 22, 0.66); }
+      #sky .sg-strokes { filter: drop-shadow(0 0 3px rgba(232, 196, 120, 0.55)) drop-shadow(0 0 11px rgba(232, 196, 120, 0.22)); }
+      #hline { position: absolute; left: -500px; top: 752px; width: 2200px; height: 16px; transform-origin: 50% 50%; }
+      #hline .core { position: absolute; left: 0; top: 7px; width: 100%; height: 2px;
+        background: linear-gradient(90deg, rgba(212,178,106,0) 0%, rgba(212,178,106,0.35) 16%, rgba(226,196,128,0.9) 32%,
+          #f6e4b2 46%, #fff6dc 50%, #f6e4b2 54%, rgba(226,196,128,0.9) 64%, rgba(212,178,106,0.4) 76%, rgba(212,178,106,0) 90%); }
+      #hline .glow { position: absolute; left: 0; top: 0; width: 100%; height: 16px; opacity: 0.6;
+        background: linear-gradient(180deg, rgba(232,196,120,0) 0%, rgba(232,196,120,0.28) 50%, rgba(232,196,120,0) 100%); }
+
+      /* ---------- the TW mark, 250px wide, (475, 296) */
+      #mark { position: absolute; left: 475px; top: 296px; width: 250px; height: 278.5px; overflow: visible;
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.38)) drop-shadow(0 0 22px rgba(232, 196, 120, 0.30)); }
+      #mglint { position: absolute; left: 500px; top: 449px; width: 200px; height: 200px; }
+      #mglint .h, #mglint .v { position: absolute; left: 0; top: 96px; width: 200px; height: 8px;
+        background: radial-gradient(50% 50% at 50% 50%, #fffef6 0%, rgba(255,240,200,0.8) 25%, rgba(255,240,200,0) 100%); }
+      #mglint .v { transform: rotate(90deg); }
+      #mglint .o { position: absolute; left: 60px; top: 60px; width: 80px; height: 80px; border-radius: 50%;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255,250,232,0.95) 0%, rgba(255,228,160,0.45) 30%, rgba(255,228,160,0) 70%); }
+
+      /* ---------- the pin, landing on the SkyPark deck at (800, 569) */
+      #pin { position: absolute; left: 767px; top: 481px; width: 66px; height: 88px; overflow: visible; transform-origin: 33px 88px;
+        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 12px rgba(240, 206, 140, 0.45)); }
+      .pring { position: absolute; left: 700px; top: 545px; width: 200px; height: 48px; border-radius: 50%; box-sizing: border-box;
+        border: 2.5px solid rgba(246, 226, 170, 0.95); box-shadow: 0 0 14px rgba(232, 196, 120, 0.5); }
+
+      /* ---------- NOW IN SINGAPORE drops out of the horizon line */
+      #nis-mask { position: absolute; left: 0; top: 764px; width: 1080px; height: 90px; overflow: hidden; }
+      #nis { position: absolute; left: 0; top: 19px; width: 1080px; height: 56px; display: flex; justify-content: center; gap: 0;
+        padding-left: calc(120px + 0.2em); box-sizing: border-box; font-family: var(--tw-sans); font-weight: 700; font-size: 44px; line-height: 56px;
+        letter-spacing: 0.2em; white-space: pre; }
+      #nis .wd { display: inline-block; background: linear-gradient(180deg, #fff3d4 0%, #f0d595 40%, #d8b466 70%, #b48d45 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 10px rgba(232, 196, 120, 0.28)); }
+      #nis-sheen { position: absolute; left: 0; top: 783px; width: 1080px; height: 56px; display: flex; justify-content: center;
+        padding-left: calc(120px + 0.2em); box-sizing: border-box; font-family: var(--tw-sans); font-weight: 700; font-size: 44px; line-height: 56px;
+        letter-spacing: 0.2em; white-space: pre; }
+      #nis-sheen .wd { display: inline-block; background: linear-gradient(100deg, rgba(255,251,236,0) 0%, rgba(255,251,236,0) 40%, rgba(255,251,236,0.95) 50%, rgba(255,251,236,0) 60%, rgba(255,251,236,0) 100%);
+        background-size: 300% 100%; background-position: 100% 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+      #dust { position: absolute; left: 0; top: 200px; width: 1080px; height: 620px; }
+      /* ---------- the bloom the compositor cuts on (48.25) */
+      #bloom-clip { position: absolute; left: 0; top: 0; width: 1080px; height: 1150px; overflow: hidden; }   /* never over the desk */
+      #bloom { position: absolute; left: -180px; top: 10px; width: 1600px; height: 1100px; transform-origin: 800px 550px;
+        background: radial-gradient(50% 50% at 50% 50%, rgba(255, 249, 232, 1) 0%, rgba(255, 236, 188, 0.95) 16%, rgba(250, 214, 148, 0.78) 32%,
+          rgba(240, 192, 118, 0.48) 50%, rgba(232, 180, 104, 0.18) 68%, rgba(232, 180, 104, 0) 84%); }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="5.866" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="5.866" data-track-index="0">
+        <div id="sun" data-layout-allow-overflow><div id="sun-a" data-layout-allow-overflow></div><div id="sun-b" data-layout-allow-overflow></div></div>
+        <div id="sun-refl" data-layout-allow-overflow></div>
+        <div id="halo"></div>
+        <canvas id="dust" width="1080" height="620" data-layout-allow-occlusion></canvas>
+        <div id="sky"></div>
+        <div id="hline" data-layout-allow-overflow><div class="glow"></div><div class="core"></div></div>
+        <svg id="mark" viewBox="0 0 1000 1114.1" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="fm-fill" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1114">
+              <stop offset="0" stop-color="#fbefc8" /><stop offset="0.38" stop-color="#e8cb86" /><stop offset="0.62" stop-color="#c9a35a" /><stop offset="1" stop-color="#9c7a35" />
+            </linearGradient>
+            <linearGradient id="fm-shine" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="0">
+              <stop offset="0" stop-color="#fffbea" stop-opacity="0" /><stop offset="0.5" stop-color="#fffbea" stop-opacity="0.92" /><stop offset="1" stop-color="#fffbea" stop-opacity="0" />
+            </linearGradient>
+            <clipPath id="fm-clip"><path id="fm-cp-t" /><path id="fm-cp-w" /><path id="fm-cp-d" /></clipPath>
+          </defs>
+          <g fill="url(#fm-fill)"><path id="fm-t" /><path id="fm-w" /><path id="fm-d" /></g>
+          <g clip-path="url(#fm-clip)"><g id="fm-shine-g"><rect x="-460" y="-200" width="460" height="1500" fill="url(#fm-shine)" transform="skewX(-18)" /></g></g>
+        </svg>
+        <div id="mglint"><div class="o"></div><div class="h"></div><div class="v"></div></div>
+        <div class="pring" id="pring1"></div>
+        <div class="pring" id="pring2"></div>
+        <svg id="pin" viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="pin-g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff2cf" /><stop offset="0.4" stop-color="#ecce8a" /><stop offset="0.75" stop-color="#c9a35a" /><stop offset="1" stop-color="#9c7a35" />
+            </linearGradient>
+          </defs>
+          <path d="M30,79 C24,66 6,48 6,29 A24,24 0 1 1 54,29 C54,48 36,66 30,79 Z" fill="url(#pin-g)" stroke="#fff0c8" stroke-width="1.2" stroke-opacity="0.6" />
+          <circle cx="30" cy="29" r="9.5" fill="#0a1430" />
+          <circle cx="30" cy="29" r="9.5" fill="none" stroke="#f6e2a8" stroke-width="1.4" />
+          <path d="M14,20 A18,18 0 0 1 26,10" fill="none" stroke="#fffbea" stroke-width="2.4" stroke-linecap="round" stroke-opacity="0.8" />
+        </svg>
+        <div id="nis-mask" data-layout-allow-overflow>
+          <div id="nis" data-layout-allow-overflow data-layout-allow-occlusion><span class="wd" id="w-now" data-layout-allow-occlusion>NOW </span><span class="wd" id="w-in" data-layout-allow-occlusion>IN </span><span class="wd" id="w-sg" data-layout-allow-occlusion>SINGAPORE</span></div>
+        </div>
+        <div id="nis-sheen" data-layout-allow-overflow data-layout-allow-occlusion><span class="wd" data-layout-allow-occlusion>NOW </span><span class="wd" data-layout-allow-occlusion>IN </span><span class="wd" data-layout-allow-occlusion>SINGAPORE</span></div>
+        <div id="bloom-clip" data-layout-allow-overflow data-layout-allow-occlusion><div id="bloom" data-layout-allow-overflow data-layout-allow-occlusion></div></div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        // composition t = output t - 42.37
+        var W0 = 42.37, END = 5.866;   // 176 frames: the renderer rounds the frame count up
+        function T(out) { return +(out - W0).toFixed(4); }
+        function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a);
+          t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+        // ---------------- the mark
+        [["t", TW_PATHS.t], ["w", TW_PATHS.w], ["d", TW_PATHS.diamond]].forEach(function (p) {
+          document.getElementById("fm-" + p[0]).setAttribute("d", p[1]);
+          document.getElementById("fm-cp-" + p[0]).setAttribute("d", p[1]);
+        });
+        // ---------------- the skyline
+        var skyEl = document.getElementById("sky");
+        skyEl.innerHTML = sgSkylineSVG({ id: "fn", strokeWidth: 2.1 / 0.76 });
+        var strokes = sgSkylinePrep(skyEl.querySelector("svg"));
+        var fills = skyEl.querySelector(".sg-fills");
+
+        var tl = gsap.timeline({ paused: true });
+
+        // 42.50 downbeat: a soft light gathers where the mark will land
+        tl.fromTo("#halo", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" }, T(42.50));
+
+        // ---------------- 43.07 "TaxWise": the mark assembles (T drops, W rises, diamond pops)
+        tl.fromTo("#fm-t", { y: -720, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power4.out" }, T(43.07));
+        tl.fromTo("#fm-w", { y: 700, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power4.out" }, T(43.14));
+        tl.fromTo("#fm-d", { scale: 0, opacity: 0, transformOrigin: "50% 50%" }, { scale: 1, opacity: 1, duration: 0.42, ease: "back.out(2.4)" }, T(43.34));
+        tl.fromTo("#mark", { filter: "blur(6px) drop-shadow(0 8px 18px rgba(0,0,0,0.38)) drop-shadow(0 0 22px rgba(232,196,120,0.30))" },
+          { filter: "blur(0px) drop-shadow(0 8px 18px rgba(0,0,0,0.38)) drop-shadow(0 0 22px rgba(232,196,120,0.30))", duration: 0.35, ease: "power2.out" }, T(43.07));
+        tl.fromTo("#mglint", { opacity: 0, scale: 0.1, rotation: -30, transformOrigin: "100px 100px" },
+          { opacity: 1, scale: 0.9, rotation: 10, duration: 0.12, ease: "expo.out" }, T(43.42));
+        tl.to("#mglint", { opacity: 0, scale: 0.3, rotation: 55, duration: 0.4, ease: "power2.in", immediateRender: false }, T(43.54));
+        // 43.50: a light sweep across the metal
+        tl.fromTo("#fm-shine-g", { x: -80 }, { x: 1560, duration: 0.6, ease: "power2.inOut" }, T(43.50));
+        tl.to("#halo", { opacity: 0.55, duration: 0.8, ease: "power1.inOut" }, T(43.6));
+
+        // ---------------- 44.27 "now in Singapore": horizon + skyline draw on, NOW / IN / SINGAPORE drop, the pin lands
+        tl.fromTo("#hline", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, T(44.16));
+        var EL = { lotus: 0.0, flyer: 0.05, mbs: 0.04, cbd: 0.10, trees: 0.09 };
+        strokes.forEach(function (s) {
+          var b = T(44.22) + EL[s.el], st, du, ez = "power2.out";
+          if (s.ph === 0) { st = b + 0.014 * s.k; du = 0.34; }
+          else if (s.ph === 1) { st = b + 0.20 + 0.008 * s.k; du = 0.24; }
+          else { st = b + 0.30 + 0.01 * s.k; du = 0.18; }
+          if (s.el === "mbs" && s.ph === 2) { st = T(44.30) + 0.03 * s.k; du = 0.22; ez = "power2.inOut"; }   // the SkyPark is down before the pin
+          if (s.el === "flyer" && s.ph === 2) { st = T(44.50) + 0.012 * s.k; du = 0.1; ez = "power1.out"; }
+          tl.fromTo(s.path, { strokeDashoffset: s.len }, { strokeDashoffset: 0, duration: du, ease: ez }, st);
+        });
+        tl.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out" }, T(44.45));
+
+        [["#w-now", 44.27], ["#w-in", 44.43], ["#w-sg", 44.59]].forEach(function (w) {
+          tl.fromTo(w[0], { yPercent: -175, filter: "blur(6px) drop-shadow(0 0 10px rgba(232,196,120,0.28))" },
+            { yPercent: 0, filter: "blur(0px) drop-shadow(0 0 10px rgba(232,196,120,0.28))", duration: 0.42, ease: "power3.out" }, T(w[1]));
+        });
+
+        // the pin falls onto the SkyPark and lands on "Singapore"
+        tl.fromTo("#pin", { y: -300, opacity: 0 }, { y: 0, opacity: 1, duration: 0.2, ease: "power2.in" }, T(44.39));
+        tl.fromTo("#pin", { scaleY: 1, scaleX: 1 }, { scaleY: 0.82, scaleX: 1.12, duration: 0.06, ease: "power2.out" }, T(44.59));
+        tl.to("#pin", { scaleY: 1, scaleX: 1, duration: 0.42, ease: "elastic.out(1.1, 0.45)", immediateRender: false }, T(44.65));
+        tl.fromTo("#pring1", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 0.4, duration: 0.04, ease: "none" }, T(44.59));
+        tl.to("#pring1", { opacity: 0, scale: 1.25, duration: 0.7, ease: "expo.out", immediateRender: false }, T(44.63));
+        tl.fromTo("#pring2", { opacity: 0, scale: 0.3 }, { opacity: 0.7, scale: 0.4, duration: 0.04, ease: "none" }, T(44.71));
+        tl.to("#pring2", { opacity: 0, scale: 1.05, duration: 0.7, ease: "expo.out", immediateRender: false }, T(44.75));
+
+        // ---------------- the sunrise behind the city
+        tl.fromTo("#sun-a", { opacity: 0, scaleY: 0.4, scaleX: 0.75 }, { opacity: 0.55, scaleY: 1, scaleX: 1, duration: 0.9, ease: "power2.out" }, T(44.50));
+        tl.fromTo("#sun-refl", { opacity: 0, scaleY: 0.3 }, { opacity: 0.6, scaleY: 1, duration: 0.9, ease: "power2.out" }, T(44.50));
+        // 45.63-47.15 "trust us, this is just the beginning": brighter and warmer, steadily
+        tl.to("#sun-a", { opacity: 1, scaleX: 1.25, scaleY: 1.3, duration: 1.52, ease: "sine.inOut" }, T(45.63));
+        tl.fromTo("#sun-b", { opacity: 0, scaleX: 0.8, scaleY: 0.7 }, { opacity: 0.9, scaleX: 1.3, scaleY: 1.4, duration: 1.52, ease: "sine.inOut" }, T(45.63));
+        tl.to("#sun-refl", { opacity: 1, scaleX: 1.3, duration: 1.52, ease: "sine.inOut" }, T(45.63));
+        tl.to("#halo", { opacity: 1, scale: 1.2, duration: 1.52, ease: "sine.inOut" }, T(45.63));
+        // 46.50 downbeat: a light sweep across NOW IN SINGAPORE
+        tl.fromTo("#nis-sheen .wd", { backgroundPosition: "100% 0" }, { backgroundPosition: "0% 0", duration: 0.75, ease: "power2.inOut" }, T(46.50));
+        // 47.15 "beginning": a last shine on the mark
+        tl.fromTo("#fm-shine-g", { x: -80 }, { x: 1560, duration: 0.7, ease: "power2.inOut", immediateRender: false }, T(47.15));
+        // ---------------- 47.50-48.25: the upper wall blooms to gold light (the compositor cuts to the end card on it)
+        tl.to("#sun-a", { opacity: 1, scaleX: 1.6, scaleY: 1.6, duration: 0.75, ease: "power2.in" }, T(47.50));
+        tl.to("#sun-b", { opacity: 1, scaleX: 1.7, scaleY: 1.8, duration: 0.75, ease: "power2.in" }, T(47.50));
+        tl.fromTo("#bloom", { opacity: 0, scale: 0.25 }, { opacity: 0.92, scale: 1, duration: 0.78, ease: "power2.in" }, T(47.45));
+
+        // ---------------- gold dust in the light (seeded), rising faster as the light grows
+        var dcv = document.getElementById("dust"), dx = dcv.getContext("2d");
+        var rnd = mulberry32(48250), motes = [];
+        for (var n = 0; n < 28; n++) {
+          motes.push({ x: 260 + rnd() * 700, y: 560 - rnd() * 90, t0: 44.9 + rnd() * 2.8, life: 1.6 + rnd() * 1.5,
+            rise: 120 + rnd() * 200, sway: 3 + rnd() * 9, f: 0.35 + rnd() * 0.5, ph: rnd() * 6.28, s: 1.1 + rnd() * 1.7, a: 0.4 + rnd() * 0.5 });
+        }
+        function drawDust() {
+          var out = tl.time() + W0;
+          dx.clearRect(0, 0, 1080, 620);
+          for (var i = 0; i < motes.length; i++) {
+            var m = motes[i], u = (out - m.t0) / m.life;
+            if (u <= 0 || u >= 1) continue;
+            var a = m.a * Math.pow(Math.sin(Math.PI * u), 0.8);
+            var x = m.x + m.sway * Math.sin(m.ph + 2 * Math.PI * m.f * (out - m.t0)), y = m.y - m.rise * u * (0.7 + 0.3 * u);
+            var g = dx.createRadialGradient(x, y, 0, x, y, m.s * 4);
+            g.addColorStop(0, "rgba(255,242,210," + a + ")"); g.addColorStop(0.3, "rgba(242,208,142," + (a * 0.5) + ")"); g.addColorStop(1, "rgba(242,208,142,0)");
+            dx.fillStyle = g; dx.beginPath(); dx.arc(x, y, m.s * 4, 0, 2 * Math.PI); dx.fill();
+          }
+        }
+        var driver = { v: 0 };
+        tl.fromTo(driver, { v: 0 }, { v: 1, duration: END, ease: "none", onUpdate: drawDust }, 0);
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

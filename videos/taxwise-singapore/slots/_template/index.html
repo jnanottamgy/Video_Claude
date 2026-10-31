@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="./vendor/gsap.min.js"></script>
+    <!-- design/ links to videos/taxwise-singapore/design: fonts, tokens, the TW mark -->
+    <link rel="stylesheet" href="./design/taxwise.css" />
+    <script src="./design/tw-mark.js"></script>
+    <style>
+      #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      .scene { position: absolute; inset: 0; }
+      #mark { position: absolute; left: 340px; top: 520px; width: 400px; color: var(--tw-gold); }
+      #title { position: absolute; left: 0; right: 0; top: 1060px; text-align: center; font-size: 120px; }
+      #label { position: absolute; left: 0; right: 0; top: 1220px; text-align: center; font-size: 30px; }
+    </style>
+  </head>
+  <body>
+    <!-- SLOT_DURATION: set data-duration on #stage and #scene to the slot length in seconds -->
+    <div id="stage" data-composition-id="main" data-start="0" data-duration="2" data-width="1080" data-height="1920">
+      <div id="scene" class="clip scene" data-start="0" data-duration="2" data-track-index="0">
+        <div id="mark"></div>
+        <div id="title" class="tw-display tw-gold-text">TaxWise</div>
+        <div id="label" class="tw-label">Template check</div>
+      </div>
+    </div>
+    <script>
+      document.getElementById("mark").innerHTML = twMarkSVG({ fill: "currentColor" });
+      var tl = gsap.timeline({ paused: true });
+      tl.fromTo("#mark .tw-t", { y: -80, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.1);
+      tl.fromTo("#mark .tw-w", { y: 80, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" }, 0.2);
+      tl.fromTo("#mark .tw-diamond", { scale: 0, transformOrigin: "50% 50%" }, { scale: 1, duration: 0.4, ease: "back.out(2)" }, 0.45);
+      tl.fromTo("#title", { y: 40, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 0.5);
+      tl.fromTo("#label", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4 }, 0.8);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
