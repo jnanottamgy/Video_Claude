@@ -64,6 +64,41 @@ lands on his words:
   skipped during his name card, which is its own caption.
 - **Finishing:** vignette and grain.
 
+## Sound, v5: his re-recorded voice (tools/adr.py, tools/dialogue.py)
+- **The takes:** HK Vinay re-recorded his six lines to the karaoke guide (below), one file per line.
+  - They are phone recordings, AAC 64 kb/s mono (clean up to about 12 kHz).
+  - The room is dry. 200 ms after a phrase his voice is 38-50 dB down; the office was 20 dB, Adobe 41.
+  - Every line is clear. The offline recogniser hears each one as scripted, apart from its usual slips on
+    "horizons" and "in-house", which it also made on the original.
+  - Two takes begin with the phone's gain-pumped room noise, so each line fades in 60-100 ms before its first
+    word.
+- **The fit (tools/adr.py), the way dialogue-replacement tools work:**
+  - **Matching.** Dynamic time warping matches each take to the original, using the echo-free Adobe version
+    as the timing guide.
+  - **Anchors.** They are every onset after a pause, plus word onsets on camera and the words the graphics
+    are cued on.
+  - **Placement.** Dynamic programming places the anchors. A missed anchor costs more when the audio would
+    run ahead of his lips.
+  - **Pauses first.** The pauses absorb the differences, keeping 80 ms of natural decay and 40 ms before each
+    word. Only then do the words speed up or slow down: at most 22% on camera, 16-20% on the voice-over.
+  - **Virtual pauses.** Where the original paused but the take runs on (15 places, for example "our ...
+    expansion", "navigate ... Singapore's", "building ... lasting"), a short silence opens at the take's
+    quietest point.
+  - **Rendering.** WSOLA renders the result with the pitch untouched.
+  - **Result.** An independent envelope check puts 90% of the on-camera words within 40 ms of the original
+    (96% within 80 ms). The graphics' cue words ("thirty", the five services, "India", "Singapore's",
+    "connections", "across borders") are within 20 ms. 40-85% of each line's speech plays untouched; the
+    rest mostly changes speed by under 10%.
+- **EQ (dialogue.py):** the same broad EQ on all six lines:
+  - a 75 Hz high-pass;
+  - +2.5 dB at 320 Hz, the body a phone mic loses;
+  - -2.5 dB at 2.8 kHz, its honk;
+  - +3 dB at 5.1 kHz, to fill a notch the phone's mic puts there.
+  Then each line is matched toward the six's average: 60% of the smoothed difference, at most 4 dB. They were
+  recorded minutes apart, with the phone held a little differently. Nothing else.
+- **Mix:** the v3 chain, unchanged. -14.2 LUFS, -1.2 dBTP. His voice sits 17.8 dB over the music and effects
+  in the speech band; the drop is still the loudest moment.
+
 ## Sound, v4: the voice
 The room's echo is baked into the phone recording. The client ran the original
 (renders/deliver/TAXWISE_voice_for_Adobe_Enhance.wav) through Adobe Podcast "Enhance Speech" and sent it back.
@@ -73,8 +108,8 @@ The room's echo is baked into the phone recording. The client ran the original
 - Lip sync is exact on every line.
 - The mix chain below is unchanged.
 - An offline transcription of Adobe's version mishears a few words ("ambitions", "horizons", "payroll",
-  "trust us"). The client confirmed they sound off: Adobe blurs consonants at high strength. The fix is a
-  re-record (below).
+  "trust us"). The client confirmed they sound off: Adobe blurs consonants at high strength. Hence the re-record
+  (v5, above).
 
 ## Re-recording the voice (tools/karaoke_timing.py, tools/karaoke.py)
 - **The guide:** a 58 s karaoke video (renders/deliver/TAXWISE_VO_karaoke_*.mp4):
@@ -87,8 +122,7 @@ The room's echo is baked into the phone recording. The client ran the original
   phrase-initial starts that the ASR put early are snapped to the onset of his voice.
 - **Two versions:** one has his original voice, to hear in earphones. The other is silent, for when the guide
   plays in the same room as the microphone.
-- **Next:** he records on a phone while the guide plays. Each line is then aligned onto the reel's timeline and
-  mixed with the chain below.
+- He recorded each line as its own file, on a phone, in a dry room (v5, above).
 
 ## Sound (tools/dialogue.py, tools/mix.py), v3
 - **History:** v1 and v2 processed the phone recording heavily:

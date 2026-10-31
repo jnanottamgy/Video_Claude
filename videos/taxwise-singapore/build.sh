@@ -4,6 +4,9 @@
 # Inputs (kept OUT of git: the repo is public):
 #   renders/src/drive/reel_original.mp4        the team's 56 s reel (HK Vinay at his desk), from their Drive
 #   renders/src/song_timeless_instrumental.mp3 the song they supplied ("Timeless Instrumental")
+#   renders/src/rerecord_*/take_*.m4a          his six lines re-recorded to the karaoke guide (one file per line,
+#                                              in script order); without them, the original voice is used
+#   renders/src/voice_enhanced.wav             the Adobe-enhanced original: the timing guide for fitting the takes
 #   library/sfx/nikovax/*.wav                  the SFX library (restore: python3 library/tools/sfx.py check)
 #   /root/asr-models                           offline ASR (Silero VAD + Parakeet TDT 0.6b v2, sherpa-onnx)
 # Output: renders/deliver/TAXWISE_Singapore_reel.mp4 (+ _nomusic.mp4, the covers)
@@ -28,7 +31,8 @@ for s in hook_behind name_behind singapore_slam team_services globe values_behin
   (cd "slots/$s" && rm -rf renders/png && npx --yes hyperframes@0.8.191 render . --format png-sequence -q high -o ./renders/png)
 done
 
-# 4. the sound: studio dialogue, then the mix (song + voice + sound design), -14 LUFS
+# 4. the sound: his re-recorded lines fitted to the reel's timing and EQ'd (dialogue.py runs tools/adr.py), then the
+#    mix (song + voice + sound design), -14 LUFS
 python3 tools/dialogue.py
 python3 tools/mix.py
 

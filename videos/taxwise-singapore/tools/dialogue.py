@@ -14,6 +14,17 @@ the client from renders/deliver/TAXWISE_voice_for_Adobe_Enhance.wav: the room's 
 aligned to the original by cross-correlation (to the sample), trimmed to the same length, and only high-passed at
 70 Hz (Adobe has already EQ'd and cleaned it).
 
+v5: when his re-recorded lines are present (renders/src/rerecord_*/take_*.m4a, recorded to the karaoke guide in a
+dry room), they replace both. tools/adr.py fits every line onto the original's timing (lip sync, graphics cues).
+The lines then get a light, broad EQ, the same for all six:
+  - a 75 Hz high-pass;
+  - +2.5 dB at 320 Hz: the body a phone mic loses;
+  - -2.5 dB at 2.8 kHz: its honk;
+  - +3 dB at 5.1 kHz: it fills a notch the phone's mic puts there.
+They also get a gentle match to each other: 60% of each line's smoothed difference from the six's average,
+at most +-4 dB, 100 Hz-10 kHz. The six lines were recorded minutes apart, with the phone held a little
+differently each time. No compression, denoising or gating here; levels and dynamics are tools/mix.py's.
+
   python3 tools/dialogue.py   ->  renders/audio/dialogue_src.wav (float, stereo, source timeline)
 """
 import os
@@ -101,11 +112,76 @@ def load_enhanced(path, ref):
     return out, lag, corr
 
 
+TAKE_EQ = np.vstack([butter(4, 75, "highpass", fs=SR, output="sos"),
+                     _peak(320, 2.5, 0.8), _peak(2800, -2.5, 1.0), _peak(5100, 3.0, 2.0)])
+MATCH, MATCH_MAX = 0.6, 4.0
+THIRDS = 1000 * 2 ** (np.arange(-10, 11) / 3)            # 100 Hz .. 10 kHz
+
+
+def third_octaves(x):
+    """Third-octave band power (dB) over the speech frames of a line, re its 300-3000 Hz average."""
+    import adr
+    act = adr.vad(adr.band_level(x))
+    f = np.fft.rfftfreq(4096, 1 / SR)
+    S, n = np.zeros(len(f)), 0
+    for i in range(0, len(x) - 4096, 1024):
+        c = (i + 2048) // 480
+        if c < len(act) and act[c]:
+            S += np.abs(np.fft.rfft(x[i:i + 4096] * np.hanning(4096))) ** 2
+            n += 1
+    S /= max(n, 1)
+    L = np.array([10 * np.log10(S[(f >= c / 2 ** (1 / 6)) & (f < c * 2 ** (1 / 6))].sum() + 1e-20) for c in THIRDS])
+    return L - L[(THIRDS >= 300) & (THIRDS <= 3000)].mean()
+
+
+def eq_fir(gain_db, taps=4095):
+    """Zero-phase FIR from a gain curve at the third-octave centres (log-interpolated, 0 dB outside)."""
+    f = np.fft.rfftfreq(taps, 1 / SR)
+    lf = np.log2(np.maximum(f, 1.0))
+    g = np.interp(lf, np.log2(THIRDS), gain_db, left=0.0, right=0.0)
+    h = np.roll(np.fft.irfft(10 ** (g / 20), n=taps), taps // 2) * np.hanning(taps)
+    return h
+
+
+def rerecorded(ref):
+    """His re-recorded lines, fitted to the original's timing (tools/adr.py) and EQ'd, on the source timeline
+    (dual mono, same length as `ref`). None when the takes aren't there."""
+    import adr
+    from scipy.signal import fftconvolve
+    paths = adr.take_paths()
+    if not paths:
+        return None
+    guide = adr.guide_track()
+    lines = []
+    for seg, p in zip(edl.SEGMENTS, paths):
+        y, rep, _ = adr.align_line(seg, adr.load_mono(p), guide)
+        lines.append((seg, sosfilt(TAKE_EQ, y)))
+        offs = [r["off_ms"] for r in rep["anchors"]]
+        print(f"  {seg['id']} {os.path.basename(p)}: {len(offs)} anchors, |off| max {max(map(abs, offs))} ms, "
+              f"speech untouched {rep['speech_unchanged_pct']}%")
+    spec = [third_octaves(y) for _, y in lines]
+    mean = np.mean(spec, 0)
+    out = np.zeros(len(ref))
+    for (seg, y), L in zip(lines, spec):
+        dev = np.convolve(np.pad(L - mean, 1, mode="edge"), [0.25, 0.5, 0.25], "valid")
+        corr = np.clip(-MATCH * dev, -MATCH_MAX, MATCH_MAX)
+        corr[[0, -1]] *= 0.5                                  # taper at the band edges
+        y = fftconvolve(y, eq_fir(corr), mode="same")
+        a = int(round(adr.window(seg)[0] * SR))
+        out[a:a + len(y)] += y[:len(out) - a]
+        print(f"  {seg['id']} match EQ (dB, 100 Hz-10 kHz in thirds): " + " ".join(f"{v:+.1f}" for v in corr))
+    return np.stack([out, out], 1)
+
+
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     ref = load_src()
     p = enhanced_path()
-    if p:
+    rr = rerecorded(ref)
+    if rr is not None:
+        y = rr
+        print("using his re-recorded lines (renders/src/rerecord_*), fitted to the reel's timing")
+    elif p:
         y, lag, corr = load_enhanced(p, ref)
         y = sosfilt(butter(4, 70, "highpass", fs=SR, output="sos"), y, axis=0)
         print(f"using the Adobe-enhanced voice {os.path.basename(p)}: offset {lag} samples ({lag / SR * 1000:.1f} ms) "
