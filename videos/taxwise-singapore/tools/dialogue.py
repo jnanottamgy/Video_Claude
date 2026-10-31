@@ -9,6 +9,11 @@ sound processed.
      further back. A linear change: in mono it is exactly the original mid.
 Levels, a light compressor and the cut onto the timeline happen in tools/mix.py.
 
+When the Adobe Podcast "Enhance Speech" version of his recording is present (renders/src/voice_enhanced.*, made by
+the client from renders/deliver/TAXWISE_voice_for_Adobe_Enhance.wav: the room's echo removed), it is used instead:
+aligned to the original by cross-correlation (to the sample), trimmed to the same length, and only high-passed at
+70 Hz (Adobe has already EQ'd and cleaned it).
+
   python3 tools/dialogue.py   ->  renders/audio/dialogue_src.wav (float, stereo, source timeline)
 """
 import os
@@ -66,9 +71,48 @@ def process(x):
     return np.stack([mid + SIDE * side, mid - SIDE * side], 1)
 
 
+def enhanced_path():
+    import glob
+    c = sorted(glob.glob(os.path.join(edl.ROOT, "renders/src/voice_enhanced.*")))
+    return c[0] if c else None
+
+
+def load_enhanced(path, ref):
+    """The Adobe-enhanced voice at 48 kHz stereo, aligned to the original recording `ref` (N, 2) and trimmed to
+    its length. Returns (audio, lag in samples, correlation)."""
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-ar", str(SR), "-ac", "2", "-f", "f32le", "-"],
+                         capture_output=True, check=True).stdout
+    e = np.frombuffer(raw, np.float32).astype(np.float64).reshape(-1, 2)
+    a, b = e.mean(1), ref.mean(1)
+    n = min(len(a), len(b))
+    bp = butter(4, [300, 3400], "bandpass", fs=SR, output="sos")
+    fa, fb = sosfilt(bp, a[:n]), sosfilt(bp, b[:n])
+    F = np.fft.rfft(fa, 2 * n) * np.conj(np.fft.rfft(fb, 2 * n))
+    cc = np.fft.irfft(F)
+    lags = np.concatenate([np.arange(0, n), np.arange(-n, 0)])
+    win = np.abs(lags) <= int(2.0 * SR)                  # Adobe keeps timing: search +-2 s
+    lag = int(lags[win][np.argmax(cc[win])])             # e[t + lag] lines up with ref[t]
+    out = np.zeros_like(ref)
+    src = e[max(0, lag):]
+    dst0 = max(0, -lag)
+    m = min(len(src), len(ref) - dst0)
+    out[dst0:dst0 + m] = src[:m]
+    corr = np.corrcoef(sosfilt(bp, out.mean(1)), sosfilt(bp, ref.mean(1)))[0, 1]
+    return out, lag, corr
+
+
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    y = process(load_src())
+    ref = load_src()
+    p = enhanced_path()
+    if p:
+        y, lag, corr = load_enhanced(p, ref)
+        y = sosfilt(butter(4, 70, "highpass", fs=SR, output="sos"), y, axis=0)
+        print(f"using the Adobe-enhanced voice {os.path.basename(p)}: offset {lag} samples ({lag / SR * 1000:.1f} ms) "
+              f"corrected, correlation with the original {corr:.2f}")
+    else:
+        y = process(ref)
+        print("using the original recording (gentle EQ)")
     sf.write(OUT, y.astype(np.float32), SR, subtype="FLOAT")
     print("->", OUT, f"{len(y) / SR:.2f} s, stereo")
 
