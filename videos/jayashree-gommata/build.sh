@@ -7,7 +7,7 @@
 #   renders/src/hd/*.mp4                   optional: a sharper copy of the same video; used instead when present
 #                                          (the crops are kept in normalised coordinates)
 #   library/sfx/nikovax/*.wav              the SFX library (restore: python3 library/tools/sfx.py check)
-# Output: renders/deliver/JAYASHREE_Cheluvara_Cheluva_reel.mp4 (+ the cover)
+# Output: renders/deliver/JAYASHREE_Cheluvara_Cheluva_reel_v2.mp4 (+ the cover)
 #
 # Tools: ffmpeg, python3 (numpy scipy opencv pillow+raqm soundfile pyloudnorm librosa), npm (for the fonts).
 set -euo pipefail

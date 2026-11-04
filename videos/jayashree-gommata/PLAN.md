@@ -53,9 +53,23 @@ It hooks on the title line from frame one and pays off on a shouted "Jai!". The 
     every cut.
   - The canvas is deep temple maroon, with the shot blurred into a soft glow, a slowly turning gold lotus
     mandala and a warm halo behind the window.
-- **Grade:** her event reel's gold LUT. The blown white skies are shaped into warm golden light, with a
-  graduated filter and the window's own vignette; overexposed shots are pulled down per shot. Then god rays
-  from above on the statue shots, bloom, grain and a vignette.
+- **Grade (v2, tools/grade.py):** the client found v1 too bright and asked for more contrast, better colour and
+  clarity.
+  - **Why v1 was milky:** her event reel's gold LUT had lifted a source that was already washed out. The
+    window's darkest parts sat at 12-46% and its midtones at 61-79%. 68-76% of each statue frame is blown
+    white, and the black stone read mid-grey.
+  - **Measured per shot,** once, from three frames (so nothing flickers):
+    - levels: the 0.7th luma percentile becomes black and the 99.7th white;
+    - a gamma that brings the subject's median to ~0.44 (the blown sky is ignored in the measurement);
+    - an S-curve with a soft shoulder, so whites stay a clean warm white instead of v1's cream.
+  - **Colour:**
+    - a touch of warmth;
+    - vibrance on muted colours (saris, the flag, marigolds), with skin, blue sky and shadows protected;
+    - the stream's blue cast on the stone neutralised to charcoal, with warm shadows.
+  - **Clarity:** at source resolution, an edge-preserving denoise (against the stream's blocking) and gentle
+    CLAHE local contrast; after the enlargement, a two-radius unsharp mask.
+  - **No haze:** no bloom or god rays in the window. A soft graduated filter and the window's own vignette
+    tame the white areas. Grain and a vignette finish the frame.
 - **VFX:**
   - golden dust and bokeh;
   - falling flower petals (marigold, yellow, rose, pink, jasmine): the song's own ಪುಷ್ಪ ವೃಷ್ಟಿ;

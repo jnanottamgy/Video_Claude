@@ -1,9 +1,11 @@
 """The picture: every frame of the reel, 1080x1920 at 30 fps.
 
 Per frame:
-  - the shot's source frame, graded through the gold LUT (her event reel's look);
-  - pushed in and cropped into the 4:3 window, inside the ticker-free area;
-  - the bright, blown sky shaped into warm golden light, god rays from above, and bloom;
+  - the shot's source frame, graded (tools/grade.py, v2): per-shot levels, contrast, colour, denoise and local
+    contrast;
+  - pushed in and cropped into the 4:3 window, inside the ticker-free area, enlarged and sharpened;
+  - a gentle graduated filter on the blown skies and the window's own vignette (v2: no bloom or god rays in
+    the window, they read as haze);
   - the canvas: deep temple maroon, the shot itself blurred into a soft glow, a slowly turning gold mandala and
     a warm halo behind the window;
   - the gold border with a travelling glint;
@@ -24,6 +26,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 import edl  # noqa: E402
 import fx  # noqa: E402
+import grade as GR  # noqa: E402
 import layout as LY  # noqa: E402
 import look  # noqa: E402
 import media  # noqa: E402
@@ -45,7 +48,6 @@ def ease(u):
 
 class Renderer:
     def __init__(self):
-        self.lut = look.lut("gold")
         self.readers = {}
         self.titles = T.Titles(edl.LYRICS)
         self.dust = fx.Dust(seed=7, n=110, n_bokeh=10)
@@ -62,7 +64,8 @@ class Renderer:
         self.grad = np.clip(1 - wy / 0.55, 0, 1) ** 1.6              # the window's graduated filter, top 55%
         wx = np.linspace(-1, 1, LY.WIN_W, dtype=np.float32)[None, :, None]
         wyy = np.linspace(-1, 1, LY.WIN_H, dtype=np.float32)[:, None, None]
-        self.wvig = 1 - 0.24 * np.clip(np.sqrt(wx ** 2 * 0.9 + wyy ** 2) - 0.45, 0, 1) ** 1.4   # the window's own vignette
+        self.wvig = 1 - 0.20 * np.clip(np.sqrt(wx ** 2 * 0.9 + wyy ** 2) - 0.45, 0, 1) ** 1.4   # the window's own vignette
+        self.params = {}
 
     def reader(self, sh):
         k = sh["name"]
@@ -70,23 +73,34 @@ class Renderer:
             self.readers[k] = media.Reader(sh["src"], sh["src"] + (sh["t1"] - sh["t0"]) + 0.15)
         return self.readers[k]
 
+    def shot_params(self, sh):
+        """The shot's levels and gamma (tools/grade.py), measured once from three of its frames."""
+        k = sh["name"]
+        if k not in self.params:
+            r = self.reader(sh)
+            box = media.crop_box(r.w, r.h, sh["cx"], sh["cy"], sh["cw"], LY.ASPECT)
+            x0, y0, x1, y1 = [int(round(v)) for v in box]
+            d = sh["t1"] - sh["t0"]
+            self.params[k] = GR.measure([r.at(sh["src"] + d * q)[y0:y1, x0:x1] for q in (0.1, 0.5, 0.9)])
+        return self.params[k]
+
+    def graded(self, src, sh):
+        """The source frame graded (v2): levels, curve, colour, then denoise and local contrast (uint8)."""
+        return GR.clarity_src((GR.tone(src, self.shot_params(sh)) * 255 + 0.5).astype(np.uint8))
+
     def window_img(self, g, sh, t):
         r = self.reader(sh)
         u = (t - sh["t0"]) / max(1e-6, sh["t1"] - sh["t0"])
         z0, z1 = sh["zoom"]
         z = z0 + (z1 - z0) * ease(u)
         box = media.crop_box(r.w, r.h, sh["cx"], sh["cy"], sh["cw"] / z, LY.ASPECT)
-        win = LY.window(g, box) * sh.get("gain", 1.0)
-        # the blown sky: shape the brightest areas into warm golden light, darker toward the top
+        win = GR.sharpen_out(media.warp(g, box, LY.WIN_W, LY.WIN_H).astype(np.float32) / 255)
+        # the blown sky and white cloth: a gentle graduated filter toward the top, and the window's vignette
         L = win.max(2, keepdims=True)
-        hi = np.clip((L - 0.70) / 0.30, 0, 1) ** 1.3
-        warm = np.array([0.98, 0.80, 0.50], np.float32) * (0.78 + 0.2 * L)
-        win = win * (1 - 0.62 * hi) + warm * 0.62 * hi
-        win = win * (1 - 0.30 * self.grad * hi) + np.array([0.55, 0.28, 0.09], np.float32) * 0.30 * self.grad * hi
+        hi = np.clip((L - 0.72) / 0.28, 0, 1)
+        win = win * (1 - 0.20 * self.grad * hi) + np.array([0.50, 0.40, 0.30], np.float32) * 0.20 * self.grad * hi
         win = win * self.wvig
-        win = fx.rays_in(win, 0.5, -0.12, sh["rays"])
-        win = look.bloom(win, 0.22, thresh=0.80)
-        return win, box
+        return np.clip(win, 0, 1), box
 
     def background(self, g, box, t):
         blur = LY.background(g, box, darken=1.0)
@@ -103,7 +117,7 @@ class Renderer:
     def frame(self, t, n):
         sh = edl.shot_at(t)
         src = self.reader(sh).at(sh["src"] + (t - sh["t0"]))
-        g = look.apply(src, self.lut)
+        g = self.graded(src, sh)
         win, box = self.window_img(g, sh, t)
         # the "Jai!": a zoom burst in the window
         if edl.JAI <= t < edl.JAI + 0.35:
