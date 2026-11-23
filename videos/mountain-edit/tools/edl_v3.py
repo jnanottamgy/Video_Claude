@@ -172,7 +172,7 @@ shot("T05", A["P3"], A["B21"], clip="0418", src=(0.40, 0.5), look="intro", max_s
      matte_t=(7.05, 8.52), view=path([(A["P3"], 1080, 2470, 2160), (A["B21"], 1080, 2520, 2160)]),
      pre=[("sky", 0.3, 0.5)], fx=[("handheld", 2)],
      overlays=[car_gfx("MAIN CHARACTER", ["STATUS  UNBOTHERED", "AURA    100%", "LOCATION  ABOVE THE CLOUDS"],
-                       7.15, A["B21"], anchor=(0.66, 0.1), side=1)],
+                       7.15, A["B21"], anchor=(0.34, 0.1), side=-1)],
      tx=dict(kind="light", d=0.1, e=0.13, peak=0.9))
 
 # the same summit, as a photograph that still moves (2.5D): the moment frozen into a memory
