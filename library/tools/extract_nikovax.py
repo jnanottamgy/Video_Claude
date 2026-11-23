@@ -123,6 +123,10 @@ def main():
               "align=start (attack on the event), peak (loudest point on the event), end (the swell ends on the event), "
               "transient (the sharpest onset, the heard hit, on the event).",
         sfx=lib)
+    if os.path.exists(MANIFEST):                   # keep the other sets' entries (and the current description)
+        cur = json.load(open(MANIFEST))
+        ids = {d["id"] for d in lib}
+        man = dict(cur, sfx=lib + [d for d in cur["sfx"] if d["id"] not in ids])
     json.dump(man, open(MANIFEST, "w"), indent=1)
     print(f"{len(lib)} effects -> {OUT}; manifest -> {MANIFEST}")
 

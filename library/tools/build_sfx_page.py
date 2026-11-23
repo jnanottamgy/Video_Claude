@@ -20,8 +20,8 @@ GROUPS = [
     ("Whooshes", ["whoosh"], "Transitions, whips, zooms and text flying in. Line up the peak with the cut."),
     ("Impacts", ["impact"], "Drops, title slams, freeze frames, white flashes."),
     ("Slashes", ["slash"], "Fast cuts, wipes, text slicing in. Alternate the three on rapid cuts."),
-    ("Glitch and time", ["glitch", "transition"], "Strobes, glitch frames, tape stops and slow motion."),
-    ("Radio and foley", ["ui", "foley"], "Cues, channel switches and the reload before a reveal."),
+    ("Glitch and time", ["glitch", "transition"], "Strobes, glitch frames, data bursts, tape stops and slow motion."),
+    ("UI, radio and foley", ["ui", "foley"], "Cues, chirps, counters, clicks, flashes and shines: the small sounds that make graphics feel real."),
     ("Ambience beds", ["ambience"], "Long loops to sit under a scene."),
 ]
 
@@ -46,7 +46,7 @@ def main():
         dst = os.path.join(out, "sfx", f"{s['id']}.wav")
         subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", src, "-c:a", "pcm_s16le", "-ar", "48000", dst], check=True)
         items.append(dict(id=s["id"], name=s["name"].split(" ", 1)[1] if s["name"].startswith("#") else s["name"],
-                          num=s["name"].split(" ", 1)[0], cat=s["category"], dur=s["duration"], hit=s["hit_s"],
+                          num=s["name"].split(" ", 1)[0] if s["name"].startswith("#") else "", cat=s["category"], dur=s["duration"], hit=s["hit_s"],
                           align=s["align"], desc=s["description"], wave=peaks(src)))
     json.dump(man, open(os.path.join(out, "manifest.json"), "w"), indent=1)
     data = json.dumps(dict(items=items, groups=[dict(title=t, cats=c, note=n) for t, c, n in GROUPS]))

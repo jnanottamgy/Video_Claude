@@ -1,5 +1,5 @@
 {
- "description": "Sound-effect library for edits. 'nikovax' = 28 effects cut from the NIKOVAX showcase video the user sent (2026-10-23). Audio is gitignored (third-party pack, public repo); restore it from the private artifact named in README.md or re-run library/tools/extract_nikovax.py on the showcase video.",
+ "description": "Sound-effect library for edits. 'nikovax' = 28 effects cut from the NIKOVAX showcase video the user sent (2026-10-23); 'soundsyouneed' = 12 effects cut from the 'Sounds you need in your next edits' reel the user sent (2026-11-23). Audio is gitignored (third-party packs, public repo); restore it from the private artifact named in README.md, or re-run library/tools/extract_nikovax.py / extract_soundsyouneed.py on the source videos.",
  "sample_rate": 48000,
  "format": "wav pcm_s24le stereo, peak-normalised to -1 dBFS",
  "usage": "Place an effect so its hit_s lands on the event: start = event_time - hit_s. align=start (attack on the event), peak (loudest point on the event), end (the swell ends on the event), transient (the sharpest onset, the heard hit, on the event).",
@@ -563,6 +563,246 @@
    "transient_s": 5.02,
    "centroid_hz": 1090,
    "low_energy": 0.447
+  },
+  {
+   "id": "8-bit-talking",
+   "file": "soundsyouneed/8-bit-talking.wav",
+   "name": "8 Bit Talking",
+   "category": "ui",
+   "align": "start",
+   "hit_s": 0.014,
+   "description": "Retro 8-bit chatter blips (~2.4 s, continuous): a character talking in a chat bubble, text typing on, game UI.",
+   "source_window_s": [
+    0.099,
+    2.537
+   ],
+   "original_peak_dbfs": -3.7,
+   "duration": 2.438,
+   "attack_s": 0.014,
+   "peak_s": 2.223,
+   "transient_s": 0.68,
+   "centroid_hz": 475,
+   "low_energy": 0.002
+  },
+  {
+   "id": "old-flash",
+   "file": "soundsyouneed/old-flash.wav",
+   "name": "Old Flash",
+   "category": "foley",
+   "align": "transient",
+   "hit_s": 0.095,
+   "description": "Vintage camera flashbulb pop: white flash frames, photo moments, freeze frames.",
+   "source_window_s": [
+    2.602,
+    3.721
+   ],
+   "original_peak_dbfs": -0.3,
+   "duration": 1.119,
+   "attack_s": 0.093,
+   "peak_s": 0.299,
+   "transient_s": 0.095,
+   "centroid_hz": 561,
+   "low_energy": 0.767
+  },
+  {
+   "id": "cinematic-woosh",
+   "file": "soundsyouneed/cinematic-woosh.wav",
+   "name": "Cinematic Woosh",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 0.644,
+   "description": "Big swelling cinematic whoosh with a tail: major transitions, camera moves, title reveals.",
+   "source_window_s": [
+    4.03,
+    6.526
+   ],
+   "original_peak_dbfs": -0.7,
+   "duration": 2.496,
+   "attack_s": 0.306,
+   "peak_s": 0.644,
+   "transient_s": 0.595,
+   "centroid_hz": 105,
+   "low_energy": 0.914
+  },
+  {
+   "id": "night-vision",
+   "file": "soundsyouneed/night-vision.wav",
+   "name": "Night Vision",
+   "category": "ui",
+   "align": "start",
+   "hit_s": 0.018,
+   "description": "Night-vision goggles switching on: a green/thermal look, POV or surveillance shots, a HUD turning on.",
+   "source_window_s": [
+    6.698,
+    8.428
+   ],
+   "original_peak_dbfs": -9.3,
+   "duration": 1.73,
+   "attack_s": 0.018,
+   "peak_s": 0.054,
+   "transient_s": 0.02,
+   "centroid_hz": 3799,
+   "low_energy": 0.0
+  },
+  {
+   "id": "nextel",
+   "file": "soundsyouneed/nextel.wav",
+   "name": "Nextel",
+   "category": "ui",
+   "align": "start",
+   "hit_s": 0.029,
+   "description": "Nextel push-to-talk chirp (short double chirp): a message in, notifications, a walkie-talkie cue.",
+   "source_window_s": [
+    8.553,
+    8.991
+   ],
+   "original_peak_dbfs": -0.7,
+   "duration": 0.438,
+   "attack_s": 0.029,
+   "peak_s": 0.087,
+   "transient_s": 0.03,
+   "centroid_hz": 1804,
+   "low_energy": 0.006
+  },
+  {
+   "id": "digital-text",
+   "file": "soundsyouneed/digital-text.wav",
+   "name": "Digital Text",
+   "category": "glitch",
+   "align": "start",
+   "hit_s": 0.015,
+   "description": "Short digital data glitch burst: text decoding or typing in, glitch titles, data UI.",
+   "source_window_s": [
+    9.076,
+    9.645
+   ],
+   "original_peak_dbfs": -3.9,
+   "duration": 0.569,
+   "attack_s": 0.015,
+   "peak_s": 0.247,
+   "transient_s": 0.18,
+   "centroid_hz": 5678,
+   "low_energy": 0.086
+  },
+  {
+   "id": "riser",
+   "file": "soundsyouneed/riser.wav",
+   "name": "Riser",
+   "category": "riser",
+   "align": "peak",
+   "hit_s": 1.956,
+   "description": "Riser that swells to a peak and falls away (~4.3 s): put its peak on the drop or the reveal.",
+   "source_window_s": [
+    9.645,
+    13.951
+   ],
+   "original_peak_dbfs": -2.4,
+   "duration": 4.306,
+   "attack_s": 0.616,
+   "peak_s": 1.956,
+   "transient_s": 1.91,
+   "centroid_hz": 298,
+   "low_energy": 0.876
+  },
+  {
+   "id": "counter",
+   "file": "soundsyouneed/counter.wav",
+   "name": "Counter",
+   "category": "ui",
+   "align": "start",
+   "hit_s": 0.024,
+   "description": "Fast ticking counter (~0.9 s): numbers rolling up, stat counters, a clock running.",
+   "source_window_s": [
+    14.028,
+    14.93
+   ],
+   "original_peak_dbfs": -4.5,
+   "duration": 0.902,
+   "attack_s": 0.024,
+   "peak_s": 0.54,
+   "transient_s": 0.04,
+   "centroid_hz": 3890,
+   "low_energy": 0.0
+  },
+  {
+   "id": "bicycle-chain",
+   "file": "soundsyouneed/bicycle-chain.wav",
+   "name": "Bicycle Chain",
+   "category": "foley",
+   "align": "start",
+   "hit_s": 0.026,
+   "description": "Bicycle freewheel ratchet ticks: a dial or slider turning, a wheel spinning, scrubbing through time.",
+   "source_window_s": [
+    15.044,
+    15.706
+   ],
+   "original_peak_dbfs": -6.9,
+   "duration": 0.662,
+   "attack_s": 0.026,
+   "peak_s": 0.061,
+   "transient_s": 0.025,
+   "centroid_hz": 7824,
+   "low_energy": 0.015
+  },
+  {
+   "id": "camera-click",
+   "file": "soundsyouneed/camera-click.wav",
+   "name": "Camera Click",
+   "category": "foley",
+   "align": "transient",
+   "hit_s": 0.51,
+   "description": "Camera shutter: wind-up then a click. Snapshots, freeze frames, photo cards appearing.",
+   "source_window_s": [
+    16.276,
+    17.0
+   ],
+   "original_peak_dbfs": -2.5,
+   "duration": 0.724,
+   "attack_s": 0.151,
+   "peak_s": 0.282,
+   "transient_s": 0.51,
+   "centroid_hz": 4662,
+   "low_energy": 0.0
+  },
+  {
+   "id": "shine",
+   "file": "soundsyouneed/shine.wav",
+   "name": "Shine",
+   "category": "ui",
+   "align": "peak",
+   "hit_s": 0.451,
+   "description": "Sparkle / glint shine: a logo glint, text shine sweep, something brand new or premium.",
+   "source_window_s": [
+    17.167,
+    18.321
+   ],
+   "original_peak_dbfs": -5.2,
+   "duration": 1.154,
+   "attack_s": 0.288,
+   "peak_s": 0.451,
+   "transient_s": 0.355,
+   "centroid_hz": 2531,
+   "low_energy": 0.048
+  },
+  {
+   "id": "woosh-5",
+   "file": "soundsyouneed/woosh-5.wav",
+   "name": "Woosh",
+   "category": "whoosh",
+   "align": "peak",
+   "hit_s": 0.223,
+   "description": "Short clean woosh: whip pans, text flying in, quick transitions.",
+   "source_window_s": [
+    18.55,
+    19.607
+   ],
+   "original_peak_dbfs": -1.0,
+   "duration": 1.057,
+   "attack_s": 0.097,
+   "peak_s": 0.223,
+   "transient_s": 0.195,
+   "centroid_hz": 386,
+   "low_energy": 0.166
   }
  ]
 }
