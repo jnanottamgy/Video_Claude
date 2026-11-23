@@ -5,6 +5,7 @@ Each matte is computed on the exact base frame the compositor draws (view moves 
 with a guided filter so hair and edges follow the picture.
   python3 tools/prep.py [SHOT ...]   ->  renders/cache/matte/<shot>/<frame>.png   (existing frames are kept)
 """
+import importlib
 import os
 import sys
 import time
@@ -13,7 +14,7 @@ import cv2
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import edl  # noqa: E402
+edl = importlib.import_module(os.environ.get("EDL", "edl"))
 import render  # noqa: E402
 
 MODELS = {"isnet": "isnet-general-use", "human": "u2net_human_seg"}
@@ -42,7 +43,10 @@ def main():
         os.makedirs(d, exist_ok=True)
         t0 = time.time()
         n = 0
-        for f in range(spec["F0"], spec["F1"]):
+        fa, fb = spec["F0"], spec["F1"]
+        if spec.get("matte_t"):                          # only the stretch that needs it (a slow-mo, a freeze)
+            fa, fb = max(fa, int(spec["matte_t"][0] * render.FPS)), min(fb, int(spec["matte_t"][1] * render.FPS) + 1)
+        for f in range(fa, fb):
             out = os.path.join(d, f"{f:05d}.png")
             if os.path.exists(out):
                 continue

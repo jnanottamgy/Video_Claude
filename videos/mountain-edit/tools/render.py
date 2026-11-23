@@ -10,6 +10,7 @@ global finishing (flashes, inverts, glitch, aberration, CRT, halation, vignette,
 """
 import argparse
 import functools
+import importlib
 import json
 import math
 import os
@@ -20,7 +21,8 @@ import cv2
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import edl  # noqa: E402
+edl = importlib.import_module(os.environ.get("EDL", "edl"))      # EDL=edl_v2 renders the second reel
+import fx2  # noqa: E402
 import gfx  # noqa: E402
 import look  # noqa: E402
 import media  # noqa: E402
@@ -30,6 +32,7 @@ ROOT = media.ROOT
 CACHE = os.path.join(ROOT, "renders/cache")
 SHOTS = edl.SHOTS
 NFRAMES = int(round(edl.DURATION * FPS))
+OUT_DIR = os.path.join(ROOT, getattr(edl, "OUT", "renders/picture"))
 
 
 def shot_at(f):
@@ -63,7 +66,7 @@ def src_of(spec, t):
 def source(key):
     """A decoded source for a shot, panel or tile, sized from every time and view it will ask for."""
     spec = edl.SPECS[key]
-    ts = np.arange(spec["F0"], spec["F1"] + 1) / FPS
+    ts = np.arange(spec["F0"] - spec.get("_pre", 0), spec["F1"] + 1 + spec.get("_post", 0)) / FPS
     times = [src_of(spec, t) for t in ts]
     views = [view_of(spec, t) for t in ts]
     aspect = spec.get("aspect", W / H)
@@ -74,10 +77,87 @@ def source(key):
     return media.Shot(spec["clip"], times, vs, margin=spec.get("margin", 1.2), max_scale=spec.get("max_scale", 1.0))
 
 
+def src_frame(S, spec, t):
+    """The source picture for output time t: with a shutter (spec["shutter"], a fraction of the frame interval),
+    every source frame the shutter spans is averaged, so fast-forwarded footage gets real motion blur."""
+    sh = spec.get("shutter", 0.0)
+    s = src_of(spec, t)
+    if sh:
+        sa, sb = src_of(spec, t - sh / (2 * FPS)), src_of(spec, t + sh / (2 * FPS))
+        span = abs(sb - sa) * S.info["fps"]
+        if span > 1.15:
+            n = int(min(18, math.ceil(span * 1.5) + 1))
+            subs = [S.src(sa + (sb - sa) * k / (n - 1), True) for k in range(n)]
+            acc = sum(subs) / n
+            # the averaged copies are discrete: smear them into a continuous streak along the dominant motion
+            q = 0.25
+            g0 = cv2.cvtColor(cv2.resize(subs[0], None, fx=q, fy=q, interpolation=cv2.INTER_AREA), cv2.COLOR_RGB2GRAY)
+            g1 = cv2.cvtColor(cv2.resize(subs[-1], None, fx=q, fy=q, interpolation=cv2.INTER_AREA), cv2.COLOR_RGB2GRAY)
+            win = cv2.createHanningWindow((g0.shape[1], g0.shape[0]), cv2.CV_32F)
+            (mx, my), resp = cv2.phaseCorrelate(g0.astype(np.float32), g1.astype(np.float32), win)
+            mx, my = mx / q, my / q
+            if resp > 0.03 and math.hypot(mx, my) > 6:
+                acc = fx2.dir_blur(acc, mx / (n - 1) * 1.6, my / (n - 1) * 1.6)
+            return acc, None
+    if spec.get("interp") == "flow":
+        k = (s - S.times[0]) * S.info["fps"]
+        i0 = int(np.floor(k))
+        fr = k - i0
+        if 0.04 < fr < 0.96 and 0 <= i0 and i0 + 1 < len(S.frames):
+            return None, (i0, fr)
+    return S.src(s, spec.get("blend", False)), None
+
+
+def flow_mix(a, b, fr):
+    """A frame between a and b (output-size images) at fraction fr, by DIS optical flow both ways."""
+    sc = 0.5
+    ga = cv2.cvtColor((cv2.resize(a, None, fx=sc, fy=sc) * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+    gb = cv2.cvtColor((cv2.resize(b, None, fx=sc, fy=sc) * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+    dis = cv2.DISOpticalFlow_create(cv2.DISOPTICAL_FLOW_PRESET_MEDIUM)
+    fab = dis.calc(ga, gb, None)
+    fba = dis.calc(gb, ga, None)
+    h, w = a.shape[:2]
+    fab = cv2.resize(fab, (w, h)) / sc
+    fba = cv2.resize(fba, (w, h)) / sc
+    xx, yy = fx2._grid(w, h)
+    fr = float(fr)
+    f32 = lambda x: x.astype(np.float32, copy=False)
+    wa = cv2.remap(a, f32(xx - fr * fab[..., 0]), f32(yy - fr * fab[..., 1]), cv2.INTER_LINEAR,
+                   borderMode=cv2.BORDER_REFLECT101)
+    wb = cv2.remap(b, f32(xx - (1 - fr) * fba[..., 0]), f32(yy - (1 - fr) * fba[..., 1]), cv2.INTER_LINEAR,
+                   borderMode=cv2.BORDER_REFLECT101)
+    return wa * (1 - fr) + wb * fr
+
+
 def render_view(key, spec, t, out=(W, H), zoom=1.0, dx=0.0, dy=0.0, droll=0.0):
     S = source(key)
     cx, cy, cw, roll = view_of(spec, t)
-    return S.view(src_of(spec, t), cx, cy, cw / zoom, roll + droll, spec.get("blend", False), out, dx, dy)
+    flip = spec.get("flip", False)
+    img, pair = src_frame(S, spec, t)
+    if pair is not None:
+        i0, fr = pair
+        a = S.view(0, cx, cy, cw / zoom, roll + droll, False, out, -dx if flip else dx, dy,
+                   img=S.frames[i0].astype(np.float32) / 255)
+        b = S.view(0, cx, cy, cw / zoom, roll + droll, False, out, -dx if flip else dx, dy,
+                   img=S.frames[i0 + 1].astype(np.float32) / 255)
+        res = flow_mix(a, b, fr)
+    else:
+        res = S.view(0, cx, cy, cw / zoom, roll + droll, False, out, -dx if flip else dx, dy, img=img)
+    return res[:, ::-1].copy() if flip else res
+
+
+def to_out(spec, t, x, y):
+    """A point in the clip's display pixels -> output pixels, through the shot's view (and flip) at time t."""
+    cx, cy, cw, roll = view_of(spec, t)
+    zoom, dx, dy, dr = view_fx(spec, t, int(t * FPS))
+    k = W / (cw / zoom)
+    a = np.deg2rad(roll + dr)
+    ux, uy = x - cx, y - cy
+    ox = W / 2 + dx + k * (math.cos(a) * ux - math.sin(a) * uy)
+    oy = H / 2 + dy + k * (math.sin(a) * ux + math.cos(a) * uy)
+    if spec.get("flip"):
+        ox = W - ox
+    return ox, oy
 
 
 # ----------------------------------------------------------------------------------------- view effects
@@ -87,9 +167,10 @@ def view_fx(spec, t, f):
     zoom, dx, dy, dr = 1.0, 0.0, 0.0, 0.0
     if spec.get("pulse", not spec.get("matte")):          # never on matted shots: their mattes are pulse-free
         import bisect
-        i = bisect.bisect_right(edl.PULSE, t) - 1
+        pulses = getattr(edl, "PULSE", [])
+        i = bisect.bisect_right(pulses, t) - 1
         if i >= 0:
-            zoom *= 1 + 0.022 * look.env_hit(t, edl.PULSE[i], 0.0, 0.2, 2.5)
+            zoom *= 1 + 0.022 * look.env_hit(t, pulses[i], 0.0, 0.2, 2.5)
     for fx in spec.get("fx", []):
         k = fx[0]
         if k == "punch":                       # ("punch", t, amount, decay)
@@ -98,6 +179,19 @@ def view_fx(spec, t, f):
             u = np.clip((t - fx[1]) / (fx[2] - fx[1]), 0, 1)
             u = u * u * (3 - 2 * u)
             zoom *= fx[3] + (fx[4] - fx[3]) * u
+        elif k == "zoomo":                      # ("zoomo", t0, t1, z0, z1, power) ease-out: fast, then settling
+            u = float(np.clip((t - fx[1]) / (fx[2] - fx[1]), 0, 1))
+            p = fx[5] if len(fx) > 5 else 2.0
+            zoom *= fx[3] + (fx[4] - fx[3]) * (1 - (1 - u) ** p)
+        elif k == "zoomi":                      # ("zoomi", t0, t1, z0, z1, power) ease-in: accelerating push
+            u = float(np.clip((t - fx[1]) / (fx[2] - fx[1]), 0, 1))
+            p = fx[5] if len(fx) > 5 else 2.0
+            zoom *= fx[3] * (fx[4] / fx[3]) ** (u ** p)
+        elif k == "rumble":                     # ("rumble", t0, t1, amp) engine vibration while fast
+            if fx[1] <= t < fx[2]:
+                rng = np.random.default_rng(f * 7 + 3)
+                dx += fx[3] * (rng.random() - 0.5) * 2
+                dy += fx[3] * 0.6 * (rng.random() - 0.5) * 2
         elif k == "shake":                      # ("shake", t, amp, dur[, seed])
             a, b, c = look.shake(f, fx[1], fx[2], fx[3], fx[4] if len(fx) > 4 else 0)
             dx += a; dy += b; dr += c
@@ -117,35 +211,26 @@ def whip_state(spec, t):
 
 
 def base_full(key, spec, t, f, out=(W, H)):
+    """The shot's view at t with its moves; whips and zoom blurs are blurred in output space (one render)."""
     zoom, dx, dy, dr = view_fx(spec, t, f)
     wfx, u = whip_state(spec, t)
     zb = [fx for fx in spec.get("fx", []) if fx[0] == "zoomblur" and fx[1] <= t < fx[2]]
-    if wfx is None and not zb:
-        return render_view(key, spec, t, out, zoom, dx, dy, dr)
-    if wfx is not None:
+    if wfx is None:
+        img = render_view(key, spec, t, out, zoom, dx, dy, dr)
+    else:
         _, a, b, d, dist = wfx[:5]
         out_side = wfx[5] if len(wfx) > 5 else "out"     # "out": leaves the frame at the end; "in": arrives
-        # position along the whip: eased so the speed peaks at the cut
         p = u ** 2.2 if out_side == "out" else -((1 - u) ** 2.2)
         speed = (2.2 * u ** 1.2) if out_side == "out" else 2.2 * (1 - u) ** 1.2
-        off = d * dist * W * p
-        blur = d * dist * W * 0.18 * speed
-        n = 9
-        acc = None
-        for i in range(n):
-            o = off + blur * (i / (n - 1) - 0.5)
-            img = render_view(key, spec, t, out, zoom, dx + o, dy, dr)
-            acc = img if acc is None else acc + img
-        return acc / n
-    fx = zb[0]                                          # ("zoomblur", t0, t1, amount, direction +1 in / -1 out)
-    u = (t - fx[1]) / (fx[2] - fx[1])
-    amt = fx[3] * (u if fx[4] > 0 else 1 - u) ** 1.5
-    n = 8
-    acc = None
-    for i in range(n):
-        img = render_view(key, spec, t, out, zoom * (1 + amt * i / (n - 1)), dx, dy, dr)
-        acc = img if acc is None else acc + img
-    return acc / n
+        off = d * dist * out[0] * p
+        img = render_view(key, spec, t, out, zoom, dx + off, dy, dr)
+        img = fx2.dir_blur(img, d * dist * out[0] * 0.18 * speed, 0)
+    for fx in zb:                                       # ("zoomblur", t0, t1, amount, +1 growing / -1 fading[, px, py])
+        uu = (t - fx[1]) / (fx[2] - fx[1])
+        amt = fx[3] * (uu if fx[4] > 0 else 1 - uu) ** 1.5
+        px, py = (fx[5], fx[6]) if len(fx) > 6 else (out[0] / 2, out[1] / 2)
+        img = fx2.radial_blur(img, px, py, amt)
+    return img
 
 
 # ----------------------------------------------------------------------------------------- layouts
@@ -316,6 +401,31 @@ def track(sid):
     return json.load(open(p)) if os.path.exists(p) else None
 
 
+@functools.lru_cache(maxsize=1024)
+def _blob_box(sid, f):
+    p = os.path.join(CACHE, "matte", sid, f"{f:05d}.png")
+    if not os.path.exists(p):
+        return None
+    m = cv2.imread(p, cv2.IMREAD_GRAYSCALE)
+    n, lab, st, _ = cv2.connectedComponentsWithStats((m > 127).astype(np.uint8), 8)
+    if n < 2:
+        return None
+    k = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
+    if st[k, cv2.CC_STAT_AREA] < 2000:
+        return None
+    x, y, w, h = st[k, :4]
+    return (float(x), float(y), float(x + w), float(y + h))
+
+
+def track_box(spec, f, k=3):
+    """The subject's box at frame f from its mattes: the largest blob, median over f-k..f+k (steady HUD locks)."""
+    bs = [_blob_box(spec["id"], g) for g in range(f - k, f + k + 1)]
+    bs = [b for b in bs if b is not None]
+    if not bs:
+        return None
+    return tuple(float(v) for v in np.median(np.array(bs), 0))
+
+
 def matte_box(m, top_frac=None):
     ys, xs = np.nonzero(m > 0.5)
     if len(ys) < 50:
@@ -372,6 +482,37 @@ def _evict_if_new(spec):
         gc.collect()
 
 
+def active_tx(f):
+    """The transition covering frame f, if any: (outgoing shot, incoming shot, tx, u 0..1 across it).
+    A transition into shot B spans round(d*FPS) frames before B's first frame and round(e*FPS) from it."""
+    for i, s in enumerate(SHOTS):
+        tx = s.get("tx")
+        if not tx or i == 0:
+            continue
+        nd, ne = int(round(tx.get("d", 0) * FPS)), int(round(tx.get("e", 0) * FPS))
+        if s["F0"] - nd <= f < s["F0"] + ne:
+            return SHOTS[i - 1], s, tx, (f - (s["F0"] - nd) + 0.5) / (nd + ne)
+    return None
+
+
+def mix(tx, a, b, u, t, f):
+    k = tx["kind"]
+    if k == "push":
+        return fx2.push(a, b, u, tx.get("dir", -1), tx.get("axis", "x"), tx.get("blur", 0.22), tx.get("curve", 2.4))
+    if k == "shock":
+        cx, cy = tx["at"](t) if callable(tx["at"]) else tx["at"]
+        return fx2.shock_reveal(a, b, u, cx, cy, tx.get("rmax", 2300))
+    if k == "luma":
+        return fx2.luma_wipe(a, b, u, tx.get("soft", 0.12), tx.get("bloom", 0.5))
+    if k == "light":
+        return fx2.light_match(a, b, u, tx.get("peak", 0.98))
+    if k == "wipe":
+        return fx2.edge_wipe(a, b, u, tx.get("dir", -1), tx.get("soft", 90), tx.get("blur", 0.12))
+    if k == "dissolve":
+        return a * (1 - u) + b * u
+    raise ValueError(k)
+
+
 def frame(f):
     t = f / FPS
     spec = shot_at(f)
@@ -379,6 +520,17 @@ def frame(f):
     if spec is None:
         img = np.zeros((H, W, 3), np.float32)
         return finish(img, t, f, None)
+    tr = active_tx(f)
+    if tr is not None:
+        A, B, tx, u = tr
+        img = mix(tx, shot_image(A, t, f), shot_image(B, t, f), u, t, f)
+    else:
+        img = shot_image(spec, t, f)
+    return finish(img, t, f, spec)
+
+
+def shot_image(spec, t, f):
+    """One shot's picture at time t, before global finishing: its base, grade, words, cut-outs and overlays."""
     raw = base(spec, t, f)
     g = raw
     for pre in spec.get("pre", []):
@@ -390,6 +542,8 @@ def frame(f):
     m = matte(spec, f) if spec.get("matte") else None
     if spec.get("layout") == "photo" and spec.get("_alpha") and spec["_alpha"][0] == f:
         m = spec["_alpha"][1]
+    for post in spec.get("post", []):                 # after the grade, before words: fn(g, spec, t, f, m, R)
+        g = post(g, spec, t, f, m, sys.modules[__name__])
     img = g
     live = [w for w in spec.get("words", []) if w["t"] <= t < w.get("until", spec["t1"])]
     ov_b = ov_f = None
@@ -419,7 +573,7 @@ def frame(f):
         img = gfx.over(img, ov_f)
     for fx in spec.get("overlays", []):
         img = fx(img, spec, t, f, m, sys.modules[__name__])
-    return finish(img, t, f, spec)
+    return img
 
 
 def finish(img, t, f, spec):
@@ -443,10 +597,16 @@ def finish(img, t, f, spec):
         ab = max(ab, h[1] * look.env_hit(t, h[0], 0.0, h[2] if len(h) > 2 else 0.25, 2))
     if ab > 0:
         img = look.aberration(img, 0.012 * ab)
-    crt = any(c[0] <= t < c[1] for c in G["crt"])
+    for sw in G.get("shocks", []):                     # (t0, dur, (cx, cy) or fn(t), strength)
+        if sw[0] <= t < sw[0] + sw[1]:
+            c = sw[2](t) if callable(sw[2]) else sw[2]
+            img = fx2.shockwave(img, c[0], c[1], (t - sw[0]) / sw[1], sw[3] if len(sw) > 3 else 38.0)
+    if G.get("hud"):
+        img = G["hud"](img, t, f, spec, sys.modules[__name__])
+    crt = any(c[0] <= t < c[1] for c in G.get("crt", []))
     if crt:
         img = crt_look(img, t, f)
-    hal = G["halation"](t)
+    hal = G["halation"](t) if callable(G["halation"]) else G["halation"]
     if hal > 0:
         img = look.halation(img, 0.8, hal)
     img = look.vignette(img, G["vignette"](t))
@@ -512,8 +672,9 @@ def main():
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--range", nargs=2, type=float)
     ap.add_argument("--fresh", action="store_true", help="re-render every chunk")
+    ap.add_argument("--chunk", type=int, default=190, help="frames per chunk (cut on shot boundaries)")
     a = ap.parse_args()
-    sd = os.path.join(ROOT, "renders/stills")
+    sd = os.path.join(OUT_DIR, "stills")
     os.makedirs(sd, exist_ok=True)
     if a.stills:
         for s in a.stills.split(","):
@@ -538,7 +699,7 @@ def main():
         cv2.imwrite(p, cv2.cvtColor(sheet, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 85])
         print(p)
         return
-    out_dir = os.path.join(ROOT, "renders/picture")
+    out_dir = OUT_DIR
     os.makedirs(out_dir, exist_ok=True)
     f_start, f_end = 0, NFRAMES
     if a.range:
@@ -548,7 +709,7 @@ def main():
     starts = sorted(set([f_start] + [s["F0"] for s in SHOTS if f_start < s["F0"] < f_end]))
     bounds, last = [f_start], f_start
     for st in starts[1:]:
-        if st - last >= 190:
+        if st - last >= a.chunk:
             bounds.append(st)
             last = st
     bounds.append(f_end)

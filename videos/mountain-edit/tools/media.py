@@ -120,7 +120,7 @@ class Shot:
         k = (s - self.times[0]) * self.info["fps"]
         k = min(max(k, 0), len(self.frames) - 1)
         i0 = int(np.floor(k))
-        f = k - i0
+        f = float(k - i0)
         a = self.frames[i0].astype(np.float32)
         if blend and f > 0.02 and i0 + 1 < len(self.frames):
             a = a * (1 - f) + self.frames[i0 + 1].astype(np.float32) * f
