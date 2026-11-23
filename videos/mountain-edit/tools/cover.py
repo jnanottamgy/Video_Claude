@@ -73,8 +73,8 @@ def main():
     # a thin helix up the left edge, and the corner marks
     hov = np.zeros((1080, 1920, 4), np.float32)
     gfx.helix(hov, 140, 540, 760, 54, 0.9, 1.0, alpha=0.9)
-    hov = cv2.resize(hov[:, :280], (int(280 * CH / 1080 / 1.5), int(CH / 1.5)))
-    hy = int(CH * 0.08)
+    hov = cv2.resize(hov[:, :280], (int(280 * CH / 1080 / 2.4), int(CH / 2.4)))
+    hy = int(CH * 0.035)
     hx = CW - hov.shape[1] - 10
     out[hy:hy + hov.shape[0], hx:hx + hov.shape[1]] = out[hy:hy + hov.shape[0], hx:hx + hov.shape[1]] * (1 - hov[..., 3:4]) + hov[..., :3]
     vg = np.sqrt(((np.mgrid[0:CH, 0:CW][1] - CW / 2) / (CW / 2)) ** 2 * 0.5 + ((np.mgrid[0:CH, 0:CW][0] - CH / 2) / (CH / 2)) ** 2)

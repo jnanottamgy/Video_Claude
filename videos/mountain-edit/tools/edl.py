@@ -51,6 +51,7 @@ def word(t, text, pos, size=300, color=gfx.WHITE, font=gfx.F_BIG, behind=False, 
 
 
 RED, WHITE = gfx.RED, gfx.WHITE
+PULSE = [T(k) for k in range(0, 29)] + [T(k) for k in range(33, 66)]       # beats in drop 1 and drop 2
 SERIF, MONO, MONOB = gfx.F_SERIF, gfx.F_MONO, gfx.F_MONOB
 
 # =========================================================================================== overlays
@@ -131,7 +132,7 @@ def rain_fx(t0, t1, peak=0.85, ramp=0.5):
             return img
         a = peak * min(1.0, (t - t0) / ramp) * min(1.0, (t1 - t) / 0.1)
         ov = gfx.blank()
-        gfx.code_rain(ov, t, a)
+        gfx.code_rain(ov, t, a, size=32, density=1.15)
         g = img * np.array([0.75, 1.0, 0.8], np.float32)              # green the world a little
         return gfx.over(img * (1 - 0.5 * a) + g * 0.5 * a, ov)
     return fx
@@ -169,7 +170,7 @@ def sunflare_fx(strength=0.8, color=(0.55, 0.8, 1.0)):
         L = look.luma(img)
         small = cv2.GaussianBlur(cv2.resize(L, (W // 8, H // 8), interpolation=cv2.INTER_AREA), (0, 0), 2)
         y, x = np.unravel_index(np.argmax(small), small.shape)
-        if small[y, x] < 0.9:
+        if small[y, x] < 0.82:
             return img
         cx, cy = x * 8 + 4, y * 8 + 4
         yy, xx = np.mgrid[0:H // 4, 0:W // 4].astype(np.float32)
@@ -294,12 +295,12 @@ shot("B1", 0.951, 1.84, clip="0418", src=(0.02, 0.5), view=(1080, 2250, 2160), l
 
 shot("B2", 1.84, 2.65, clip="0434", src=(0.02, 0.5), view=(1920, 1080, 3840), look="intro", matte="isnet",
      pre=[("sky", 0.4, 0.6)], fx=[("punch", 1.84, 0.06, 0.4), ("handheld", 3)],
-     words=[word(1.84, "ROYALTY", (1280, 470), 380, RED, behind=True, tracking=0.03, dur=0.09)],
+     words=[word(1.84, "ROYALTY", (1250, 300), 330, RED, behind=True, tracking=0.03, dur=0.09)],
      overlays=[hud_subject("SUBJECT 01", 0.95, lock_t=1.9, vf=True, prog=(0.951, 4.41, 0.0, 0.42, "SEQUENCING DNA"))])
 
 shot("B3", 2.65, 4.412, clip="0434", src=(1.40, 0.72), view=path([(2.65, 1920, 1080, 3840), (4.41, 1950, 1120, 3500)]),
      look="intro", matte="isnet", pre=[("sky", 0.4, 0.6)], fx=[("handheld", 3), ("punch", 3.28, 0.07, 0.5)],
-     words=[word(3.28, "DNA.", (1330, 520), 430, RED, behind=True, tracking=0.02, dur=0.1)],
+     words=[word(3.28, "DNA.", (1490, 520), 380, RED, behind=True, tracking=0.02, dur=0.1)],
      overlays=[hud_subject("SUBJECT 01", 1.0, lock_t=2.7, pts=26, prog=(0.951, 4.41, 0.0, 0.42, "SEQUENCING DNA")),
                helix_fx(3.1, 4.412, 1790, 540, 600, 62, grow=0.5)])
 
@@ -314,10 +315,10 @@ shot("B7", 8.200, 9.68, clip="0462", src=(0.45, 0.6), view=(540, 1350, 1080), lo
 shot("B8", 9.68, 10.149, clip="0437", src=(0.05, 1.6), view=(1920, 1000, 3400), look="crew")
 shot("B9", 10.149, 11.58, layout="photo", clip="0402", view=(1150, 1980, 2252), look="crew",
      bg_zoom=(1.0, 1.035), fg_zoom=(1.0, 1.1), pan=(-0.01, 0.0), fx=[("punch", 10.149, 0.05, 0.4)],
-     overlays=[lambda img, s, t, f, m, R: gfx.add_star(img, 1560 - (1150 - 960) * 0.85, 870, 0.9 * look.env_hit(t, 10.149, 0, 0.5, 1.5) + 0.05,
+     overlays=[lambda img, s, t, f, m, R: gfx.add_star(img, 1165, 440, 0.9 * look.env_hit(t, 10.149, 0, 0.5, 1.5) + 0.05,
                                                      1.2 * look.env_hit(t, 10.149, 0, 0.6, 1.4))])
 shot("B10", 11.58, 11.97, layout="black", look=None)
-shot("B11", 11.97, 12.88, clip="0441", src=(8.4, 1.0), view=(540, 820, 1080), look="intro", fx=[("zoom", 11.97, 12.88, 1.0, 1.06)],
+shot("B11", 11.97, 12.88, clip="0441", src=(9.2, 1.0), view=(540, 1100, 1080), look="intro", fx=[("zoom", 11.97, 12.88, 1.0, 1.06)],
      words=[word(12.40, "HERITAGE", (960, 520), 240, WHITE, tracking=0.14, dur=0.14, from_=1.1, alpha=0.95)])
 shot("B12", 12.88, 13.76, clip="0438", src=(5.2, 1.0), view=(1920, 1080, 3840), look="intro",
      fx=[("handheld", 3), ("zoomblur", 13.60, 13.76, 0.45, 1)])
@@ -342,7 +343,7 @@ shot("C1", D1, 16.20, clip="0397", src=(3.70, 0.85), view=(1920, 1080, 3600), lo
 shot("C2", 16.20, 16.96, clip="0395", src=ramp([(16.20, 6.10), (16.40, 6.42), (16.80, 6.58), (16.96, 6.70)]), blend=True,
      view=(540, 1200, 1080), look="rally", matte="isnet", overlays=[hud_target("TARGET 22", None)],
      fx=[("whip", 16.20, 16.30, -1, 0.9, "in"), ("shake", 16.20, 16, 0.4, 2), ("whip", 16.86, 16.96, 1, 0.9, "out")])
-shot("C3", 16.96, 17.76, clip="0465", src=(5.90, 1.0), matte="isnet", overlays=[hud_target("TARGET 53", None)], view=path([(16.96, 1080, 1900, 2160), (17.4, 1080, 2500, 2160), (17.76, 1080, 2700, 2160)]), look="rally",
+shot("C3", 16.96, 17.76, clip="0465", src=(6.0, 1.0), matte="isnet", overlays=[hud_target("TARGET 53", None)], view=path([(16.96, 1080, 1900, 2160), (17.4, 1080, 2500, 2160), (17.76, 1080, 2700, 2160)]), look="rally",
      fx=[("whip", 16.96, 17.06, 1, 0.9, "in"), ("punch", 17.30, 0.08, 0.3)])
 shot("C4", 17.76, 18.80, clip="0396", src=(5.0, 0.5), view=(540, 1380, 1080), look="rally", fx=[("handheld", 6)],
      words=[word(17.76, "CAN'T", (960, 330), 230, WHITE, tracking=0.03),
@@ -373,7 +374,7 @@ shot("C9", 23.90, 24.32, clip="0397", src=(5.10, 1.0), view=(1920, 1080, 3700), 
 shot("C10", 24.32, 25.92, clip="0465", src=(7.25, 0.5), view=(1080, 2200, 2160), look="rally", blend=True,
      fx=[("zoom", 24.32, 25.92, 1.0, 1.12)],
      words=[word(25.52, "THE MATRIX", (960, 540), 200, (0.55, 1.0, 0.65), font=MONOB, tracking=0.1, dur=0.06)],
-     overlays=[rain_fx(24.32, 25.92, 0.9, 0.6)])
+     overlays=[rain_fx(24.32, 25.92, 1.0, 0.45)])
 shot("C11", 25.92, 26.38, clip="0393", src=(0.50, 1.0), view=(1920, 1080, 3840), look="rally", fx=[("punch", 25.92, 0.08, 0.3)])
 shot("C12", 26.38, 26.84, clip="0467", src=(7.55, 1.0), view=(960, 560, 1920), look="rally", fx=[("punch", 26.38, 0.08, 0.3)])
 shot("C13", 26.84, 27.07, clip="0395", src=(6.85, 1.0), view=(540, 1250, 1080), look="rally")
@@ -474,8 +475,7 @@ def _bars(t):
 
 GLOBAL = dict(
     flashes=[(0.30, 0.08, 0.6), (0.60, 0.08, 0.5), (0.951, 0.4, 0.95), (1.84, 0.2, 0.45), (3.28, 0.3, 0.55, (1.0, 0.75, 0.7)), (4.412, 0.25, 0.9),
-             (8.200, 0.45, 1.0), (10.149, 0.35, 1.0), (11.97, 0.25, 0.5), (13.76, 0.1, 0.6), (13.93, 0.1, 0.5),
-             (14.08, 0.1, 0.6, (1.0, 0.6, 0.6)), (14.26, 0.18, 0.9), (D1, 0.5, 1.0), (16.20, 0.3, 0.85),
+             (8.200, 0.45, 1.0), (10.149, 0.35, 1.0), (11.97, 0.25, 0.5), (13.93, 0.1, 0.5), (14.26, 0.18, 0.9), (D1, 0.5, 1.0), (16.20, 0.3, 0.85),
              (18.32, 0.15, 0.4), (19.28, 0.22, 0.6, (1.0, 0.55, 0.5)), (22.56, 0.15, 0.7), (23.44, 0.15, 0.6),
              (25.52, 0.22, 0.6, (0.6, 1.0, 0.7)), (25.92, 0.1, 0.4), (26.38, 0.1, 0.4), (28.482, 0.35, 0.6),
              (D2, 0.55, 1.0), (32.16, 0.25, 0.5, (1.0, 0.92, 0.8)), (33.04, 0.12, 0.35), (34.88, 0.2, 0.5), (35.84, 0.15, 0.4),

@@ -4,7 +4,7 @@
 #   tools/deliver.sh  ->  renders/deliver/DNA_reel_16x9.mp4      1920x1080 master (horizontal, as briefed)
 #                         renders/deliver/DNA_reel_IG_9x16.mp4   1080x1920 for Reels: the 16:9 picture centred on black
 #                         renders/deliver/DNA_cover.jpg          the Reels cover (tools/cover.py)
-# H.264 High, CRF 16 with a 20 Mb/s ceiling (Instagram re-encodes; a clean, rich upload survives it best), 2 s GOP,
+# H.264 High, CRF 17 with a 12 Mb/s ceiling (Instagram re-encodes; a clean, rich upload survives it best), 2 s GOP,
 # BT.709 tags, AAC 320 kb/s 48 kHz, faststart.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -16,7 +16,7 @@ n=$(ffprobe -v error -count_frames -select_streams v -show_entries stream=nb_rea
 want=$(python3 -c "import sys; sys.path.insert(0, 'tools'); import render; print(render.NFRAMES)")
 echo "picture: $n frames (want $want)"
 [ "$n" = "$want" ] || { echo "frame count mismatch" >&2; exit 1; }
-v=(-c:v libx264 -preset slow -crf 16 -maxrate 20000k -bufsize 40000k -profile:v high -level 4.2 -g 60 -keyint_min 30
+v=(-c:v libx264 -preset slow -crf 17 -maxrate 12000k -bufsize 24000k -profile:v high -level 4.2 -g 60 -keyint_min 30
    -pix_fmt yuv420p -color_range tv -colorspace bt709 -color_primaries bt709 -color_trc bt709)
 ffmpeg -y -v error -i "$P" -i "$A" -map 0:v -map 1:a "${v[@]}" -c:a aac -b:a 320k -ar 48000 -shortest \
   -movflags +faststart "$D/DNA_reel_16x9.mp4"

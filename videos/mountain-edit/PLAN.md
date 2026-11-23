@@ -169,3 +169,84 @@ Target-lock HUD boxes track the cars throughout.
 | 46.83 | 0434 | Standing at the edge, tracked HUD |
 | 48.8 | 0434 | "I DON'T COMPROMISE" behind him, word by word |
 | 49.68 | Title card | Helix + "DNA." over his white silhouette; black at 50.37 |
+
+## Picture (tools/edl.py, render.py)
+
+**Framing:**
+- Every shot is a 16:9 window (or a panel) in the clip's display pixels.
+- 4K clips are decoded straight to output scale. 1080p verticals are upscaled with a gentle unsharp.
+
+**The intro words.** Words behind subjects use rembg mattes cached per output frame (tools/prep.py):
+- isnet for people and cars, refined with a guided filter;
+- holes inside silhouettes (mirrored lenses) are flood-filled.
+
+**Tracking:**
+- The HUD target boxes follow the matte's bounding box: the head for people, the whole car for cars.
+- Point constellations are fixed in the subject's box, so they move with it.
+- The HUD hides while a whip blurs the frame.
+
+**Photos (0402, 0413, 4838):**
+- Each photo is split into the person (matte) and an inpainted background.
+- The two layers move at different speeds (2.5D parallax).
+- The 808 slide uses this as a dolly zoom: the background pushes 1.42x while he stays almost still.
+
+**Transitions:**
+- whips (directional blur + slide, the speed peaking at the cut);
+- a zoom-through into the build;
+- white flashes;
+- 2-frame white cut-outs and inverts;
+- a CRT broadcast section (B&W, scanlines, a rolling bar, tears, LIVE bug) under the news sample;
+- panels: the triptych "NOT FOR IMITATION" and the 3x3 "footage" grid;
+- a window card for "peekin' out the window";
+- a two-frame stutter before drop 2.
+
+**Speed:**
+- 60 fps sources play at 0.5x for slow motion.
+- Ramps (PCHIP time maps) on the drifts (C2, C6) and on drop 2's walk (E1).
+
+**Finishing:**
+- grades per section: intro cool/desaturated with a sky ND, rally contrasty dust, summit teal-orange, crew neutral;
+- halation, aberration on the hits, vignette, grain;
+- 2.39:1 bars in the intro, the break and the outro, which slam open on the drops.
+
+**Render:** `python3 tools/render.py` (4 workers, about 10 min) -> renders/picture/picture.mp4. Review boards:
+`python3 tools/board.py OUT.jpg t1 t2 ...`.
+
+## Sound (tools/mix.py)
+
+- The song plays untouched.
+- **Cues.** About 95 cues from library/sfx, each set relative to the song's short-term level where it lands, by
+  type:
+  - impacts about 6 dB under it;
+  - whooshes about 8 dB under;
+  - HUD beeps about 13 dB under.
+- **Engines.** The real engine pass-bys from five rally clips sit under drop 1, aligned to the passes on screen.
+- **Filtering.** Everything but the two drop hits is high-passed at 140 Hz, so nothing fights the 808.
+- **The effects bus** is trimmed to 11 LU under the song.
+- **Master:** -14 LUFS, -1 dBTP (Instagram).
+
+## Deliver (tools/deliver.sh)
+
+- `DNA_reel_16x9.mp4`: 1920x1080, the master.
+- `DNA_reel_IG_9x16.mp4`: 1080x1920 for Reels, the 16:9 picture centred on black.
+- `DNA_cover.jpg`: the Reels cover.
+
+## Review notes (v1)
+
+Checked on contact sheets of the rendered picture (6 fps) and frame strips around the cuts.
+
+**Fixed:**
+- **Placement.** "ROYALTY" now sits behind his hair, clear of the mirrored lenses (which read as background in the
+  matte). "DNA." in B3 sits right, revealing as his head turns. "HERITAGE" moved to a frame that shows the valley.
+- **The MONEY / POWER cards.** They no longer take the global flash, which washed them grey.
+- **A black frame at the head of each panel shot.** Panels now show from the frame their appear time falls in.
+- **The renderer.** The first render ran out of memory (12 cached sources x 4 workers) and the pool hung. Now:
+  - a worker drops its decoded sources when it moves to the next shot;
+  - chunks are about 190 frames;
+  - the pool fails loudly;
+  - finished chunks are kept (`--fresh` redoes them).
+
+**Added:**
+- a 2.2% zoom pulse on every beat in both drops (not on matted shots, whose mattes are pulse-free);
+- brighter, larger code rain;
+- a lower sun-flare threshold.

@@ -71,7 +71,7 @@ def source(key):
     vs = [(cx, cy, cw / zmax) for cx, cy, cw, _ in views]
     if abs(aspect - W / H) > 1e-3:          # panels: convert to a 16:9-equivalent window that covers the tall one
         vs = [(cx, cy, max(cw, cw / aspect * W / H)) for cx, cy, cw in vs]
-    return media.Shot(spec["clip"], times, vs, margin=spec.get("margin", 1.3), max_scale=spec.get("max_scale", 1.0))
+    return media.Shot(spec["clip"], times, vs, margin=spec.get("margin", 1.2), max_scale=spec.get("max_scale", 1.0))
 
 
 def render_view(key, spec, t, out=(W, H), zoom=1.0, dx=0.0, dy=0.0, droll=0.0):
@@ -85,6 +85,11 @@ def render_view(key, spec, t, out=(W, H), zoom=1.0, dx=0.0, dy=0.0, droll=0.0):
 def view_fx(spec, t, f):
     """Zoom (punches), offset (shakes) and roll for this frame from the shot's fx list."""
     zoom, dx, dy, dr = 1.0, 0.0, 0.0, 0.0
+    if spec.get("pulse", not spec.get("matte")):          # never on matted shots: their mattes are pulse-free
+        import bisect
+        i = bisect.bisect_right(edl.PULSE, t) - 1
+        if i >= 0:
+            zoom *= 1 + 0.022 * look.env_hit(t, edl.PULSE[i], 0.0, 0.2, 2.5)
     for fx in spec.get("fx", []):
         k = fx[0]
         if k == "punch":                       # ("punch", t, amount, decay)
@@ -170,7 +175,7 @@ def panels_frame(spec, t, f):
         img = cv2.GaussianBlur(bg, (0, 0), 25) * 0.35
     for pk in spec["panels"]:
         p = edl.SPECS[pk]
-        if t < p["appear"]:
+        if p["appear"] >= t + 1.0 / FPS - 1e-6:   # a panel shows from the frame its appear time falls in
             continue
         x0, y0, x1, y1 = p["rect"]
         pw, ph = x1 - x0, y1 - y0
@@ -325,6 +330,8 @@ def matte_box(m, top_frac=None):
 # ----------------------------------------------------------------------------------------- words
 
 def draw_words(ov_behind, ov_front, spec, t):
+    """Draw the shot's live words; returns (any behind, any in front)."""
+    used = [False, False]
     for w in spec.get("words", []):
         t_in, t_out = w["t"], w.get("until", spec["t1"])
         if not (t_in <= t < t_out):
@@ -340,18 +347,35 @@ def draw_words(ov_behind, ov_front, spec, t):
         x, y = w["pos"](t) if callable(w["pos"]) else w["pos"]
         blur = 2.5 * max(0.0, sc - 1.0) * 6
         target = ov_behind if w.get("behind", False) else ov_front
+        used[0 if w.get("behind", False) else 1] = True
         if w.get("shadow", True) and not w.get("behind", False):
             sh = np.zeros_like(spr)
             sh[..., 3] = spr[..., 3] * 0.55
             gfx.place(target, sh, x + 4, y + 6, sc, a, 6 + blur)
         gfx.place(target, spr, x, y, sc * w.get("scale", 1.0), a * w.get("alpha", 1.0), blur)
+    return used
 
 
 # ----------------------------------------------------------------------------------------- one frame
 
+_current = {"id": None}
+
+
+def _evict_if_new(spec):
+    """Each worker renders shots in order: drop every decoded source when it moves to a new shot."""
+    sid = spec["id"] if spec else None
+    if sid != _current["id"]:
+        _current["id"] = sid
+        source.cache_clear()
+        photo_layers.cache_clear()
+        import gc
+        gc.collect()
+
+
 def frame(f):
     t = f / FPS
     spec = shot_at(f)
+    _evict_if_new(spec)
     if spec is None:
         img = np.zeros((H, W, 3), np.float32)
         return finish(img, t, f, None)
@@ -367,9 +391,13 @@ def frame(f):
     if spec.get("layout") == "photo" and spec.get("_alpha") and spec["_alpha"][0] == f:
         m = spec["_alpha"][1]
     img = g
-    ov_b, ov_f = gfx.blank(), gfx.blank()
-    draw_words(ov_b, ov_f, spec, t)
-    if ov_b[..., 3].max() > 0:
+    live = [w for w in spec.get("words", []) if w["t"] <= t < w.get("until", spec["t1"])]
+    ov_b = ov_f = None
+    used = (False, False)
+    if live:
+        ov_b, ov_f = gfx.blank(), gfx.blank()
+        used = draw_words(ov_b, ov_f, spec, t)
+    if used[0]:
         img = gfx.over(img, ov_b)
         if m is not None:
             mm = m[..., None]
@@ -387,7 +415,8 @@ def frame(f):
             pul = 0.75 + 0.25 * math.sin(t * 14)
             col = np.array(fx[3] if len(fx) > 3 else (1, 1, 1), np.float32)
             img = 1 - (1 - img) * (1 - np.clip((edge + rim)[..., None] * col * a * pul, 0, 1))
-    img = gfx.over(img, ov_f)
+    if used[1]:
+        img = gfx.over(img, ov_f)
     for fx in spec.get("overlays", []):
         img = fx(img, spec, t, f, m, sys.modules[__name__])
     return finish(img, t, f, spec)
@@ -482,6 +511,7 @@ def main():
     ap.add_argument("--sheet", nargs=3, type=float)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--range", nargs=2, type=float)
+    ap.add_argument("--fresh", action="store_true", help="re-render every chunk")
     a = ap.parse_args()
     sd = os.path.join(ROOT, "renders/stills")
     os.makedirs(sd, exist_ok=True)
@@ -514,18 +544,28 @@ def main():
     if a.range:
         f_start, f_end = media.frame_of(a.range[0]), media.frame_of(a.range[1])
     n = a.workers
-    # split on shot boundaries near equal sizes so each source decodes in one worker
-    bounds = [f_start]
-    for k in range(1, n):
-        target = f_start + (f_end - f_start) * k // n
-        cands = [s["F0"] for s in SHOTS if f_start < s["F0"] < f_end]
-        bounds.append(min(cands, key=lambda c: abs(c - target)) if cands else target)
+    # chunks of about 190 frames, cut on shot boundaries, so each source decodes once and memory stays bounded
+    starts = sorted(set([f_start] + [s["F0"] for s in SHOTS if f_start < s["F0"] < f_end]))
+    bounds, last = [f_start], f_start
+    for st in starts[1:]:
+        if st - last >= 190:
+            bounds.append(st)
+            last = st
     bounds.append(f_end)
-    bounds = sorted(set(bounds))
-    jobs = [(k, bounds[k], bounds[k + 1], os.path.join(out_dir, f"seg_{k:02d}.mp4")) for k in range(len(bounds) - 1)]
+    jobs = []
+    for k in range(len(bounds) - 1):
+        out = os.path.join(out_dir, f"seg_{bounds[k]:05d}_{bounds[k + 1]:05d}.mp4")
+        done = out + ".done"
+        if a.fresh or not os.path.exists(done):
+            jobs.append((k, bounds[k], bounds[k + 1], out))
+    print(f"{len(bounds) - 1} chunks, {len(jobs)} to render", flush=True)
     import multiprocessing as mp
-    with mp.get_context("fork").Pool(len(jobs)) as pool:
-        outs = pool.map(render_chunk, jobs)
+    from concurrent.futures import ProcessPoolExecutor
+    with ProcessPoolExecutor(n, mp_context=mp.get_context("fork")) as ex:
+        for out in ex.map(render_chunk, jobs):
+            open(out + ".done", "w").close()
+            print("done", out, flush=True)
+    outs = [os.path.join(out_dir, f"seg_{bounds[k]:05d}_{bounds[k + 1]:05d}.mp4") for k in range(len(bounds) - 1)]
     lst = os.path.join(out_dir, "segs.txt")
     with open(lst, "w") as fh:
         for o in outs:
