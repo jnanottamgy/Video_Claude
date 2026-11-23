@@ -1,6 +1,6 @@
 """Rough word timing for the edit audio (offline): Parakeet TDT for timed tokens, Whisper medium.en for a second
 reading of the text. Music under rap makes both approximate; the result guides where words land, nothing more.
-  python3 tools/lyrics_asr.py renders/audio/dna.wav  ->  renders/analysis/audio/asr.json"""
+  python3 tools/lyrics_asr.py renders/audio/dna.wav [OUT.json]  ->  renders/analysis/audio/asr.json"""
 import json, sys
 import numpy as np, soundfile as sf, librosa, sherpa_onnx
 
@@ -26,4 +26,4 @@ for a in np.arange(0, len(m) / 16000, 5.0):
     s = wr.create_stream(); s.accept_waveform(16000, seg); wr.decode_stream(s)
     out["whisper"].append({"t0": float(a), "text": s.result.text})
     print(f"[whisper {a:4.1f}] {s.result.text}")
-json.dump(out, open("renders/analysis/audio/asr.json", "w"), indent=1)
+json.dump(out, open(sys.argv[2] if len(sys.argv) > 2 else "renders/analysis/audio/asr.json", "w"), indent=1)

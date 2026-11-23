@@ -433,3 +433,112 @@ def flares(img, pts, strength, color=(0.65, 0.82, 1.0), streak=260.0):
     fl = cv2.resize(acc, (W, H), interpolation=cv2.INTER_LINEAR)
     add = np.clip(fl[..., None] * np.array(color, np.float32) * strength, 0, 1)
     return 1 - (1 - img) * (1 - add)
+
+
+# ----------------------------------------------------------------------------------------- reel 3: tears and tape
+
+@functools.lru_cache(maxsize=16)
+def _tear_line(seed, n, length, x0, slope):
+    """A jagged tear: offset across the cut for each of n rows (multi-scale wobble, a random walk, fibres)."""
+    rng = np.random.default_rng(seed)
+    y = np.arange(n, dtype=np.float32)
+    x = x0 + slope * (y - n / 2)
+    for k, amp in ((2, 70), (5, 30), (13, 12), (37, 5)):
+        x += amp * np.sin(2 * np.pi * k * y / n + rng.random() * 6.283)
+    x += np.cumsum(rng.standard_normal(n)).astype(np.float32) * 0.7
+    x += rng.standard_normal(n).astype(np.float32) * 1.4
+    return x
+
+
+@functools.lru_cache(maxsize=4)
+def _fibre(seed, w=W, h=H):
+    rng = np.random.default_rng(seed + 99)
+    return cv2.GaussianBlur(rng.random((h, w)).astype(np.float32), (0, 0), 0.8)
+
+
+def tear(A, B, u, seed=7, x0=0.52, slope=0.12, spread=0.75, paper=(0.97, 0.95, 0.9), edge=9):
+    """The frame rips along a jagged line from top to bottom and the two halves peel apart, left half to the
+    left and right half to the right, rows near the top first (like paper), with white fibre edges and soft
+    shadows, revealing B underneath."""
+    xx, yy = _grid()
+    xt = _tear_line(seed, H, W, x0 * W, slope)[:, None]
+    ys = np.arange(H, dtype=np.float32)[:, None] / H
+    # the crack runs down the frame in the first third; each row then separates with an accelerating ease
+    v = np.clip((u - ys * 0.3) / 0.7, 0, 1)
+    d = spread * W * v ** 1.7 + 3.0 * (v > 0)
+    lift = 26.0 * v ** 1.2                                    # the halves curl up a little as they go
+    fib = _fibre(seed)
+    out = B.copy()
+    for side in (-1, 1):
+        sx = (xx - side * d).astype(np.float32)               # where this output pixel comes from in A
+        sy = (yy + lift).astype(np.float32)
+        img = cv2.remap(A, sx, sy, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+        inside = (sx < xt) if side < 0 else (sx >= xt)
+        valid = (sx >= 0) & (sx < W)
+        a = (inside & valid).astype(np.float32)
+        a = cv2.GaussianBlur(a, (0, 0), 0.7)
+        band = np.clip(1 - np.abs(sx - xt) / edge, 0, 1) * a * (0.55 + 0.45 * fib)
+        col = img * (1 - band[..., None]) + np.array(paper, np.float32) * band[..., None]
+        sh = cv2.GaussianBlur(a, (0, 0), 14)
+        sh = np.roll(sh, 10, 0)
+        out = out * (1 - 0.5 * sh[..., None])
+        out = out * (1 - a[..., None]) + col * a[..., None]
+    return out
+
+
+def torn_sprite(spr, sep, seed=3, paper=(0.97, 0.95, 0.9), angle=-12.0):
+    """A text sprite (premultiplied RGBA) torn in two along a jagged diagonal: the upper piece shifts up-left,
+    the lower down-right by sep px, each with a white fibre edge. Returns a new, larger sprite."""
+    h, w = spr.shape[:2]
+    pad = int(abs(sep) * 1.5) + 12
+    S = cv2.copyMakeBorder(spr, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(0, 0, 0, 0))
+    hh, ww = S.shape[:2]
+    rng = np.random.default_rng(seed)
+    x = np.arange(ww, dtype=np.float32)
+    cut = hh / 2 + np.tan(np.deg2rad(angle)) * (x - ww / 2)
+    for k, amp in ((3, h * 0.05), (11, h * 0.02), (31, h * 0.008)):
+        cut += amp * np.sin(2 * np.pi * k * x / ww + rng.random() * 6.283)
+    cut += np.cumsum(rng.standard_normal(ww)).astype(np.float32) * 0.25
+    yy = np.arange(hh, dtype=np.float32)[:, None]
+    top = (yy < cut[None, :]).astype(np.float32)
+    out = np.zeros_like(S)
+    for m, dx, dy in ((top, -0.6, -0.8), (1 - top, 0.6, 0.8)):
+        piece = S * m[..., None]
+        band = np.clip(1 - np.abs(yy - cut[None, :]) / 5.0, 0, 1) * S[..., 3] * m
+        piece[..., :3] = piece[..., :3] * (1 - band[..., None]) + np.array(paper, np.float32) * band[..., None]
+        M = np.float32([[1, 0, dx * sep], [0, 1, dy * sep]])
+        moved = cv2.warpAffine(piece, M, (ww, hh), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+        out = moved + out * (1 - moved[..., 3:4])
+    return out
+
+
+def vhs(img, f, t, strength=1.0):
+    """Tape on rewind: rows wobble, a tracking band rolls up the frame tearing the picture sideways, colour
+    bleeds, scanlines and snow."""
+    rng = np.random.default_rng(f * 31 + 7)
+    xx, yy = _grid()
+    rows = np.repeat(rng.standard_normal(H // 6 + 1).astype(np.float32), 6)[:H] * 2.5 * strength
+    by = ((0.95 - (t * 1.7) % 1.0) * H)                       # the tracking band climbs
+    band = np.exp(-((np.arange(H) - by) / 38.0) ** 2).astype(np.float32)
+    rows = rows + band * (40 * strength) * np.sign(rng.standard_normal())
+    sx = (xx + rows[:, None]).astype(np.float32)
+    out = cv2.remap(img, sx, yy, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT101)
+    out = np.dstack([shift(out[..., 0].copy(), 6 * strength), out[..., 1], shift(out[..., 2].copy(), -6 * strength)])
+    L = look.luma(out)[..., None]
+    out = out * 0.7 + L * 0.3
+    scan = (0.85 + 0.15 * (np.arange(H) % 3 == 0)).astype(np.float32)[:, None, None]
+    out = out * scan
+    snow = rng.random((H // 2, W // 2)).astype(np.float32)
+    snow = cv2.resize(snow, (W, H), interpolation=cv2.INTER_NEAREST)
+    out = out * (1 - 0.12 * strength) + snow[..., None] * 0.12 * strength
+    out = out + band[:, None, None] * 0.25 * strength * snow[..., None]
+    return np.clip(out, 0, 1)
+
+
+def flash_pop(img, u, color=(1.0, 1.0, 1.0)):
+    """A camera flash: an instant white-out that decays, a little blown-out bloom on the way down."""
+    if u < 0 or u >= 1:
+        return img
+    e = (1 - u) ** 2.2
+    out = look.halation(img, 0.5, 1.2 * e, (1.0, 0.97, 0.92), 30)
+    return out * (1 - e) + np.array(color, np.float32) * e

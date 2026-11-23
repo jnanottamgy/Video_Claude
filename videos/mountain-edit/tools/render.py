@@ -454,6 +454,9 @@ def draw_words(ov_behind, ov_front, spec, t):
             a *= (t_out - t) / 0.05
         spr = gfx.text(w["text"], w.get("font", gfx.F_BIG), w.get("size", 300), tuple(w.get("color", gfx.WHITE)),
                        w.get("tracking", 0.0), w.get("stroke", 0), w.get("outline", False))
+        if w.get("torn") is not None:                   # torn in two along a jagged line, pieces apart by sep px
+            sep = w["torn"](t) if callable(w["torn"]) else w["torn"]
+            spr = fx2.torn_sprite(spr, sep, w.get("seed", 3))
         x, y = w["pos"](t) if callable(w["pos"]) else w["pos"]
         blur = 2.5 * max(0.0, sc - 1.0) * 6
         target = ov_behind if w.get("behind", False) else ov_front
@@ -510,6 +513,13 @@ def mix(tx, a, b, u, t, f):
         return fx2.edge_wipe(a, b, u, tx.get("dir", -1), tx.get("soft", 90), tx.get("blur", 0.12))
     if k == "dissolve":
         return a * (1 - u) + b * u
+    if k == "tear":
+        return fx2.tear(a, b, u, tx.get("seed", 7), tx.get("x0", 0.52), tx.get("slope", 0.12), tx.get("spread", 0.75))
+    if k == "flash":                                    # a camera flash across the cut
+        if u < 0.5:
+            k2 = (u / 0.5) ** 3
+            return a * (1 - k2) + k2
+        return fx2.flash_pop(b, (u - 0.5) / 0.5)
     raise ValueError(k)
 
 
